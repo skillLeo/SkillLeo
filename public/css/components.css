@@ -1,0 +1,9 @@
+/* Additional component-specific styles */
+.card-content {
+    /* Component content styles */
+}
+
+/* Reusable utility classes */
+.u-text-center { text-align: center; }
+.u-mb-16 { margin-bottom: 16px; }
+.u-mt-16 { margin-top: 16px; }
