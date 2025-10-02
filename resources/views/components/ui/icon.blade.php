@@ -1237,7 +1237,6 @@
     color: #ffffff;
     border-color: var(--accent);
 }
-
 .btn-solid.btn-primary_muted:hover {
     background: #0f46c4;
     color: #ffffff;
@@ -1251,7 +1250,7 @@
 }
 
 .btn-outlined.btn-primary_muted:hover {
-    background: var(--border);
+    background: var(--apc-bg);
     color: var(--muted);
     border-color: var(--muted);
     box-shadow: inset 0 0 0 1px var(--muted);

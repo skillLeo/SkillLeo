@@ -169,7 +169,7 @@
 
 /* Primary Outlined */
 .btn-outlined.btn-primary {
-    background: #ffffff;
+    background: var(--card);
     color: var(--accent);
     border-color: var(--accent);
 }

@@ -63,7 +63,7 @@
                 <a class="hm-social" href="{{ $user->linkedin }}"><i class="fa-brands fa-linkedin-in"></i></a>
             @endif
             <a class="hm-cv" href="{{ $user->cv_url ?? '#' }}">
-                <i class="fa-solid fa-download"></i> Download CV
+                <i class="fa-solid fa-download"></i>  Resume
             </a>
         </div>
 

@@ -12,7 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Custom Styles -->
-    <link href="{{ asset('css/profile.css') }}" rel="stylesheet">
+    {{-- <link href="{{ asset('css/profile.css') }}" rel="stylesheet"> --}}
+    <link href="{{ asset('css/profile1.css') }}" rel="stylesheet">
     <link href="{{ asset('css/components.css') }}" rel="stylesheet">
     <!-- In resources/views/layouts/app.blade.php -->
 <link href="{{ asset('css/responsive.css') }}" rel="stylesheet">
@@ -25,7 +26,7 @@
            .card{margin-bottom: 0px !important;}
     </style>
 </head>
-<body>
+<body data-theme="dark">
     @yield('content')
     
     <!-- Scripts -->
@@ -33,5 +34,24 @@
     <script src="{{ asset('js/profile.js') }}"></script>
     @stack('scripts')
     @section('scripts')
+
+
+    {{-- <script>
+        // Disable right-click context menu
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+        // Disable F12, Ctrl+Shift+I, Ctrl+U etc.
+document.addEventListener("keydown", (e) => {
+  if (
+    e.key === "F12" || 
+    (e.ctrlKey && e.shiftKey && e.key === "I") ||
+    (e.ctrlKey && e.key === "u") ||
+    (e.ctrlKey && e.shiftKey && e.key === "J")
+  ) {
+    e.preventDefault();
+  }
+});
+
+    </script> --}}
 </body>
 </html>

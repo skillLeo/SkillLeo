@@ -101,7 +101,6 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid var(--gray-300);
         background: var(--white);
         border-radius: 8px;
         cursor: pointer;

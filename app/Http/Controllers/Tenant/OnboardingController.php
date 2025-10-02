@@ -57,7 +57,7 @@ class OnboardingController extends Controller
             ],
             'services' => [
                 'Web Development',
-                'Mobile App Development',
+                'App Development',
                 'API Integration'
             ]
         ];
@@ -82,7 +82,7 @@ class OnboardingController extends Controller
             'experiences', 
             'reviews'
         ))->with([
-            'brandName' => 'Codefixxer',
+            'brandName' => 'Codefixxaaaer',
             'messageCount' => 2
         ]);
     }
