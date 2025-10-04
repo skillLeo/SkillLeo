@@ -1,310 +1,289 @@
-@extends(view: 'layouts.onboarding')
+@extends('layouts.onboarding')
+
 @section('title', 'Portfolio Projects - ProMatch')
 
-@php
-    $currentStep = 5;
-    $totalSteps = 8;
-@endphp
+@section('card-content')
+
+<x-onboarding.form-header 
+    skipUrl="{{ route('tenant.onboarding.education') }}"
+
+    step="5"
+    title="Showcase your work"
+    subtitle="Add 2-4 projects that best demonstrate your expertise"
+/>
+
+<form id="portfolioForm" action="{{ route('tenant.onboarding.portfolio.store') }}" method="POST">
+    @csrf
+
+    <x-onboarding.alert type="info">
+        Optional but recommended for better visibility
+        <button type="button" class="btn btn-secondary" id="skipBtn" style="margin-top: var(--space-sm);">Skip for now</button>
+    </x-onboarding.alert>
+
+    <div class="projects-list" id="projectsList">
+        <div class="empty-state" id="emptyState">
+            <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📁</div>
+            <div style="font-weight: var(--fw-semibold); margin-bottom: var(--space-xs);">No projects yet</div>
+            <div style="color: var(--text-muted); font-size: var(--fs-subtle);">Add your first project to get started</div>
+        </div>
+    </div>
+
+    <button type="button" class="btn-add" id="addBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add project
+    </button>
+
+    <input type="hidden" name="projects" id="projectsData">
+
+    <div style="background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg);">
+        <strong style="color: var(--accent); font-size: var(--fs-subtle); display: block; margin-bottom: var(--space-sm);">AI Assistant</strong>
+        <div style="display: flex; gap: var(--space-sm);">
+            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: var(--fs-subtle);" id="generateBtn">Generate from URL</button>
+            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: var(--fs-subtle);" id="enhanceBtn">Enhance text</button>
+        </div>
+    </div>
+
+    <x-onboarding.form-footer 
+skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.onboarding.experience') }}" />
+</form>
+
+@endsection
 
 @push('styles')
 <style>
-    /* Portfolio-specific styles that aren't in app.css */
-    .skip-section {
-        background: var(--gray-100);
-        border: 1px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 16px;
-        text-align: center;
-        margin-bottom: 20px;
-        color: var(--gray-700);
-        font-size: 14px;
-    }
+.projects-list { margin: var(--space-lg) 0; }
 
-    .skip-btn {
-        margin-top: 10px;
-        background: var(--white);
-        border: 1px solid var(--gray-300);
-        color: var(--gray-700);
-        padding: 10px 14px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 13px;
-        transition: all .2s ease;
-    }
+.project-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    background: var(--card);
+    position: relative;
+    margin-bottom: var(--space-md);
+    transition: all var(--transition-base);
+}
 
-    .skip-btn:hover {
-        border-color: var(--dark);
-        background: var(--gray-100);
-        color: var(--dark);
-    }
+.project-card:hover { box-shadow: var(--shadow-sm); }
+.edit-card { border-color: var(--accent); background: var(--apc-bg); }
 
-    /* Project cards specific styles */
-    .project-card {
-        border: 1px solid var(--gray-300);
-        border-radius: 12px;
-        padding: 20px;
-        background: var(--white);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03);
-        position: relative;
-        margin-bottom: 14px;
-        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-        animation: cardAppear .5s ease;
-    }
+.card-actions {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    display: flex;
+    gap: var(--space-sm);
+}
 
-    @keyframes cardAppear {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: none; }
-    }
+.card-edit, .card-remove {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
 
-    .display-card {
-        background: var(--gray-100);
-    }
+.card-edit:hover {
+    background: var(--accent);
+    color: var(--btn-text-primary);
+    border-color: var(--accent);
+}
 
-    .display-card:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
-        border-color: var(--gray-300);
-    }
+.card-remove:hover {
+    background: var(--error);
+    color: var(--btn-text-primary);
+    border-color: var(--error);
+}
 
-    .edit-card {
-        border: 1px solid var(--dark);
-    }
+.card-media {
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+    background: var(--apc-bg);
+    aspect-ratio: 16 / 9;
+}
 
-    /* Card media/images */
-    .card-media {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 12px;
-        border: 1px solid var(--gray-300);
-        background: linear-gradient(135deg, rgba(0, 0, 0, .03), rgba(0, 0, 0, .02));
-    }
+.card-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-    .card-media .media-wrap {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background: var(--gray-100);
-        display: block;
-    }
+.card-title {
+    font-size: var(--fs-title);
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    margin-bottom: var(--space-sm);
+}
 
-    .card-media img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
+.card-description {
+    color: var(--text-body);
+    line-height: var(--lh-relaxed);
+    margin-bottom: var(--space-md);
+}
 
-    .card-link {
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 13px;
-    }
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-    .card-link:hover {
-        text-decoration: underline;
-    }
+.card-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-subtle);
+    transition: color var(--transition-base);
+}
 
-    .card-tech {
-        font-size: 11px;
-        color: var(--gray-500);
-        background: var(--white);
-        padding: 4px 8px;
-        border-radius: 12px;
-        border: 1px solid var(--gray-300);
-    }
+.card-link:hover { color: var(--accent-dark); }
 
-    /* Image upload specific */
-    .img-dropzone {
-        position: relative;
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 14px;
-        background: var(--gray-100);
-        transition: border-color .2s ease, background .2s ease;
-        cursor: pointer;
-    }
+.card-tech {
+    font-size: var(--fs-micro);
+    color: var(--text-muted);
+    background: var(--apc-bg);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
 
-    .img-dropzone:hover {
-        border-color: var(--dark);
-        background: #F2F6FF;
-    }
+.img-dropzone {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-md);
+    background: var(--apc-bg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
 
-    .img-dropzone.dragover {
-        border-color: var(--primary);
-        background: rgba(0, 97, 255, 0.06);
-    }
+.img-dropzone:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
 
-    .img-dropzone .dz-inner {
-        display: grid;
-        grid-template-columns: 120px 1fr;
-        gap: 14px;
-        align-items: center;
-    }
+.dz-inner {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
 
-    .img-thumb {
-        width: 120px;
-        height: 80px;
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid var(--gray-300);
-        background: var(--white);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        color: var(--gray-500);
-    }
+.img-thumb {
+    width: 100px;
+    height: 60px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-micro);
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
 
-    .img-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
+.img-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-    .img-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
+.img-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
 
-    .img-btn {
-        background: var(--white);
-        border: 1px solid var(--gray-300);
-        color: var(--gray-700);
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all .2s ease;
-    }
+.img-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-body);
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-micro);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
 
-    .img-btn:hover {
-        background: var(--dark);
-        color: #fff;
-        border-color: var(--dark);
-    }
+.img-btn:hover {
+    background: var(--accent);
+    color: var(--btn-text-primary);
+    border-color: var(--accent);
+}
 
-    .img-hint {
-        font-size: 12px;
-        color: var(--gray-500);
-        margin-top: 6px;
-    }
+.img-hint {
+    font-size: var(--fs-micro);
+    color: var(--text-subtle);
+    margin-top: 4px;
+}
 
-    .form-header-actions {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-        margin-bottom: 12px;
-    }
+.btn-add {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--card);
+    color: var(--text-body);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: var(--fs-body);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    transition: all var(--transition-base);
+}
 
-    /* Toast notification */
-    .toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--dark);
-        color: #fff;
-        padding: 12px 16px;
-        border-radius: 10px;
-        font-size: 13px;
-        box-shadow: var(--shadow-lg);
-        z-index: 9999;
-        animation: toastIn .2s ease;
-    }
+.btn-add:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+}
 
-    @keyframes toastIn {
-        from {
-            opacity: 0;
-            transform: translateY(-6px);
-        }
-        to {
-            opacity: 1;
-            transform: none;
-        }
-    }
+.form-header-actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    margin-bottom: var(--space-md);
+}
 
-    /* Mobile responsiveness for image dropzone */
-    @media (max-width: 640px) {
-        .img-dropzone .dz-inner {
-            grid-template-columns: 1fr;
-        }
-        
-        .img-thumb {
-            width: 100%;
-            height: 160px;
-        }
-    }
+.save-btn, .cancel-btn {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-subtle);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.save-btn {
+    background: var(--success);
+    color: var(--btn-text-primary);
+    border: none;
+}
+
+.cancel-btn {
+    background: var(--card);
+    color: var(--text-body);
+    border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+    .dz-inner { flex-direction: column; }
+    .img-thumb { width: 100%; height: 120px; }
+}
 </style>
 @endpush
 
-@section('card-content')
-    <div class="form-header">
-        <div class="step-badge">Portfolio Projects</div>
-        <h1 class="form-title">Showcase your best work</h1>
-        <p class="form-subtitle">Add projects that demonstrate your skills and impact.</p>
-    </div>
-
-    <form id="portfolioForm" action="{{ route('tenant.onboarding.portfolio.store') }}" method="POST">
-        @csrf
-
-        <!-- Skip -->
-        <div class="skip-section">
-            Portfolio is optional but highly recommended for better visibility.
-            <div>
-                <button type="button" class="skip-btn" id="skipBtn">Skip for now</button>
-            </div>
-        </div>
-
-        <!-- Projects -->
-        <div class="projects-list" id="projectsList">
-            <div class="empty-state" id="emptyState">
-                <div class="empty-icon">🎯</div>
-                <div class="empty-title">Add your first project</div>
-                <div class="empty-subtitle">Showcase work that demonstrates your expertise</div>
-            </div>
-        </div>
-
-        <!-- Add button -->
-        <button type="button" class="add-project-btn" id="addBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Add project
-        </button>
-
-        <input type="hidden" name="projects" id="projectsData">
-
-        <!-- AI helper -->
-        <div class="ai-helper">
-            <strong>AI Project Assistant</strong>
-            <div class="ai-actions">
-                <button type="button" class="ai-button" id="generateBtn">🔗 Generate from URL</button>
-                <button type="button" class="ai-button" id="enhanceBtn">✨ Enhance Description</button>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="form-actions">
-            <a href="{{ route('tenant.onboarding.experience') }}" class="btn btn-back">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Back
-            </a>
-
-            <button type="submit" class="btn btn-primary" id="continueBtn" disabled>
-                <span id="btnText">Continue</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-        </div>
-    </form>
-@endsection
-
+ 
 @push('scripts')
 <script>
 /* ===== Portfolio Projects with Image Upload ===== */

@@ -136,7 +136,7 @@
 
 
                 <!-- Why Choose Me -->
-                <section class="right-sections">
+                <section class="card pad24">
                     <div class="cards-header">
                         <h2 class="portfolios-title">Why Choose Me?</h2>
                         <button class="edit-card icon-btn" aria-label="Edit card">
@@ -153,7 +153,7 @@
                 </section>
 
                 <!-- Services -->
-                <section class="right-sections">
+                <section class="card pad24">
                     <div class="cards-header">
                         <h2 class="portfolios-title">Services</h2>
                         <button class="edit-card icon-btn" aria-label="Edit card">

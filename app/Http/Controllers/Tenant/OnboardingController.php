@@ -99,6 +99,10 @@ class OnboardingController extends Controller
     {
         return view('tenant.onboarding.welcome');
     }
+    public function info()
+    {
+        return view('tenant.onboarding.info');
+    }
 
     public function personal()
     {

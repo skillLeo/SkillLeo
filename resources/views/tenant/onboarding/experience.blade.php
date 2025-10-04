@@ -2,229 +2,178 @@
 
 @section('title', 'Work Experience - ProMatch')
 
-@php
-    $currentStep = 4;
-    $totalSteps = 8;
-@endphp
-
 @section('card-content')
-    <div class="form-header">
-        <x-ui.step-badge label="Work Experience" />
-        <h1 class="form-title">Your professional journey</h1>
-        <p class="form-subtitle">Add roles that highlight your responsibilities and impact.</p>
+
+<x-onboarding.form-header 
+    skipUrl="{{ route('tenant.onboarding.education') }}"
+
+    step="4"
+    title="Your professional journey"
+    subtitle="Add roles that highlight your responsibilities and impact"
+/>
+
+<form id="experienceForm" action="{{ route('tenant.onboarding.experience.store') }}" method="POST">
+    @csrf
+
+    <div class="experience-list" id="experienceList">
+        <div class="empty-state" id="emptyState">Start with your most recent role</div>
     </div>
 
-    <form id="experienceForm" action="{{ route('tenant.onboarding.experience.store') }}" method="POST">
-        @csrf
+    <button type="button" class="btn-add" id="addBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add experience
+    </button>
 
-        <div class="experience-list" id="experienceList">
-            <div class="empty-state" id="emptyState">Start with your most recent role.</div>
-        </div>
+    <input type="hidden" name="experiences" id="experiencesData">
 
-        <button type="button" class="add-experience-btn" id="addBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Add experience
-        </button>
+    <x-onboarding.alert type="success">
+        <strong>Pro tip:</strong> Use strong verbs and add metrics (e.g., "Reduced costs by 18%"). Keep 2–4 bullet points per role.
+    </x-onboarding.alert>
 
-        <input type="hidden" name="experiences" id="experiencesData">
+    <x-onboarding.form-footer 
+skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.onboarding.skills') }}" />
+</form>
 
-        <div class="tips">
-            <strong>Pro tip:</strong> Use strong verbs and add metrics (e.g., "Reduced costs by 18%"). Keep 2–4 bullet points per role.
-        </div>
-
-        <div class="form-actions">
-            <x-ui.button variant="back" href="{{ route('tenant.onboarding.skills') }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Back
-            </x-ui.button>
-
-            <x-ui.button variant="primary" type="submit" id="continueBtn" disabled>
-                <span id="btnText">Continue</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </x-ui.button>
-        </div>
-    </form>
 @endsection
 
 @push('styles')
 <style>
-    .experience-list { margin: 24px 0; }
+.experience-list { margin: var(--space-lg) 0; }
 
-    .empty-state {
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 28px;
-        text-align: center;
-        color: var(--gray-500);
-        font-size: 14px;
-    }
+.experience-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    background: var(--card);
+    position: relative;
+    margin-bottom: var(--space-md);
+    transition: all var(--transition-base);
+}
 
-    .experience-card {
-        border: 1px solid var(--gray-300);
-        border-radius: 12px;
-        padding: 20px;
-        background: var(--white);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03);
-        position: relative;
-        margin-bottom: 14px;
-        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-    }
+.experience-card:hover { box-shadow: var(--shadow-sm); }
+.edit-card { border-color: var(--accent); background: var(--apc-bg); }
 
-    .experience-card:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
-    }
+.card-actions {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    display: flex;
+    gap: var(--space-sm);
+}
 
-    .card-actions {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        display: flex;
-        gap: 8px;
-        z-index: 2;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid var(--gray-300);
-        border-radius: 10px;
-        backdrop-filter: blur(6px);
-        padding: 4px;
-    }
+.card-company {
+    font-weight: var(--fw-bold);
+    color: var(--text-heading);
+    font-size: var(--fs-title);
+    margin-bottom: 2px;
+}
 
-    .icon-btn {
-        width: 30px;
-        height: 30px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--white);
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background .2s ease, color .2s ease, transform .15s ease, border-color .2s ease;
-    }
+.card-title {
+    font-weight: var(--fw-semibold);
+    color: var(--text-body);
+    margin-bottom: var(--space-sm);
+}
 
-    .icon-btn:hover {
-        transform: translateY(-1px);
-    }
+.card-date {
+    font-size: var(--fs-subtle);
+    color: var(--text-muted);
+}
 
-    .btn-edit:hover {
-        background: var(--dark);
-        color: #fff;
-        border-color: var(--dark);
-    }
+.card-description {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border);
+    color: var(--text-body);
+    line-height: var(--lh-relaxed);
+}
 
-    .btn-remove {
-        border-radius: 50%;
-        color: #DC2626;
-        background: #FEE2E2;
-        border-color: #FCA5A5;
-    }
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
 
-    .btn-remove:hover {
-        background: #DC2626;
-        color: #fff;
-        border-color: #DC2626;
-    }
+.date-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
 
-    .card-header {
-        padding-right: 96px;
-    }
+.current-role {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
 
-    .card-company {
-        font-weight: 700;
-        color: var(--gray-900);
-        font-size: 16px;
-        margin-bottom: 2px;
-    }
+.current-role input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
 
-    .card-title {
-        font-weight: 600;
-        color: var(--gray-700);
-        font-size: 14px;
-        margin-bottom: 6px;
-    }
+.btn-add {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--card);
+    color: var(--text-body);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: var(--fs-body);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    transition: all var(--transition-base);
+}
 
-    .card-date {
-        font-size: 13px;
-        color: var(--gray-500);
-    }
+.btn-add:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+}
 
-    .card-description {
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--gray-300);
-        font-size: 14px;
-        color: var(--gray-700);
-    }
+.form-header-actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    margin-bottom: var(--space-md);
+}
 
-    .edit-card {
-        height: none;
-    }
+.save-btn, .cancel-btn {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: var(--fw-medium);
+    font-size: var(--fs-subtle);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
 
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
+.save-btn {
+    background: var(--success);
+    color: var(--btn-text-primary);
+    border: none;
+}
 
-    .date-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
+.cancel-btn {
+    background: var(--card);
+    color: var(--text-body);
+    border: 1px solid var(--border);
+}
 
-    .current-role {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: var(--gray-700);
-        margin-top: 8px;
-    }
-
-    .current-role input {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--dark);
-    }
-
-    .add-experience-btn {
-        width: 100%;
-        padding: 12px 16px;
-        border-radius: 10px;
-        border: 1px dashed var(--gray-300);
-        background: var(--gray-100);
-        color: var(--gray-700);
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all .2s ease;
-        margin-top: 12px;
-        cursor: pointer;
-    }
-
-    .add-experience-btn:hover {
-        background: #EEF2FF;
-        border-color: var(--dark);
-        color: var(--dark);
-        transform: translateY(-1px);
-    }
-
-    @media (max-width: 640px) {
-        .form-grid,
-        .date-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+@media (max-width: 640px) {
+    .form-grid, .date-grid { grid-template-columns: 1fr; }
+}
 </style>
 @endpush
 
+ 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -333,9 +282,9 @@
                             oninput="updateExperience(${exp.id}, 'description', this.value)">${escapeHtml(exp.description)}</textarea>
                     </div>
 
-                    <div class="form-actions" style="padding-top: 8px;">
-                        <button type="button" class="btn btn-back" onclick="cancelEdit(${exp.id})">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="saveExperience(${exp.id})">Save</button>
+                    <div class="form-header-actions">
+                        <button type="button" class="cancel-btn" onclick="cancelEdit(${exp.id})">Cancel</button>
+                        <button type="button" class="save-btn" onclick="saveExperience(${exp.id})">✓ Save</button>
                     </div>
                 </div>
             `;
@@ -372,3 +321,5 @@
     });
 </script>
 @endpush
+
+ 

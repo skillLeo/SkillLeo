@@ -12,7 +12,7 @@
             @foreach($reviews ?? [] as $review)
             <div class="review-card">
                 <div class="reviewer-avatar-large">
-                    <img src="{{ $review['avatar'] ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&crop=face' }}" 
+                    <img src="#" 
                          alt="{{ $review['name'] ?? 'Sophie Carter' }}" 
                          class="avatar-image" />
                 </div>
@@ -29,7 +29,7 @@
             @if(empty($reviews))
             <div class="review-card">
                 <div class="reviewer-avatar-large">
-                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" 
+                    <img src="#" 
                          alt="James Bennett" 
                          class="avatar-image" />
                 </div>

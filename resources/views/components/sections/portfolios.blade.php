@@ -6,9 +6,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        /* color: var(--accent) !important; */
-        width: 1.6em;
-        height: 1.6em;
+  
     }
     .projects-btn {
         display: flex;
@@ -60,6 +58,7 @@
         @forelse($portfolios ?? [] as $portfolio)
             <x-cards.portfolio-card :portfolio="$portfolio" />
         @empty
+            <x-cards.portfolio-card />
             <x-cards.portfolio-card />
         @endforelse
     </div>

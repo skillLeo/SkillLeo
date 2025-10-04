@@ -1,6 +1,6 @@
 <section class="hero-mobile">
     <div class="hm-banner">
-        <img src="{{ $user->banner ?? 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1400&auto=format&fit=crop' }}" alt="Banner">
+        <img src="#" alt="Banner">
         <div class="hm-avatar">
             @if($user->avatar)
                 <img src="{{ $user->avatar }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">

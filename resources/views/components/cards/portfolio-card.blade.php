@@ -1,6 +1,6 @@
 {{-- resources/views/components/cards/portfolio-card.blade.php --}}
 <div class="portfolio-card">
-    <img src="{{ $portfolio['image'] ?? 'https://via.placeholder.com/400x200/667eea/ffffff?text=Laravel+AI' }}" 
+    <img src="#" 
          alt="{{ $portfolio['title'] ?? 'Portfolio Project' }}" 
          class="portfolio-image">
     
@@ -29,15 +29,15 @@
         
         {{-- NEW: Button with eye icon --}}
         <x-ui.button 
-            variant="solid" 
-            shape="square" 
-            color="primary" 
-            size="md"
-            onclick="viewProject({{ $portfolio['id'] ?? 1 }})"
-            class="w-full mt-3"
-        >
-            <x-ui.icon name="eye" variant="outlined" size="sm" class="color-card" />
-            View Details
-        </x-ui.button>
+        variant="solid" 
+        shape="square" 
+        color="primary" 
+        size="md"
+        onclick="viewProject({{ $portfolio['id'] ?? 1 }})"
+        class="w-full mt-3"
+    >
+        <x-ui.icon name="eye" variant="outlined" size="sm" />
+        View Details
+    </x-ui.button>
     </div>
 </div>

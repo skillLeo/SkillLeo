@@ -1,11 +1,10 @@
-<!-- this isauth landing page -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProMatch - Where Tenant Meets Opportunity</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>ProMatch - Where Talent Meets Opportunity</title>
+    <link rel="stylesheet" href="css/app.css">
     <style>
         * {
             margin: 0;
@@ -13,35 +12,13 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #0061FF;
-            --dark: #000000;
-            --gray-900: #111111;
-            --gray-700: #404040;
-            --gray-500: #737373;
-            --gray-300: #D4D4D4;
-            --gray-100: #F5F5F5;
-            --white: #FFFFFF;
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--white);
-            color: var(--gray-900);
-            line-height: 1.5;
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text-body);
+            line-height: var(--lh-normal);
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
-        }
-
-        /* Animated Background Canvas */
-        .bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.03;
         }
 
         /* Navigation */
@@ -53,13 +30,17 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             z-index: 1000;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid var(--border);
+        }
+
+        [data-theme="dark"] .nav {
+            background: rgba(27, 31, 35, 0.8);
         }
 
         .nav-inner {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 40px;
+            padding: 0 var(--space-xl);
             height: 64px;
             display: flex;
             align-items: center;
@@ -67,43 +48,43 @@
         }
 
         .logo {
-            height: 28px;
+            height: 32px;
             width: auto;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 40px;
+            gap: var(--space-xl);
         }
 
         .nav-links a {
-            color: var(--gray-700);
+            color: var(--text-body);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            transition: color var(--transition-base);
         }
 
         .nav-links a:hover {
-            color: var(--dark);
+            color: var(--text-heading);
         }
 
         .nav-btn {
-            padding: 8px 20px;
-            background: var(--dark);
-            color: var(--white);
+            padding: 10px 20px;
+            background: var(--ink);
+            color: var(--card);
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: var(--radius);
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all var(--transition-base);
         }
 
         .nav-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-md);
         }
 
         /* Hero Section */
@@ -112,7 +93,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 120px 40px 80px;
+            padding: 120px var(--space-xl) var(--space-2xl);
             position: relative;
         }
 
@@ -124,11 +105,11 @@
 
         .hero-title {
             font-size: clamp(48px, 8vw, 96px);
-            font-weight: 700;
+            font-weight: var(--fw-extrabold);
             letter-spacing: -0.04em;
-            line-height: 1.1;
+            line-height: var(--lh-compact);
             margin-bottom: 2vw;
-            background: linear-gradient(90deg, #000 0%, #0061FF 50%, #000 100%);
+            background: linear-gradient(90deg, var(--ink) 0%, var(--accent) 50%, var(--ink) 100%);
             background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -143,84 +124,84 @@
         }
 
         .hero-subtitle {
-            font-size: 20px;
-            color: var(--gray-500);
+            font-size: var(--fs-h3);
+            color: var(--text-muted);
             max-width: 600px;
-            margin: 0 auto 48px;
-            line-height: 1.6;
+            margin: 0 auto var(--space-2xl);
+            line-height: var(--lh-relaxed);
         }
 
         .hero-actions {
             display: flex;
-            gap: 16px;
+            gap: var(--space-md);
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .btn {
             padding: 14px 32px;
-            font-size: 15px;
-            font-weight: 500;
-            border-radius: 8px;
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            border-radius: var(--radius);
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--transition-base);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
         }
 
         .btn-primary {
-            background: var(--dark);
-            color: var(--white);
+            background: var(--ink);
+            color: var(--card);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: var(--white);
-            color: var(--dark);
-            border: 1px solid var(--gray-300);
+            background: var(--card);
+            color: var(--ink);
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            border-color: var(--dark);
-            background: var(--gray-100);
+            border-color: var(--ink);
+            background: var(--apc-bg);
         }
 
-        /* Features Grid */
+        /* Features */
         .features {
-            padding: 10px 40px;
+            padding: var(--space-2xl) var(--space-xl);
             max-width: 1200px;
-            margin: 0 auto;
-            margin-bottom: 4vw;
+            margin: 0 auto var(--space-2xl);
         }
 
         .features-header {
             text-align: center;
-            margin-bottom: 80px;
+            margin-bottom: var(--space-2xl);
         }
 
         .features-title {
-            font-size: 48px;
-            font-weight: 700;
+            font-size: var(--fs-display);
+            font-weight: var(--fw-bold);
             letter-spacing: -0.02em;
-            margin-bottom: 16px;
+            margin-bottom: var(--space-md);
+            color: var(--text-heading);
         }
 
         .features-subtitle {
-            font-size: 18px;
-            color: var(--gray-500);
+            font-size: var(--fs-h3);
+            color: var(--text-muted);
         }
 
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 48px;
+            gap: var(--space-2xl);
         }
 
         .feature {
@@ -243,30 +224,31 @@
         .feature-icon {
             width: 48px;
             height: 48px;
-            background: var(--gray-100);
-            border-radius: 12px;
+            background: var(--apc-bg);
+            border-radius: var(--radius);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 24px;
+            margin-bottom: var(--space-lg);
             font-size: 24px;
         }
 
         .feature h3 {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 12px;
+            font-size: var(--fs-h3);
+            font-weight: var(--fw-semibold);
+            margin-bottom: var(--space-sm);
+            color: var(--text-heading);
         }
 
         .feature p {
-            color: var(--gray-500);
-            line-height: 1.6;
+            color: var(--text-muted);
+            line-height: var(--lh-relaxed);
         }
 
         /* AI Section */
         .ai-section {
-            padding: 120px 40px;
-            background: var(--gray-100);
+            padding: var(--space-2xl) var(--space-xl);
+            background: var(--apc-bg);
         }
 
         .ai-content {
@@ -274,29 +256,31 @@
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 80px;
+            gap: var(--space-2xl);
             align-items: center;
         }
 
         .ai-text h2 {
-            font-size: 40px;
-            font-weight: 700;
+            font-size: var(--fs-display);
+            font-weight: var(--fw-bold);
             letter-spacing: -0.02em;
-            margin-bottom: 24px;
+            margin-bottom: var(--space-lg);
+            color: var(--text-heading);
         }
 
         .ai-text p {
-            font-size: 18px;
-            color: var(--gray-500);
-            margin-bottom: 32px;
-            line-height: 1.6;
+            font-size: var(--fs-h3);
+            color: var(--text-muted);
+            margin-bottom: var(--space-xl);
+            line-height: var(--lh-relaxed);
         }
 
         .ai-visual {
-            background: var(--white);
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            background: var(--card);
+            padding: var(--space-xl);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
         }
 
         .ai-demo {
@@ -306,12 +290,24 @@
         .ai-badge {
             display: inline-block;
             padding: 4px 12px;
-            background: var(--primary);
-            color: var(--white);
+            background: var(--accent);
+            color: var(--btn-text-primary);
             border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 16px;
+            font-size: var(--fs-micro);
+            font-weight: var(--fw-semibold);
+            margin-bottom: var(--space-md);
+        }
+
+        .ai-demo h3 {
+            font-size: var(--fs-h3);
+            color: var(--text-heading);
+            margin-bottom: var(--space-lg);
+        }
+
+        .ai-demo p {
+            color: var(--text-muted);
+            text-align: left;
+            line-height: var(--lh-relaxed);
         }
 
         /* Modal */
@@ -333,82 +329,145 @@
         }
 
         .modal-content {
-            background: var(--white);
-            border-radius: 16px;
+            background: var(--card);
+            border-radius: var(--radius);
             width: 90%;
             max-width: 440px;
-            padding: 48px;
+            padding: var(--space-2xl);
             position: relative;
+            border: 1px solid var(--border);
         }
 
         .modal-close {
             position: absolute;
-            top: 24px;
-            right: 24px;
+            top: var(--space-lg);
+            right: var(--space-lg);
             width: 32px;
             height: 32px;
             border: none;
-            background: var(--gray-100);
+            background: var(--apc-bg);
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            color: var(--gray-500);
+            color: var(--text-muted);
+            transition: all var(--transition-base);
         }
 
         .modal-close:hover {
-            background: var(--gray-300);
+            background: var(--border);
         }
 
         .modal h2 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-size: var(--fs-h1);
+            font-weight: var(--fw-bold);
+            margin-bottom: var(--space-sm);
+            color: var(--text-heading);
         }
 
         .modal p {
-            color: var(--gray-500);
-            margin-bottom: 32px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-xl);
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: var(--space-lg);
         }
 
         .form-group label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            margin-bottom: var(--space-sm);
+            color: var(--text-body);
         }
 
         .form-group input {
             width: 100%;
             padding: 12px 16px;
-            border: 1px solid var(--gray-300);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.2s;
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius);
+            font-size: var(--fs-body);
+            background: var(--input-bg);
+            color: var(--input-text);
+            transition: border-color var(--transition-base);
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+
+        .form-group input::placeholder {
+            color: var(--input-placeholder);
         }
 
         .divider {
             text-align: center;
-            margin: 24px 0;
-            color: var(--gray-500);
-            font-size: 14px;
+            margin: var(--space-lg) 0;
+            color: var(--text-muted);
+            font-size: var(--fs-subtle);
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: calc(50% - 70px);
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .social-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .social-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md);
+        }
+
+        .social-btn {
+            padding: 13px 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--card);
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            color: var(--text-body);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+        }
+
+        .social-btn:hover {
+            border-color: var(--ink);
+            background: var(--apc-bg);
+            transform: translateY(-1px);
+        }
+
+        .social-btn.full-width {
+            width: 100%;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .nav-inner {
-                padding: 0 20px;
+                padding: 0 var(--space-lg);
             }
 
             .nav-links {
@@ -416,7 +475,7 @@
             }
 
             .hero {
-                padding: 100px 20px 60px;
+                padding: 100px var(--space-lg) var(--space-2xl);
             }
 
             .hero-title {
@@ -424,40 +483,37 @@
             }
 
             .hero-subtitle {
-                font-size: 18px;
+                font-size: var(--fs-body);
             }
 
             .features {
-                padding: 80px 20px;
+                padding: var(--space-2xl) var(--space-lg);
             }
 
             .features-grid {
                 grid-template-columns: 1fr;
-                gap: 32px;
+                gap: var(--space-xl);
             }
 
             .ai-content {
                 grid-template-columns: 1fr;
-                gap: 40px;
+                gap: var(--space-xl);
             }
 
             .modal-content {
-                padding: 32px;
+                padding: var(--space-xl);
+            }
+
+            .social-row {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
-    <canvas class="bg-canvas" id="bgCanvas"></canvas>
-
-    <!-- Navigation -->
     <nav class="nav">
         <div class="nav-inner">
-            <picture>
-                <!-- <source media="(max-width: 768px)" srcset="logos/rm-bg/icon1.png"> -->
-                <img class="logo" src="logos/rm-bg/logo1.png" alt="ProMatch">
-            </picture>
+            <img class="logo" src="assets/images/logos/croped/logo_light.png" alt="ProMatch" id="navLogo">
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#ai">AI Tools</a>
@@ -467,7 +523,6 @@
         </div>
     </nav>
 
-    <!-- Hero -->
     <section class="hero">
         <div class="hero-content">
             <h1 class="hero-title">Where talent meets opportunity</h1>
@@ -487,7 +542,6 @@
         </div>
     </section>
 
-    <!-- Features -->
     <section class="features" id="features">
         <div class="features-header">
             <h2 class="features-title">Built for modern work</h2>
@@ -512,7 +566,6 @@
         </div>
     </section>
 
-    <!-- AI Section -->
     <section class="ai-section" id="ai">
         <div class="ai-content">
             <div class="ai-text">
@@ -524,265 +577,67 @@
                 <div class="ai-demo">
                     <div class="ai-badge">AI Analysis</div>
                     <h3>E-commerce Platform</h3>
-                    <div style="margin-top: 24px; text-align: left;">
-                        <p style="color: var(--gray-500); margin-bottom: 16px;">
-                            <strong>Timeline:</strong> 6-8 weeks<br>
-                            <strong>Budget Range:</strong> $15,000 - $45,000<br>
-                            <strong>Skills Required:</strong> React, Node.js, AWS
-                        </p>
-                    </div>
+                    <p style="margin-top: var(--space-lg);">
+                        <strong>Timeline:</strong> 6-8 weeks<br>
+                        <strong>Budget Range:</strong> $15,000 - $45,000<br>
+                        <strong>Skills Required:</strong> React, Node.js, AWS
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 
-
-    <style>
-        /* Updated Social Buttons */
-.social-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.social-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.social-btn {
-    padding: 13px 20px;
-    border: 1px solid #E5E5E5;
-    border-radius: 8px;
-    background: var(--white);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--gray-700);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    position: relative;
-}
-
-.social-btn.full-width {
-    width: 100%;
-}
-
-.social-btn:hover {
-    border-color: var(--dark);
-    background: #FAFAFA;
-    transform: translateY(-1px);
-}
-
-.social-btn:active {
-    transform: translateY(0);
-}
-
-.social-btn span {
-    font-weight: 500;
-}
-
-/* Clean hover states */
-.social-google:hover {
-    border-color: #4285F4;
-}
-
-.social-github:hover {
-    border-color: #24292e;
-}
-
-.social-linkedin:hover {
-    border-color: #0077B5;
-}
-
-/* Icon colors */
-.social-github svg {
-    color: #24292e;
-}
-
-.social-linkedin svg {
-    color: #0077B5;
-}
-
-/* Updated divider */
-.divider {
-    text-align: center;
-    margin: 28px 0 20px;
-    color: #9CA3AF;
-    font-size: 13px;
-    font-weight: 400;
-    position: relative;
-}
-
-.divider::before,
-.divider::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: calc(50% - 70px);
-    height: 1px;
-    background: #E5E5E5;
-}
-
-.divider::before {
-    left: 0;
-}
-
-.divider::after {
-    right: 0;
-}
-
-/* Mobile responsive */
-@media (max-width: 480px) {
-    .social-row {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .social-btn span {
-        font-size: 13px;
-    }
-    
-    .social-btn {
-        padding: 12px 16px;
-    }
-}
-    </style>
-<!-- Auth Modal -->
-<!-- Auth Modal -->
-<div class="modal" id="authModal">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeModal()">&times;</button>
-        <h2>Welcome back</h2>
-        <p>Sign in to continue to ProMatch</p>
-        
-        <form>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" placeholder="you@example.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" placeholder="Enter password">
-            </div>
-            <button class="btn btn-primary" style="width: 100%;" type="submit">Continue</button>
-        </form>
-        
-        <div class="divider">Or continue with</div>
-        
-        <div class="social-buttons">
-            <button class="social-btn social-google full-width">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                <span>Google</span>
-            </button>
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2>Welcome back</h2>
+            <p>Sign in to continue to ProMatch</p>
             
-            <div class="social-row">
-                <button class="social-btn social-github">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            <form>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="Enter password">
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" type="submit">Continue</button>
+            </form>
+            
+            <div class="divider">Or continue with</div>
+            
+            <div class="social-buttons">
+                <button class="social-btn full-width">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                     </svg>
-                    <span>GitHub</span>
+                    <span>Google</span>
                 </button>
                 
-                <button class="social-btn social-linkedin">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                    </svg>
-                    <span>LinkedIn</span>
-                </button>
+                <div class="social-row">
+                    <button class="social-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <span>GitHub</span>
+                    </button>
+                    
+                    <button class="social-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                        <span>LinkedIn</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
     <script>
-        // Background animation
-        const canvas = document.getElementById('bgCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const particles = [];
-        const particleCount = 50;
-        
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = Math.random() * 0.5 - 0.25;
-            }
-            
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                
-                if (this.x > canvas.width) this.x = 0;
-                if (this.x < 0) this.x = canvas.width;
-                if (this.y > canvas.height) this.y = 0;
-                if (this.y < 0) this.y = canvas.height;
-            }
-            
-            draw() {
-                ctx.fillStyle = '#000';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        
-        function init() {
-            for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle());
-            }
-        }
-        
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            particles.forEach(particle => {
-                particle.update();
-                particle.draw();
-            });
-            
-            particles.forEach((a, i) => {
-                particles.slice(i + 1).forEach(b => {
-                    const dx = a.x - b.x;
-                    const dy = a.y - b.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < 100) {
-                        ctx.strokeStyle = `rgba(0, 0, 0, ${1 - distance / 100})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.beginPath();
-                        ctx.moveTo(a.x, a.y);
-                        ctx.lineTo(b.x, b.y);
-                        ctx.stroke();
-                    }
-                });
-            });
-            
-            requestAnimationFrame(animate);
-        }
-        
-        init();
-        animate();
-        
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-        
-        // Modal functions
         function openModal() {
             document.getElementById('authModal').classList.add('active');
         }
@@ -791,12 +646,29 @@
             document.getElementById('authModal').classList.remove('active');
         }
         
-        // Close modal on outside click
         document.getElementById('authModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('authModal')) {
                 closeModal();
             }
         });
+
+        // Theme-aware logo switching
+        const navLogo = document.getElementById('navLogo');
+        const html = document.documentElement;
+        
+        function updateLogo() {
+            const theme = html.getAttribute('data-theme');
+            navLogo.src = theme === 'dark' 
+                ? 'assets/images/logos/croped/logo_dark.png'
+                : 'assets/images/logos/croped/logo_light.png';
+        }
+
+        // Watch for theme changes
+        const observer = new MutationObserver(updateLogo);
+        observer.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+        
+        // Initial logo
+        updateLogo();
     </script>
 </body>
 </html>

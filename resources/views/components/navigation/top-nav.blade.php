@@ -590,6 +590,865 @@
     </div>
 </nav>
 
+
+<style>
+    /* ... your existing styles ... */
+    
+    /* ===== PROFILE DROPDOWN/SIDEBAR ===== */
+    .profile-menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 9998;
+    }
+    
+    .profile-menu-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .profile-menu {
+      position: fixed;
+      background: var(--card);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 9999;
+    }
+    
+    [data-theme="dark"] .profile-menu {
+      background: rgba(27, 31, 35, 0.98);
+      border: 1px solid var(--nav-border-dark);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(20px);
+    }
+    
+    /* Mobile: Full-height Sidebar */
+    @media (max-width: 767px) {
+      .profile-menu {
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        transform: translateX(100%);
+        overflow-y: auto;
+      }
+    
+      .profile-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+      }
+    }
+    
+    /* Desktop/Tablet: Dropdown */
+    @media (min-width: 768px) {
+      .profile-menu {
+        top: 60px;
+        right: 20px;
+        width: 320px;
+        border-radius: 16px;
+        transform: translateY(-10px);
+      }
+    
+      .profile-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+    
+      .profile-menu-overlay {
+        display: none;
+      }
+    }
+    
+    /* Profile Header */
+    .profile-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    
+    [data-theme="dark"] .profile-header {
+      border-color: var(--nav-border-dark);
+      background: linear-gradient(135deg, rgba(74, 143, 255, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    }
+    
+    .profile-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--border);
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    
+    .profile-close-btn:hover {
+      background: var(--accent);
+      color: white;
+      transform: rotate(90deg);
+    }
+    
+    [data-theme="dark"] .profile-close-btn {
+      background: var(--icon-btn-bg-dark);
+    }
+    
+    @media (min-width: 768px) {
+      .profile-close-btn {
+        display: none;
+      }
+    }
+    
+    .profile-avatar-large {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      margin-bottom: 12px;
+      border: 3px solid var(--accent);
+      box-shadow: 0 4px 16px rgba(74, 143, 255, 0.2);
+    }
+    
+    .profile-user-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 4px;
+    }
+    
+    .profile-user-email {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .profile-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      font-size: 12px;
+      font-weight: 600;
+      color: #059669;
+    }
+    
+    [data-theme="dark"] .profile-badge {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+      color: #10b981;
+    }
+    
+    .profile-badge i {
+      font-size: 10px;
+    }
+    
+    /* Menu Sections */
+    .profile-section {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    [data-theme="dark"] .profile-section {
+      border-color: var(--nav-border-dark);
+    }
+    
+    .profile-section:last-child {
+      border-bottom: none;
+    }
+    
+    .profile-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-subtle);
+      padding: 8px 12px;
+      margin-bottom: 4px;
+    }
+    
+    /* Menu Items */
+    .profile-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid transparent;
+    }
+    
+    .profile-menu-item:hover {
+      background: rgba(74, 143, 255, 0.08);
+      border-color: rgba(74, 143, 255, 0.2);
+      transform: translateX(4px);
+    }
+    
+    [data-theme="dark"] .profile-menu-item:hover {
+      background: rgba(74, 143, 255, 0.15);
+    }
+    
+    .profile-menu-item-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    
+    .profile-menu-item:hover .profile-menu-item-icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+    
+    /* Icon Colors */
+    .icon-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .icon-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .icon-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .icon-orange { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+    .icon-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .icon-gray { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+    .icon-yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    
+    [data-theme="dark"] .icon-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    [data-theme="dark"] .icon-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    [data-theme="dark"] .icon-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    [data-theme="dark"] .icon-orange { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+    [data-theme="dark"] .icon-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    [data-theme="dark"] .icon-gray { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+    [data-theme="dark"] .icon-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    
+    .profile-menu-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .profile-menu-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: 2px;
+    }
+    
+    .profile-menu-item-desc {
+      font-size: 12px;
+      color: var(--text-subtle);
+      line-height: 1.3;
+    }
+    
+    .profile-menu-item-arrow {
+      color: var(--text-subtle);
+      font-size: 14px;
+      transition: transform 0.2s ease;
+    }
+    
+    .profile-menu-item:hover .profile-menu-item-arrow {
+      transform: translateX(4px);
+    }
+    
+    /* Theme Toggle Switch */
+    .theme-toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 12px;
+      border-radius: 10px;
+    }
+    
+    .theme-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      background: var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    
+    .theme-switch.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .theme-switch-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+    
+    .theme-switch.active .theme-switch-slider {
+      transform: translateX(24px);
+    }
+    
+    .theme-switch-slider i {
+      color: #f59e0b;
+    }
+    
+    .theme-switch.active .theme-switch-slider i {
+      color: #8b5cf6;
+    }
+    
+    /* Logout Button */
+    .profile-logout-btn {
+      margin: 12px 8px;
+      padding: 14px 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      color: #ef4444;
+    }
+    
+    .profile-logout-btn:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+      transform: translateX(4px);
+    }
+    
+    [data-theme="dark"] .profile-logout-btn {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
+      color: #f87171;
+    }
+    
+    /* Scrollbar */
+    .profile-menu::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .profile-menu::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .profile-menu::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+    
+    /* Avatar Clickable */
+    .nav-avatar {
+      cursor: pointer;
+    }
+    </style>
+    
+    <!-- Add this after your nav -->
+    <!-- Profile Menu Overlay -->
+    <div class="profile-menu-overlay" id="profileOverlay"></div>
+    
+    <style>
+        /* ===== MINIMAL PROFILE DROPDOWN ===== */
+        .profile-dropdown {
+          position: fixed;
+          background: var(--card);
+          border-radius: 12px;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-8px);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 9999;
+          width: 320px;
+          overflow: hidden;
+        }
+        
+        [data-theme="dark"] .profile-dropdown {
+          background: #242526;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+        
+        .profile-dropdown.active {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+        
+        /* Desktop positioning */
+        @media (min-width: 768px) {
+          .profile-dropdown {
+            top: 70px;
+            right: 20px;
+          }
+        }
+        
+        /* Mobile positioning */
+        @media (max-width: 767px) {
+          .profile-dropdown {
+            top: 70px;
+            right: 10px;
+            left: 10px;
+            width: auto;
+            max-width: 400px;
+            margin: 0 auto;
+          }
+        }
+        
+        /* Profile Card */
+        .profile-card {
+          padding: 20px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+        }
+        
+        [data-theme="dark"] .profile-card {
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-avatar-mini {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        
+        .profile-info {
+          flex: 1;
+          min-width: 0;
+        }
+        
+        .profile-name {
+          font-size: 15px;
+          font-weight: 600;
+          color: var(--text-heading);
+          margin-bottom: 2px;
+        }
+        
+        .profile-bio {
+          font-size: 13px;
+          color: var(--text-muted);
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        /* Menu List */
+        .profile-menu-list {
+          padding: 8px 0;
+        }
+        
+        .profile-menu-link {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 20px;
+          color: var(--text-body);
+          text-decoration: none;
+          transition: background 0.15s ease;
+          cursor: pointer;
+        }
+        
+        .profile-menu-link:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="dark"] .profile-menu-link:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .profile-menu-icon {
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          font-size: 16px;
+        }
+        
+        .profile-menu-text {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-body);
+          flex: 1;
+        }
+        
+        /* Divider */
+        .profile-divider {
+          height: 1px;
+          background: var(--border);
+          margin: 8px 0;
+        }
+        
+        [data-theme="dark"] .profile-divider {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Dark Mode Toggle - LinkedIn Style */
+        .dark-mode-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 20px;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        
+        .dark-mode-toggle:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="dark"] .dark-mode-toggle:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark-mode-label {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+          position: relative;
+          width: 48px;
+          height: 24px;
+          background: #ccc;
+          border-radius: 12px;
+          transition: background 0.3s ease;
+        }
+        
+        [data-theme="dark"] .toggle-switch {
+          background: #4a8fff;
+        }
+        
+        .toggle-slider {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 20px;
+          height: 20px;
+          background: white;
+          border-radius: 50%;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          color: #f59e0b;
+        }
+        
+        [data-theme="dark"] .toggle-slider {
+          transform: translateX(24px);
+          color: #8b5cf6;
+        }
+        
+        /* Visitor Mode - Facebook Style */
+        .visitor-mode-section {
+          background: rgba(74, 143, 255, 0.05);
+          padding: 12px 20px;
+          margin: 8px 0;
+        }
+        
+        [data-theme="dark"] .visitor-mode-section {
+          background: rgba(74, 143, 255, 0.1);
+        }
+        
+        .visitor-mode-link {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0;
+          color: var(--text-body);
+          text-decoration: none;
+          cursor: pointer;
+        }
+        
+        .visitor-mode-link:hover {
+          background: transparent;
+        }
+        
+        .visitor-mode-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: var(--accent);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          flex-shrink: 0;
+        }
+        
+        .visitor-mode-content {
+          flex: 1;
+        }
+        
+        .visitor-mode-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-heading);
+          margin-bottom: 2px;
+        }
+        
+        .visitor-mode-desc {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+        
+        /* Sign Out */
+        .profile-signout {
+          padding: 10px 20px;
+          color: #f23f43;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .profile-signout:hover {
+          background: rgba(242, 63, 67, 0.1);
+        }
+        
+        /* Avatar clickable */
+        .nav-avatar {
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+        
+        .nav-avatar:hover {
+          transform: scale(1.05);
+        }
+        
+        /* Smooth theme transition */
+        * {
+          transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        </style>
+        
+        <!-- Clean Profile Dropdown -->
+        <div class="profile-dropdown" id="profileDropdown">
+          <!-- Profile Card -->
+          <div class="profile-card">
+            <img class="profile-avatar-mini" src="{{ $user->avatar ?? 'https://i.pravatar.cc/96?img=13' }}" alt="Profile">
+            <div class="profile-info">
+              <div class="profile-name">{{ $user->name ?? 'Hassam Mehmood' }}</div>
+              <div class="profile-bio">{{ $user->bio ?? 'Full-Stack Developer | AI & Chatbot Expert' }}</div>
+            </div>
+          </div>
+        
+          <!-- Menu Options -->
+          <div class="profile-menu-list">
+            <a href="#" class="profile-menu-link">
+              <div class="profile-menu-icon">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <span class="profile-menu-text">Profile</span>
+            </a>
+        
+            <a href="#" class="profile-menu-link">
+              <div class="profile-menu-icon">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+              <span class="profile-menu-text">Dashboard</span>
+            </a>
+        
+            <a href="#" class="profile-menu-link">
+              <div class="profile-menu-icon">
+                <i class="fa-solid fa-gear"></i>
+              </div>
+              <span class="profile-menu-text">Settings</span>
+            </a>
+        
+            <div class="profile-divider"></div>
+        
+            <!-- Dark Mode Toggle -->
+            <div class="dark-mode-toggle" id="darkModeToggle">
+              <div class="dark-mode-label">
+                <div class="profile-menu-icon">
+                  <i class="fa-solid fa-moon"></i>
+                </div>
+                <span class="profile-menu-text">Dark Mode</span>
+              </div>
+              <div class="toggle-switch">
+                <div class="toggle-slider">
+                  <i class="fa-solid fa-sun"></i>
+                </div>
+              </div>
+            </div>
+        
+            <div class="profile-divider"></div>
+          </div>
+        
+          <!-- Visitor Mode - Facebook Style -->
+          <div class="visitor-mode-section">
+            <a href="#" class="visitor-mode-link">
+              <div class="visitor-mode-icon-wrapper">
+                <i class="fa-solid fa-eye"></i>
+              </div>
+              <div class="visitor-mode-content">
+                <div class="visitor-mode-title">See as Visitor</div>
+                <div class="visitor-mode-desc">View your profile as others see it</div>
+              </div>
+            </a>
+          </div>
+        
+          <!-- Sign Out -->
+          <div class="profile-signout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Sign Out</span>
+          </div>
+        </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const profileAvatars = document.querySelectorAll('.nav-avatar');
+          const profileDropdown = document.getElementById('profileDropdown');
+          const darkModeToggle = document.getElementById('darkModeToggle');
+        
+          // Toggle dropdown on avatar click
+          profileAvatars.forEach(avatar => {
+            avatar.addEventListener('click', function(e) {
+              e.stopPropagation();
+              profileDropdown.classList.toggle('active');
+            });
+          });
+        
+          // Close dropdown when clicking anywhere outside
+          document.addEventListener('click', function(e) {
+            if (!e.target.closest('.profile-dropdown') && !e.target.closest('.nav-avatar')) {
+              profileDropdown.classList.remove('active');
+            }
+          });
+        
+          // Prevent dropdown from closing when clicking inside it
+          profileDropdown?.addEventListener('click', function(e) {
+            e.stopPropagation();
+          });
+        
+          // Close on escape key
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+              profileDropdown.classList.remove('active');
+            }
+          });
+        
+          // Dark Mode Toggle
+          darkModeToggle?.addEventListener('click', function() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            
+            // Update icon
+            const icon = this.querySelector('.toggle-slider i');
+            icon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+            
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+          });
+        
+          // Load saved theme
+          const savedTheme = localStorage.getItem('theme') || 'light';
+          if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            const icon = darkModeToggle?.querySelector('.toggle-slider i');
+            if (icon) icon.className = 'fa-solid fa-moon';
+          }
+        });
+        </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const profileAvatars = document.querySelectorAll('.nav-avatar');
+      const profileMenu = document.getElementById('profileMenu');
+      const profileOverlay = document.getElementById('profileOverlay');
+      const profileCloseBtn = document.getElementById('profileCloseBtn');
+      const themeToggle = document.getElementById('themeToggle');
+    
+      // Open profile menu
+      profileAvatars.forEach(avatar => {
+        avatar.addEventListener('click', function(e) {
+          e.stopPropagation();
+          profileMenu.classList.toggle('active');
+          profileOverlay.classList.toggle('active');
+          document.body.style.overflow = profileMenu.classList.contains('active') ? 'hidden' : '';
+        });
+      });
+    
+      // Close profile menu
+      function closeProfileMenu() {
+        profileMenu.classList.remove('active');
+        profileOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    
+      profileCloseBtn?.addEventListener('click', closeProfileMenu);
+      profileOverlay?.addEventListener('click', closeProfileMenu);
+    
+      // Close on escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && profileMenu.classList.contains('active')) {
+          closeProfileMenu();
+        }
+      });
+    
+      // Theme toggle
+      themeToggle?.addEventListener('click', function() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        this.classList.toggle('active');
+        
+        // Update icon
+        const icon = this.querySelector('i');
+        icon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        
+        // Save preference
+        localStorage.setItem('theme', newTheme);
+      });
+    
+      // Load saved theme
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeToggle?.classList.add('active');
+        const icon = themeToggle?.querySelector('i');
+        if (icon) icon.className = 'fa-solid fa-moon';
+      }
+    });
+    </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Suggestion database with icons and descriptions

@@ -39,6 +39,7 @@ Route::get('/account-type', [GatewayController::class, 'accountType'])->name('au
 */
 
 Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function () {
+    Route::get('/info', [TenantOnboardingController::class, 'info'])->name('info');
     Route::get('/welcome', [TenantOnboardingController::class, 'welcome'])->name('welcome');
     Route::get('/personal', [TenantOnboardingController::class, 'personal'])->name('personal');
     Route::post('/personal', [TenantOnboardingController::class, 'storePersonal'])->name('personal.store');

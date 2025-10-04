@@ -2,19 +2,16 @@
 
 @section('title', 'Company Information - ProMatch')
 
-@php
-    $currentStep = 1;
-    $totalSteps = 5;
-@endphp
-
 @section('card-content')
-    <div class="form-header">
-        <x-ui.step-badge label="Company Information" />
-        <h1 class="form-title">Tell us about your company</h1>
-        <p class="form-subtitle">This helps professionals understand who you are and builds trust</p>
-    </div>
 
-    <form id="clientInfoForm" action="{{ route('client.onboarding.info.store') }}" method="POST">
+    <x-ui.onboarding.form-header 
+        step="1"
+        totalSteps="5"
+        title="Tell us about your company"
+        subtitle="This helps professionals understand who you are and builds trust"
+    />
+
+    <form id="clientInfoForm" action="#" method="POST">
         @csrf
 
         <!-- Account Type Toggle -->
@@ -40,14 +37,14 @@
 
         <!-- Company Fields -->
         <div id="companyFields">
-            <x-forms.input 
+            <x-ui.onboarding.input 
                 name="company_name"
                 label="Company Name"
                 placeholder="Acme Inc."
                 required
             />
 
-            <x-forms.select 
+            <x-ui.onboarding.select 
                 name="company_size"
                 label="Company Size"
                 placeholder="Select company size"
@@ -60,7 +57,7 @@
                 ]"
             />
 
-            <x-forms.input 
+            <x-ui.onboarding.input 
                 name="industry"
                 label="Industry"
                 placeholder="e.g., Technology, Healthcare, Finance"
@@ -70,13 +67,13 @@
         <!-- Individual Fields (Hidden by default) -->
         <div id="individualFields" style="display: none;">
             <div class="input-row">
-                <x-forms.input 
+                <x-ui.onboarding.input 
                     name="first_name"
                     label="First Name"
                     placeholder="John"
                 />
 
-                <x-forms.input 
+                <x-ui.onboarding.input 
                     name="last_name"
                     label="Last Name"
                     placeholder="Smith"
@@ -85,7 +82,7 @@
         </div>
 
         <!-- Common Fields -->
-        <x-forms.input 
+        <x-ui.onboarding.input 
             name="contact_email"
             type="email"
             label="Contact Email"
@@ -93,89 +90,97 @@
             required
         />
 
-        <x-forms.input 
+        <x-ui.onboarding.input 
             name="phone"
             type="tel"
             label="Phone Number (Optional)"
             placeholder="+1 (555) 000-0000"
         />
 
-        <x-forms.input 
+        <x-ui.onboarding.input 
             name="website"
             type="url"
             label="Website (Optional)"
             placeholder="https://yourcompany.com"
         />
 
-        <x-forms.textarea 
+        <x-ui.onboarding.textarea 
             name="about"
             label="About"
             placeholder="Tell professionals about your company, mission, or what you do..."
             rows="4"
             maxlength="500"
-            :showCounter="true"
+            showCounter
         />
 
-        <!-- Actions -->
-        <div class="form-actions">
-            <x-ui.button variant="back" href="{{ route('tenant.onboarding.account-type') }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Back
-            </x-ui.button>
-
-            <x-ui.button variant="primary" type="submit" id="continueBtn">
-                <span>Continue</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </x-ui.button>
-        </div>
+        <x-ui.onboarding.form-footer
+            backUrl="#"
+            nextLabel="Continue"
+        />
     </form>
+
 @endsection
 
 @push('styles')
-<style>
-    .account-toggle {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 8px;
-    }
+    <x-ui.onboarding.styles />
+    
+    <!-- Client-specific styles -->
+    <style>
+        .account-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
 
-    .toggle-option {
-        padding: 14px 20px;
-        background: var(--white);
-        border: 2px solid var(--gray-300);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all .2s ease;
-        font-family: inherit;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--gray-700);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
+        .toggle-option {
+            padding: 14px 20px;
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: var(--fs-body);
+            font-weight: var(--fw-semibold);
+            color: var(--text-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
 
-    .toggle-option svg {
-        flex-shrink: 0;
-    }
+        .toggle-option svg {
+            flex-shrink: 0;
+        }
 
-    .toggle-option:hover {
-        border-color: var(--dark);
-        background: var(--gray-100);
-    }
+        .toggle-option:hover {
+            border-color: var(--accent);
+            background: var(--apc-bg);
+        }
 
-    .toggle-option.active {
-        border-color: var(--primary);
-        background: rgba(0, 97, 255, 0.08);
-        color: var(--primary);
-    }
-</style>
+        .toggle-option.active {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .account-toggle {
+                grid-template-columns: 1fr;
+            }
+
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 @endpush
 
 @push('scripts')
@@ -185,6 +190,9 @@
         const accountTypeInput = document.getElementById('accountType');
         const companyFields = document.getElementById('companyFields');
         const individualFields = document.getElementById('individualFields');
+
+        // Load saved data
+        loadSavedData();
 
         toggleOptions.forEach(option => {
             option.addEventListener('click', function() {
@@ -197,12 +205,70 @@
                 if (type === 'company') {
                     companyFields.style.display = 'block';
                     individualFields.style.display = 'none';
+                    
+                    // Set company fields as required
+                    companyFields.querySelectorAll('input[required], select[required]').forEach(el => el.required = true);
+                    individualFields.querySelectorAll('input[required], select[required]').forEach(el => el.required = false);
                 } else {
                     companyFields.style.display = 'none';
                     individualFields.style.display = 'block';
+                    
+                    // Set individual fields as required
+                    individualFields.querySelectorAll('input[required], select[required]').forEach(el => el.required = true);
+                    companyFields.querySelectorAll('input[required], select[required]').forEach(el => el.required = false);
                 }
+
+                saveData();
             });
         });
+
+        // Auto-save on input
+        const form = document.getElementById('clientInfoForm');
+        form.addEventListener('input', saveData);
+
+        function saveData() {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                localStorage.setItem('client_onboarding_info', JSON.stringify(data));
+            } catch {}
+        }
+
+        function loadSavedData() {
+            try {
+                const saved = localStorage.getItem('client_onboarding_info');
+                if (!saved) return;
+
+                const data = JSON.parse(saved);
+                
+                // Restore account type
+                if (data.account_type) {
+                    toggleOptions.forEach(opt => {
+                        if (opt.getAttribute('data-type') === data.account_type) {
+                            opt.click();
+                        }
+                    });
+                }
+
+                // Restore form values
+                Object.keys(data).forEach(key => {
+                    const input = form.querySelector(`[name="${key}"]`);
+                    if (input && key !== 'account_type') {
+                        input.value = data[key];
+                    }
+                });
+
+                // Update character counter for textarea
+                const aboutTextarea = form.querySelector('[name="about"]');
+                if (aboutTextarea) {
+                    const counter = aboutTextarea.closest('.form-group')?.querySelector('.current-count');
+                    if (counter) {
+                        counter.textContent = aboutTextarea.value.length;
+                    }
+                }
+            } catch {}
+        }
     });
 </script>
 @endpush
