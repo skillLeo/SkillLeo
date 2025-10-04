@@ -17,6 +17,7 @@ use App\Http\Controllers\Client\OnboardingController as ClientOnboardingControll
 
 
 
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 
 
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])

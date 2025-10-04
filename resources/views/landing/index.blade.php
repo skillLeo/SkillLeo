@@ -611,7 +611,7 @@
     <a class="social-btn full-width" href="/auth/google/redirect">Google</a>
     <div class="social-row">
       <a class="social-btn" href="/auth/github/redirect">GitHub</a>
-      <a class="social-btn" href="/auth/linkedin/redirect">LinkedIn</a>
+      <a class="social-btn" href="{{ route('oauth.redirect', 'linkedin') }}">LinkedIn</a>
     </div>
   </div>
   

@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
-class OAuthController extends Controller
+final class OAuthController extends Controller
 {
     private function scopes(string $provider): array
     {
         return match ($provider) {
             'google'   => ['openid', 'email', 'profile'],
-            'linkedin' => ['profile', 'email', 'openid'], // LinkedIn v2 API scopes
+            'linkedin' => ['openid', 'profile', 'email'], // OIDC scopes
             'github'   => [],
             default    => [],
         };
@@ -23,16 +23,27 @@ class OAuthController extends Controller
 
     private function driver(string $provider)
     {
-        $redirect = config("services.{$provider}.redirect");
+        // Map 'linkedin' -> 'linkedin-openid' driver + its own config key
+        if ($provider === 'linkedin') {
+            $driverName = 'linkedin-openid';
+            $redirect   = config('services.linkedin-openid.redirect');
+        } else {
+            $driverName = $provider;
+            $redirect   = config("services.{$provider}.redirect");
+        }
 
-        $driver = Socialite::driver($provider)->redirectUrl($redirect);
+        $driver = Socialite::driver($driverName)->redirectUrl($redirect);
+
+        // Be explicit: ensure redirect_uri is present on the outbound request
+        if ($provider === 'linkedin') {
+            $driver->with(['redirect_uri' => $redirect]);
+        }
 
         $scopes = $this->scopes($provider);
         if (!empty($scopes)) {
             $driver->scopes($scopes);
         }
 
-        // Use stateless mode to avoid session state issues
         if (env('OAUTH_STATELESS', false)) {
             $driver->stateless();
         }
@@ -48,7 +59,7 @@ class OAuthController extends Controller
             return $this->driver($provider)->redirect();
         } catch (\Throwable $e) {
             Log::error("OAuth redirect error for {$provider}: " . $e->getMessage());
-            return redirect('/login')->withErrors(['oauth' => 'Unable to connect to ' . ucfirst($provider)]);
+            return redirect('/')->withErrors(['oauth' => 'Unable to connect to ' . ucfirst($provider)]);
         }
     }
 
@@ -56,18 +67,17 @@ class OAuthController extends Controller
     {
         abort_unless(in_array($provider, ['google', 'github', 'linkedin']), 404);
 
-        // Handle OAuth errors from provider
         if (request()->has('error')) {
             $msg = request('error_description') ?? request('error') ?? 'Login cancelled';
             Log::warning("OAuth error for {$provider}: {$msg}");
-            return redirect('/login')->withErrors(['oauth' => $msg]);
+            return redirect('/')->withErrors(['oauth' => $msg]);
         }
 
         try {
             $pUser = $this->driver($provider)->user();
 
             if (!$pUser->getEmail()) {
-                return redirect('/login')->withErrors(['oauth' => 'Email not provided by ' . ucfirst($provider)]);
+                return redirect('/')->withErrors(['oauth' => 'Email not provided by ' . ucfirst($provider)]);
             }
 
             $user = $service->findOrCreate($provider, $pUser);
@@ -84,13 +94,13 @@ class OAuthController extends Controller
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
             Log::error("Invalid state for {$provider}: " . $e->getMessage());
-            return redirect('/login')->withErrors(['oauth' => 'Session expired. Please try again.']);
+            return redirect('/')->withErrors(['oauth' => 'Session expired. Please try again.']);
         } catch (\Throwable $e) {
             Log::error("OAuth callback error for {$provider}: " . $e->getMessage(), [
                 'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace'     => $e->getTraceAsString(),
             ]);
-            return redirect('/login')->withErrors(['oauth' => 'Login failed. Please try again.']);
+            return redirect('/')->withErrors(['oauth' => 'Login failed. Please try again.']);
         }
     }
 }
