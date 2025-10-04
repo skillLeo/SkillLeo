@@ -4,7 +4,7 @@
 
 @section('card-content')
 
-    <x-ui.onboarding.form-header 
+    <x-onboarding.form-header 
         step="3"
         title="Your key skills"
         subtitle="Add 3-10 skills that best represent your expertise"
@@ -60,7 +60,7 @@
 
         <input type="hidden" name="skills" id="skillsData">
 
-        <x-ui.onboarding.form-footer
+        <x-onboarding.form-footer
             backUrl="{{ route('tenant.onboarding.location') }}"
         />
     </form>
@@ -68,7 +68,7 @@
 @endsection
 
 @push('styles')
-    <x-ui.onboarding.styles />
+     
     
     <!-- Skills-specific styles -->
     <style>

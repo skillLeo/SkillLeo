@@ -12,8 +12,12 @@ use App\Http\Controllers\Client\OnboardingController as ClientOnboardingControll
 |--------------------------------------------------------------------------
 */
 
+Route::get('/get-started', [GatewayController::class, 'accountType'])->name('auth.account-type');
+
+
+
 Route::get('/profile', [TenantOnboardingController::class, 'profile'])->name('tenant.profile');
-Route::get('/dashbaord', [TenantOnboardingController::class, 'dashbaord'])->name('tenant.dashboard');
+Route::get('/marketing', [TenantOnboardingController::class, 'marketing'])->name('tenant.dashboard');
 
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
@@ -30,7 +34,7 @@ Route::prefix('marketing')->name('marketing.')->group(function() {
 | Authentication Gateway
 |--------------------------------------------------------------------------
 */
-Route::get('/account-type', [GatewayController::class, 'accountType'])->name('auth.account-type');
+// Route::get('/account-type', [GatewayController::class, 'accountType'])->name('auth.account-type');
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +43,6 @@ Route::get('/account-type', [GatewayController::class, 'accountType'])->name('au
 */
 
 Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function () {
-    Route::get('/info', [TenantOnboardingController::class, 'info'])->name('info');
     Route::get('/welcome', [TenantOnboardingController::class, 'welcome'])->name('welcome');
     Route::get('/personal', [TenantOnboardingController::class, 'personal'])->name('personal');
     Route::post('/personal', [TenantOnboardingController::class, 'storePersonal'])->name('personal.store');
@@ -57,7 +60,7 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
     Route::post('/preferences', [TenantOnboardingController::class, 'storePreferences'])->name('preferences.store');
     Route::get('/review', [TenantOnboardingController::class, 'review'])->name('review');
     Route::get('/publish', [TenantOnboardingController::class, 'publish'])->name('publish');
-    Route::post('/publish', [TenantOnboardingController::class, 'storepublish'])->name('publish');
+    Route::post('/publish', [TenantOnboardingController::class, 'storepublish'])->name('publish.store');
 });
 
 /*

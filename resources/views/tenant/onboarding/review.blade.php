@@ -4,7 +4,7 @@
 
 @section('card-content')
 
-    <x-ui.onboarding.form-header 
+    <x-onboarding.form-header 
         step="8"
         title="Your profile is ready to shine"
         subtitle="Give it a quick look, toggle visibility, and publish."
@@ -60,7 +60,7 @@
         @csrf
         <input type="hidden" name="is_public" id="isPublicInput" value="1">
         
-        <x-ui.onboarding.form-footer
+        <x-onboarding.form-footer
             backUrl="{{ route('tenant.onboarding.preferences') }}"
             nextLabel="Publish profile"
             id="publishBtn"
@@ -70,7 +70,7 @@
 @endsection
 
 @push('styles')
-    <x-ui.onboarding.styles />
+     
     
     <style>
         .summary-card {

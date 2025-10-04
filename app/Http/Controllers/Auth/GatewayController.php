@@ -10,4 +10,4 @@ class GatewayController extends Controller
     {
         return view('auth.account-type');
     }
-}
+}   

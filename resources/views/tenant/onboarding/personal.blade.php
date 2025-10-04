@@ -41,7 +41,7 @@
     />
 
     <x-onboarding.form-footer 
-skipUrl="{{ route('tenant.onboarding.education') }}"
+skipUrl="{{ route('tenant.onboarding.location') }}"
         backUrl="{{ route('tenant.onboarding.welcome') }}"
     />
 </form>

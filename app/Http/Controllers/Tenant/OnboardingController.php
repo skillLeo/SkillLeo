@@ -90,9 +90,10 @@ class OnboardingController extends Controller
 
     
 
-    public function dashboard()
+ 
+    public function marketing()
     {
-        return view('tenant.dashboard');
+        return view('marketing.index');
     }
 
     public function welcome()
@@ -111,13 +112,7 @@ class OnboardingController extends Controller
 
     public function storePersonal(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
-        ]);
-
-        Session::put('tenant.onboarding.personal', $validated);
+        
         return redirect()->route('tenant.onboarding.location');
     }
 
@@ -197,18 +192,7 @@ class OnboardingController extends Controller
 
     public function storePreferences(Request $request)
     {
-        $validated = $request->validate([
-            'currency' => 'required|string',
-            'rate' => 'required|numeric',
-            'unit' => 'required|string',
-            'availability' => 'required|string',
-            'hours_per_week' => 'required|string',
-            'remote_work' => 'boolean',
-            'open_to_work' => 'boolean',
-            'long_term' => 'boolean',
-        ]);
-
-        Session::put('tenant.onboarding.preferences', $validated);
+ 
         return redirect()->route('tenant.onboarding.review');
     }
 
@@ -227,10 +211,10 @@ class OnboardingController extends Controller
         return view('tenant.onboarding.review', compact('data'));
     }
 
-    public function storepublish(Request $request)
+    public function storepublish()
     {
-        // Create talent profile logic here
-        Session::forget('tenant.onboarding');
-        return redirect()->route('tenant.dashboard')->with('success', 'Profile created successfully!');
+        return view('tenant.onboarding.publish');
+        // Session::forget('tenant.onboarding');
+        // return redirect()->route('tenant.dashboard')->with('success', 'Profile created successfully!');
     }
 }

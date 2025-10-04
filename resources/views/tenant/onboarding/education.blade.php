@@ -4,7 +4,7 @@
 
 @section('card-content')
 
-    <x-ui.onboarding.form-header step="6" title="Your education"
+    <x-onboarding.form-header step="6" title="Your education"
         subtitle="Add your academic background and certifications" />
 
     <form id="educationForm" action="{{ route('tenant.onboarding.education.store') }}" method="POST">
@@ -23,13 +23,13 @@
 
         <input type="hidden" name="education" id="educationData">
 
-        <x-ui.onboarding.form-footer backUrl="{{ route('tenant.onboarding.portfolio') }}" />
+        <x-onboarding.form-footer backUrl="{{ route('tenant.onboarding.portfolio') }}" />
     </form>
 
 @endsection
 
 @push('styles')
-    <x-ui.onboarding.styles />
+     
 
     <style>
         .education-list {

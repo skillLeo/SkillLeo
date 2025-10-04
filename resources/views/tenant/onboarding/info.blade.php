@@ -4,7 +4,7 @@
 
 @section('card-content')
 
-    <x-ui.onboarding.form-header 
+    <x-onboarding.form-header 
         step="1"
         totalSteps="5"
         title="Tell us about your company"
@@ -113,7 +113,7 @@
             showCounter
         />
 
-        <x-ui.onboarding.form-footer
+        <x-onboarding.form-footer
             backUrl="#"
             nextLabel="Continue"
         />
@@ -122,7 +122,7 @@
 @endsection
 
 @push('styles')
-    <x-ui.onboarding.styles />
+     
     
     <!-- Client-specific styles -->
     <style>

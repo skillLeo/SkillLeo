@@ -30,7 +30,7 @@
     </div>
 
     <div class="actions">
-        <a href="#" class="btn btn-primary">Go to profile</a>
+        <a href="{{route('tenant.profile')}}" class="btn btn-primary">Go to profile</a>
         <a href="#" class="btn btn-success">Go to dashboard</a>
         <button class="btn btn-secondary" id="shareBtn">Share</button>
     </div>
