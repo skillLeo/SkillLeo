@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{LandingController, MarketingController};
 use App\Http\Controllers\Auth\GatewayController;
+    use App\Http\Controllers\Auth\OtpController;
+    use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Tenant\OnboardingController as TenantOnboardingController;
 use App\Http\Controllers\Client\OnboardingController as ClientOnboardingController;
 
@@ -12,7 +14,34 @@ use App\Http\Controllers\Client\OnboardingController as ClientOnboardingControll
 |--------------------------------------------------------------------------
 */
 
-Route::get('/get-started', [GatewayController::class, 'accountType'])->name('auth.account-type');
+
+
+
+
+
+Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
+    ->whereIn('provider', ['google','github','linkedin'])
+    ->name('oauth.redirect');
+
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
+    ->whereIn('provider', ['google','github','linkedin'])
+    ->name('oauth.callback');
+
+// optional: quick debug to see the exact URL Socialite sends
+
+
+
+
+
+
+
+
+
+Route::get('/verify-otp', [OtpController::class, 'view'])->name('otp.view');
+
+// OAuth
+Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');Route::get('/get-started', [GatewayController::class, 'accountType'])->name('auth.account-type');
 
 
 
@@ -34,13 +63,9 @@ Route::prefix('marketing')->name('marketing.')->group(function() {
 | Authentication Gateway
 |--------------------------------------------------------------------------
 */
-// Route::get('/account-type', [GatewayController::class, 'accountType'])->name('auth.account-type');
+Route::get('/account-type', [GatewayController::class, 'accountType'])->name('auth.account-type');
 
-/*
-|--------------------------------------------------------------------------
-| Tenant Onboarding Routes
-|--------------------------------------------------------------------------
-*/
+
 
 Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function () {
     Route::get('/welcome', [TenantOnboardingController::class, 'welcome'])->name('welcome');

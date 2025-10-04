@@ -320,6 +320,25 @@ body {
     padding-top: var(--nav-height-mobile);
 
 }
+/* Add this to your main CSS file (around line 100-150 in your first CSS document) */
+
+body {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+.experience-desc,
+.experience-meta,
+.review-text,
+.reviewer-location,
+.reviewer-name,
+.ai-creator-title,
+.ai-creator-desc {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
 
 /* ===================================
      UTILITY CLASSES
@@ -1174,8 +1193,7 @@ section {
 
 /* Review Text with Inline Quotes */
 .review-text-wrapper {
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: var(--fs-body) !important;
     color: var(--review-text);
     text-align: center;
 }

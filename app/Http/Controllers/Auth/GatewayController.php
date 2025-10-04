@@ -10,4 +10,8 @@ class GatewayController extends Controller
     {
         return view('auth.account-type');
     }
+    public function otp()
+    {
+        return view('auth.otp');
+    }
 }   

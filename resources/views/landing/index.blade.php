@@ -593,7 +593,7 @@
             <h2>Welcome back</h2>
             <p>Sign in to continue to ProMatch</p>
             
-            <form>
+            <form id="loginForm" method="POST" action="/api/auth/login">
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" placeholder="you@example.com">
@@ -607,7 +607,25 @@
             
             <div class="divider">Or continue with</div>
             
-            <div class="social-buttons">
+<div class="social-buttons">
+    <a class="social-btn full-width" href="/auth/google/redirect">Google</a>
+    <div class="social-row">
+      <a class="social-btn" href="/auth/github/redirect">GitHub</a>
+      <a class="social-btn" href="/auth/linkedin/redirect">LinkedIn</a>
+    </div>
+  </div>
+  
+  <script>
+  document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd=new FormData(e.target);
+    const res=await fetch('/api/auth/login',{method:'POST',headers:{'X-CSRF-TOKEN':fd.get('_token')},body:fd});
+    const json=await res.json();
+    if(res.ok){ window.location.href='/onboarding'; }
+    else { alert(json.message || 'Login failed'); }
+  });
+  </script>
+            {{-- <div class="social-buttons">
                 <button class="social-btn full-width">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -633,7 +651,7 @@
                         <span>LinkedIn</span>
                     </button>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </div>
 

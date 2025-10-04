@@ -19,7 +19,7 @@
                 <h5 class="reviewer-name">{{ $review['name'] ?? 'Sophie Carter' }}</h5>
                 <span class="reviewer-location">{{ $review['location'] ?? 'New York, USA' }}</span>
                 <div class="review-content">
-                    <div class="review-text-wrapper">
+                    <div class="review-text-wrapper" style="font-size: var(--fs-body) !important;">
                         <span class="quote-mark quote-left">"</span><span class="review-text">{{ $review['review'] ?? 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups.' }}</span><span class="quote-mark quote-right">"</span>
                     </div>
                 </div>
@@ -36,7 +36,7 @@
                 <h5 class="reviewer-name">James Bennett</h5>
                 <span class="reviewer-location">Toronto, Canada</span>
                 <div class="review-content">
-                    <div class="review-text-wrapper">
+                    <div class="review-text-wrapper" style="font-size: var(--fs-body) !important;">
                         <span class="quote-mark quote-left">"</span><span class="review-text">Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups.</span><span class="quote-mark quote-right">"</span>
                     </div>
                 </div>

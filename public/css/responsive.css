@@ -260,7 +260,7 @@
     }
 
     .review-text-wrapper {
-        font-size: 14px;
+        font-size: var(--fs-body);
     }
 
     .upload-box {
