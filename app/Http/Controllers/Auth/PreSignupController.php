@@ -125,7 +125,7 @@ class PreSignupController extends Controller
         );
 
         return redirect(
-            $user->is_profile_complete ? '/'.($user->username ?? 'dashboard') : '/onboarding'
+            $user->is_profile_complete ? '/'.($user->username ?? 'dashboard') : 'tenant/onboarding/welcome'
         )->with('status', 'Your account is ready. Welcome!');
     }
 }
