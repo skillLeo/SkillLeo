@@ -51,7 +51,7 @@ class EmailVerificationController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            return redirect('/')->with('status', 'Already verified.');
+            return redirect('/login')->with('status', 'Already verified.');
         }
 
         $user->notify(new \App\Notifications\VerifyEmailLink());

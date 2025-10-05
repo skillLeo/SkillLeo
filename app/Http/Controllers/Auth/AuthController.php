@@ -94,4 +94,14 @@
 
             return redirect('/login')->with('status', 'Logged out');
         }
+                
+                public function logout_get()
+        {
+         
+            session()->invalidate();
+            session()->regenerateToken();
+            Auth::logout();
+
+            return redirect('/login')->with('status', 'Logged out');
+        }
     }

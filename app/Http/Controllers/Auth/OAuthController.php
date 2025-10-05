@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/OAuthController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -34,70 +33,130 @@ final class OAuthController extends Controller
         }
 
         $driver = Socialite::driver($driverName)->redirectUrl($redirect);
-        if ($provider === 'linkedin') $driver->with(['redirect_uri' => $redirect]);
+        if ($provider === 'linkedin') {
+            $driver->with(['redirect_uri' => $redirect]);
+        }
 
         $scopes = $this->scopes($provider);
-        if ($scopes) $driver->scopes($scopes);
+        if ($scopes) {
+            $driver->scopes($scopes);
+        }
 
-        if (env('OAUTH_STATELESS', false)) $driver->stateless();
+        if (env('OAUTH_STATELESS', false)) {
+            $driver->stateless();
+        }
+        
         return $driver;
     }
 
     public function redirect(string $provider): RedirectResponse
     {
+        Log::info("=== OAUTH REDIRECT START ===", ['provider' => $provider]);
+        
         abort_unless(in_array($provider, ['google','github','linkedin']), 404);
-        try { return $this->driver($provider)->redirect(); }
-        catch (\Throwable $e) {
-            Log::error("OAuth redirect error for {$provider}: ".$e->getMessage());
+        
+        try {
+            $redirectUrl = $this->driver($provider)->redirect();
+            Log::info("OAuth redirect successful", ['provider' => $provider]);
+            return $redirectUrl;
+        } catch (\Throwable $e) {
+            Log::error("OAuth redirect error", [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect('/')->withErrors(['oauth' => "Unable to connect to ".ucfirst($provider)]);
         }
     }
 
     public function callback(string $provider, SocialAuthService $service)
     {
+        Log::info("=== OAUTH CALLBACK START ===", [
+            'provider' => $provider,
+            'query_params' => request()->query()
+        ]);
+        
         abort_unless(in_array($provider, ['google','github','linkedin']), 404);
 
         try {
-            $pUser   = $this->driver($provider)->user();
-            $uid     = (string) $pUser->getId();
-            $email   = strtolower($pUser->getEmail() ?? '');
+            // Get user from provider
+            $pUser = $this->driver($provider)->user();
+            $uid = (string) $pUser->getId();
+            $email = strtolower($pUser->getEmail() ?? '');
+            
+            Log::info("Provider user retrieved", [
+                'provider' => $provider,
+                'uid' => $uid,
+                'email' => $email
+            ]);
 
-            // 1) already linked?
+            // 1) Check if identity already linked
             if ($identity = $service->findIdentity($provider, $uid)) {
+                Log::info("Identity found, logging in user", ['user_id' => $identity->user->id]);
                 Auth::login($identity->user, true);
                 return redirect()->intended('/dashboard');
             }
 
-            // 2) linking mode? (user is already signed-in and asked to connect)
-            if (Auth::check() && session('oauth.mode') === 'link' && session('oauth.link.user_id') === auth()->id()) {
+            // 2) Check if in linking mode (user wants to connect this provider)
+            if (Auth::check() && 
+                session('oauth.mode') === 'link' && 
+                session('oauth.link.user_id') === auth()->id()) {
+                
+                Log::info("Linking mode detected", ['user_id' => auth()->id()]);
                 $service->linkIdentityToUser(auth()->user(), $provider, $pUser);
                 session()->forget(['oauth.mode','oauth.link.user_id']);
-                return redirect()->route('settings.connected-accounts')->with('status', ucfirst($provider).' connected.');
+                return redirect()->route('settings.connected-accounts')
+                    ->with('status', ucfirst($provider).' connected.');
             }
 
-            // 3) not linking; check if email matches an existing account
+            // 3) Check if email matches existing account
             if ($email && ($existing = User::whereRaw('LOWER(email)=?',[$email])->first())) {
-                // DO NOT link automatically. Ask them to sign in first.
+                Log::info("Email matches existing user", [
+                    'email' => $email,
+                    'user_id' => $existing->id,
+                    'has_password' => !empty($existing->password)
+                ]);
+                
+                // Show account exists page
                 return redirect()->route('register.existing', [
-                    'email'       => $email,
-                    'masked'      => $this->maskEmail($email),
+                    'email' => $email,
+                    'masked' => $this->maskEmail($email),
                     'hasPassword' => $existing->password ? '1' : '0',
-                    'providers'   => implode(',', $service->detectProvidersForUser($existing)),
+                    'providers' => implode(',', $service->detectProvidersForUser($existing)),
                 ])->with('status', 'To connect '.ucfirst($provider).', please sign in first, then link it from Settings.');
             }
 
-            // 4) brand new user → create and link
+            // 4) Brand new user - create account
+            Log::info("Creating new user from OAuth", [
+                'provider' => $provider,
+                'email' => $email
+            ]);
+            
             $user = $service->createUserWithIdentity($provider, $pUser);
-            if (!$user->email_verified_at && $email) $user->forceFill(['email_verified_at'=>now()])->save();
+            
+            if (!$user->email_verified_at && $email) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+            
+            Log::info("New user created, logging in", ['user_id' => $user->id]);
             Auth::login($user, true);
+            
             return redirect('/account-type');
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
-            Log::warning("Invalid state for {$provider}: ".$e->getMessage());
-            return redirect('/')->withErrors(['oauth' => 'Session expired. Please try again.']);
+            Log::warning("Invalid OAuth state", [
+                'provider' => $provider,
+                'error' => $e->getMessage()
+            ]);
+            return redirect('/register')->withErrors(['oauth' => 'Session expired. Please try again.']);
+            
         } catch (\Throwable $e) {
-            Log::error("OAuth callback error for {$provider}: ".$e->getMessage(), ['trace'=>$e->getTraceAsString()]);
-            return redirect('/')->withErrors(['oauth' => 'Login failed. Please try again.']);
+            Log::error("OAuth callback error", [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect('/register')->withErrors(['oauth' => 'Login failed. Please try again.']);
         }
     }
 
@@ -105,8 +164,9 @@ final class OAuthController extends Controller
     {
         if (!str_contains($email,'@')) return $email;
         [$l,$d] = explode('@',$email,2);
-        $l = strlen($l)<=2 ? substr($l,0,1).str_repeat('*',max(0,strlen($l)-1))
-                           : substr($l,0,1).str_repeat('*',strlen($l)-2).substr($l,-1);
+        $l = strlen($l)<=2 
+            ? substr($l,0,1).str_repeat('*',max(0,strlen($l)-1))
+            : substr($l,0,1).str_repeat('*',strlen($l)-2).substr($l,-1);
         return $l.'@'.$d;
     }
 }

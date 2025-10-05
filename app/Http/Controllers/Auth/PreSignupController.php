@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Cache, URL, Mail, Hash, DB};
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PreSignupController extends Controller
 {
@@ -18,78 +19,106 @@ class PreSignupController extends Controller
 
     // Step 1: handle form, stash payload in cache, email signed link
     public function sendLink(Request $request)
-{
-    // 1) Validate FIRST
-    $data = $request->validate([
-        'name'     => ['required','string','max:120'],
-        'email'    => ['required','email','max:255'],
-        'password' => ['required', \Illuminate\Validation\Rules\Password::min(8)],
-        'intent'   => ['required','in:professional,client'],
-    ]);
-
-    $data['email'] = strtolower(trim($data['email']));
-
-    // 2) If email exists -> go to "Account already exists" screen (NO error)
-    if ($existing = \App\Models\User::withoutGlobalScopes()
-            ->whereRaw('LOWER(email) = ?', [$data['email']])->first()) {
-
-        // Determine sign-in options
-        $hasPassword = !empty($existing->password);
-
-        // If you track connected providers, prefer those; else fallback to all
-        $providers = method_exists($existing, 'socialAccounts')
-            ? $existing->socialAccounts()->pluck('provider')->all()
-            : [];
-        if (!$hasPassword && empty($providers)) {
-            $providers = ['google','linkedin','github'];
+    {
+        Log::info('=== REGISTRATION START ===', ['email' => $request->email]);
+    
+        try {
+            // 1) Validate
+            $data = $request->validate([
+                'name'     => ['required','string','max:120'],
+                'email'    => ['required','email','max:255'],
+                'password' => ['required', Password::min(8)],
+                'intent'   => ['required','in:professional,client'],
+            ]);
+    
+            \Log::info('Validation passed', ['email' => $data['email']]);
+    
+            $data['email'] = strtolower(trim($data['email']));
+    
+            // 2) Check existing user
+            $existing = User::withoutGlobalScopes()
+                ->whereRaw('LOWER(email) = ?', [$data['email']])
+                ->first();
+    
+            if ($existing) {
+                \Log::info('User exists, redirecting to account-exists');
+                
+                $hasPassword = !empty($existing->password);
+                $providers = method_exists($existing, 'oauthIdentities')
+                    ? $existing->oauthIdentities()->pluck('provider')->toArray()
+                    : [];
+                    
+                if (!$hasPassword && empty($providers)) {
+                    $providers = ['google','linkedin','github'];
+                }
+    
+                return redirect()->route('register.existing', [
+                    'email' => $data['email'],
+                    'masked' => $this->maskEmail($data['email']),
+                    'hasPassword' => $hasPassword ? '1' : '0',
+                    'providers' => implode(',', $providers),
+                ])->withInput(['email' => $data['email']]);
+            }
+    
+            // 3) Create token
+            $token = (string) Str::uuid();
+            \Log::info('Token created', ['token' => $token]);
+    
+            $payload = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'intent' => $data['intent'],
+                'tenant_name' => $data['name'],
+                'ip' => $request->ip(),
+                'ua' => (string) $request->userAgent(),
+            ];
+    
+            // 4) Store in cache
+            $cacheKey = "signup:{$token}";
+            Cache::put($cacheKey, $payload, now()->addMinutes(60));
+            
+            // Verify cache worked
+            $cached = Cache::get($cacheKey);
+            if (!$cached) {
+                \Log::error('CACHE FAILED - payload not stored!');
+                throw new \Exception('Cache storage failed');
+            }
+            \Log::info('Cache stored successfully');
+    
+            // 5) Create signed URL
+            $url = URL::temporarySignedRoute(
+                'register.confirm',
+                now()->addMinutes(60),
+                ['token' => $token]
+            );
+            \Log::info('Signed URL created', ['url' => $url]);
+    
+            // 6) Send email
+            Mail::to($payload['email'])->send(new SignupLinkMail($payload['name'], $url));
+            \Log::info('Email sent successfully');
+    
+            // 7) Store in session
+            $request->session()->put('signup_token', $token);
+            $request->session()->put('signup_email', $payload['email']);
+    
+            Log::info('=== REGISTRATION COMPLETE ===');
+    
+            return redirect()
+                ->route('verification.notice')
+                ->with('status', 'We emailed you a secure link to create your account.');
+    
+        } catch (\Exception $e) {
+            Log::error('REGISTRATION ERROR', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()
+                ->withErrors(['email' => 'Registration failed. Please try again.'])
+                ->withInput();
         }
-
-        // Masked email for display
-        $masked = $this->maskEmail($data['email']);
-
-        return redirect()->route('register.existing', [
-            'email'       => $data['email'],
-            'masked'      => $masked,
-            'hasPassword' => $hasPassword ? '1' : '0',
-            'providers'   => implode(',', $providers),
-        ])->withInput(['email' => $data['email']]);
     }
-
-    // 3) Create token + payload (store PLAIN password here; AuthService will hash)
-    $token = (string) \Illuminate\Support\Str::uuid();
-
-    $payload = [
-        'name'        => $data['name'],
-        'email'       => $data['email'],
-        'password'    => $data['password'], // plain here; will be hashed on confirm
-        'intent'      => $data['intent'],
-        'tenant_name' => $data['name'],
-        'ip'          => $request->ip(),
-        'ua'          => (string) $request->userAgent(),
-    ];
-
-    // 4) Cache payload for 60 mins (server-side)
-    \Illuminate\Support\Facades\Cache::put("signup:{$token}", $payload, now()->addMinutes(60));
-
-    // 5) Signed URL valid for 60 mins
-    $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-        'register.confirm',
-        now()->addMinutes(60),
-        ['token' => $token]
-    );
-
-    // 6) Email link
-    \Illuminate\Support\Facades\Mail::to($payload['email'])
-        ->send(new \App\Mail\SignupLinkMail($payload['name'], $url));
-
-    // 7) Save for resend UX
-    $request->session()->put('signup_token', $token);
-    $request->session()->put('signup_email', $payload['email']);
-
-    return redirect()
-        ->route('verification.notice')
-        ->with('status', 'We emailed you a secure link to create your account.');
-}
 
 /**
  * Mask an email like c*****@gmail.com
