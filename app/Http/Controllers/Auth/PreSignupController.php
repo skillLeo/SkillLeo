@@ -6,15 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Mail\SignupLinkMail;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\{Cache, URL, Mail, Hash, DB};
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 
 class PreSignupController extends Controller
 {
@@ -23,6 +19,7 @@ class PreSignupController extends Controller
     // Step 1: handle form, stash payload in cache, email signed link
     public function sendLink(Request $request)
     {
+        // 1) Validate FIRST
         $data = $request->validate([
             'name'     => ['required','string','max:120'],
             'email'    => ['required','email','max:255'],
@@ -30,43 +27,46 @@ class PreSignupController extends Controller
             'intent'   => ['required','in:professional,client'],
         ]);
 
-        // Block if this email is already registered
-        if (User::where('email', strtolower($data['email']))->exists()) {
+        $data['email'] = strtolower($data['email']);
+
+        // 2) Block if email exists
+        if (User::where('email', $data['email'])->exists()) {
             return back()->withErrors(['email' => 'This email is already registered.'])->withInput();
         }
 
-        // Create a random signup token
+        // 3) Create token + payload
+        // IMPORTANT: Store PLAIN password in cache (will be hashed later in AuthService)
         $token = (string) Str::uuid();
 
-        // Hash the password NOW so we never keep a raw password anywhere
         $payload = [
             'name'        => $data['name'],
-            'email'       => strtolower($data['email']),
-            'password'    => Hash::make($data['password']),
+            'email'       => $data['email'],
+            'password'    => $data['password'], // ✅ Store plain password here
             'intent'      => $data['intent'],
             'tenant_name' => $data['name'],
             'ip'          => $request->ip(),
             'ua'          => (string) $request->userAgent(),
         ];
 
-        // Keep payload server-side in cache for 60 minutes
+        // 4) Cache payload for 60 mins (server-side)
         Cache::put("signup:{$token}", $payload, now()->addMinutes(60));
 
-        // Create a signed URL that expires in 60 minutes
+        // 5) Signed URL valid for 60 mins
         $url = URL::temporarySignedRoute(
             'register.confirm',
             now()->addMinutes(60),
             ['token' => $token]
         );
 
-        // Email the link
+        // 6) Email link
         Mail::to($payload['email'])->send(new SignupLinkMail($payload['name'], $url));
 
-        // Remember token/email in session for easy resend UX
+        // 7) Save for resend UX
         $request->session()->put('signup_token', $token);
         $request->session()->put('signup_email', $payload['email']);
 
-        return redirect()->route('verification.notice') // show your “check your email” page
+        return redirect()
+            ->route('verification.notice')
             ->with('status', 'We emailed you a secure link to create your account.');
     }
 
@@ -78,9 +78,6 @@ class PreSignupController extends Controller
             return back()->withErrors(['email' => 'Session expired. Please fill the form again.']);
         }
 
-        // We don’t have the original name/intent/password here; ask user to re-enter OR
-        // store a short recap in session when first submitting.
-        // For simplicity, we ask them to re-submit the form:
         return back()->withErrors(['email' => 'Please re-submit the signup form to resend the link.']);
     }
 
@@ -101,11 +98,11 @@ class PreSignupController extends Controller
 
         // Create the user now, verified immediately, inside a transaction
         $user = DB::transaction(function () use ($payload) {
-            // Use your existing service to handle tenant creation + user fields
+            // AuthService will hash the password - pass plain password
             $user = $this->authService->registerEmail([
                 'name'        => $payload['name'],
                 'email'       => $payload['email'],
-                'password'    => $payload['password'], // already hashed
+                'password'    => $payload['password'], // ✅ Plain password passed to service
                 'intent'      => $payload['intent'],
                 'tenant_name' => $payload['tenant_name'],
             ]);
@@ -118,14 +115,14 @@ class PreSignupController extends Controller
 
         // Log them in and record the device
         Auth::login($user, true);
-        app(\App\Services\Auth\AuthService::class)->recordLogin(
+        $this->authService->recordLogin(
             $user,
             $payload['ip'] ?? $request->ip(),
             $payload['ua'] ?? $request->userAgent()
         );
 
         return redirect(
-            $user->is_profile_complete ? '/'.($user->username ?? 'dashboard') : 'tenant/onboarding/welcome'
+            $user->is_profile_complete ? '/'.($user->username ?? 'dashboard') : 'account-type'
         )->with('status', 'Your account is ready. Welcome!');
     }
 }

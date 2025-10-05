@@ -8,7 +8,7 @@
 
     <div id="smooth-content">
         <!-- Top Features Section start -->
-        <div class="bg-white border-top border-neutral-100 tw-py-4 common-shadow-one">
+        {{-- <div class="bg-white border-top border-neutral-100 tw-py-4 common-shadow-one">
             <div class="container">
                 <div class="top-features-slider overflow-hidden left-right-gradient position-relative">
                     <div class="d-flex align-items-center tw-gap-4">
@@ -43,175 +43,679 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
         <!-- Top Features Section end -->
 
         <!-- Banner Section Start -->
-        <section class="banner tw-py-80-px overflow-hidden section-bg-three position-relative">
-            <img src="{{asset('assets/marketing/images/shapes/sqaure_shape.png')}}" alt="Shape"
-                class="position-absolute top-0 tw-end-0 tw-me-12-percent" />
+      
+        
 
-            <div class="container max-w-1400-px">
-                <div class="row gy-4 align-items-center">
-                    <div class="col-lg-6">
-                        <div class="">
-                            <h1 class="splitTextStyleOne fw-light tw-leading-104">
-                                <span class="d-inline-block">Turn
-                                </span>
-                                <span class="d-inline-block fw-semibold">
-                                    Your
-                                </span>
-                                <span class="d-inline-block fw-semibold">Profile</span>
-                                <span class="d-inline-block fw-semibold">Into</span>
-                                <span class="d-inline-block fw-semibold">Projects</span>
-                                <span class="d-inline-block">&amp; Payments</span>
-                            </h1>
-                            <p class="text-neutral-500 tw-text-lg max-w-500-px fw-medium tw-mt-8 splitTextStyleOne">
-                                SkillLeo helps pros and teams go from profile to paid. Publish a polished portfolio, match with clients, create orders and milestones, manage projects with teammates, and get paid — with AI drafting your bio, case studies, and proposals from your CV or a short brief.
-                            </p>
-                            <div class="tw-mt-11 d-flex align-items-center tw-gap-42-px flex-wrap">
-                                <div data-aos="fade-up" data-aos-anchor-placement="top-bottom" data-aos-duration="800">
-                                    <a href="#"
-                                        class="hover--translate-y-1 active--translate-y-scale-9 btn btn-main hover-style-one button--stroke d-sm-inline-flex align-items-center justify-content-center tw-gap-5 group active--translate-y-2 tw-px-56-px tw-py-5 fw-semibold rounded-pill"
-                                        data-block="button">
-                                        <span class="button__flair"></span>
-                                        <span class="button__label">Get Started</span>
-                                    </a>
-                                </div>
-                                <div class="" data-aos="fade-up" data-aos-anchor-placement="top-bottom"
-                                    data-aos-duration="800">
-                                    <div class="d-flex align-items-center tw-gap-4">
-                                        <div class="d-flex align-items-center">
-                                            <div
-                                                class="tw-w-9 tw-h-9 rounded-circle overflow-hidden tw-duration-300 hover-scale-14 tw-hover-z-9 position-relative z-2">
-                                                <img src="{{asset('assets/marketing/images/thumbs/client-img1.png')}}" alt="Client Image"
-                                                    class="w-100 h-100 object-fit-cover" />
-                                            </div>
-                                            <div
-                                                class="tw-w-9 tw-h-9 rounded-circle overflow-hidden tw-duration-300 hover-scale-14 tw-hover-z-9 position-relative tw--ms-10-px z-1">
-                                                <img src="{{asset('assets/marketing/images/thumbs/client-img2.png')}}" alt="Client Image"
-                                                    class="w-100 h-100 object-fit-cover" />
-                                            </div>
-                                            <div
-                                                class="tw-w-9 tw-h-9 rounded-circle overflow-hidden tw-duration-300 hover-scale-14 tw-hover-z-9 position-relative tw--ms-10-px">
-                                                <img src="{{asset('assets/marketing/images/thumbs/client-img3.png')}}" alt="Client Image"
-                                                    class="w-100 h-100 object-fit-cover" />
-                                            </div>
-                                        </div>
-                                        <span class="h5 counter">2.3M+</span>
-                                    </div>
-                                    <p class="fw-bold tw-text-sm font-heading text-heading tw-mt-2 counter">
-                                        5,000+ client reviews
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="col-lg-6">
-                        <div class="tw-ps-98-px position-relative tw-pb-8">
-                            <div class="position-relative z-1">
-                                <img src="{{asset('assets/marketing/images/thumbs/banner-img.png')}}" alt="" data-aos="zoom-in"
-                                    data-aos-anchor-placement="top-bottom" data-aos-duration="1000" />
-                            </div>
-                            <!-- Review -->
-                            <div
-                                class="bg-white tw-rounded-3xl tw-p-6 max-w-218-px position-absolute tw-end-0 top-0 w-100 tw--mt-8-px tw--me-8-px common-shadow-two z-1">
-                                <div
-                                    class="d-inline-flex align-items-center tw-gap-1 bg-green tw-py-05 tw-px-3 rounded-pill position-absolute top-0 tw-end-0 tw--mt-12-px tw--me-12-px">
-                                    <span class="text-white fw-bold tw-text-sm">4.9</span>
-                                    <span class="text-white d-flex">
-                                        <img src="{{asset('assets/marketing/images/icons/star.svg')}}" alt="" />
-                                    </span>
-                                </div>
-                                <img src="{{asset('assets/marketing/images/icons/ratings.svg')}}" alt="" class="" />
-                                <div class="tw-mt-3 d-flex align-items-center justify-content-between max-w-154-px">
-                                    <span class="tw-text-lg text-heading fw-semibold">Trustpilot</span>
-                                    <img src="{{asset('assets/marketing/images/icons/verified-icon.svg')}}" alt="" />
-                                </div>
-                            </div>
-                            <!-- Review -->
 
-                            <!-- Experience -->
-                            <div class="bg-main-600 tw-p-12 tw-pe-6 d-inline-block tw-rounded-xl clip-path-one position-absolute bottom-0 tw-end-0 z-1 tw--me-70-px tw-mb-205"
-                                data-aos="fade-up" data-aos-anchor-placement="top-bottom" data-aos-duration="900">
-                                <h2 class="text-white counter">8+</h2>
-                                <span class="text-white">Years Experience</span>
-                            </div>
-                            <!-- Experience -->
 
-                            <!-- Revenue -->
-                            <div class="bg-white-7 tw-py-6 tw-px-7 tw-rounded-2xl border border-white bg-blur-20 position-absolute bottom-0 tw-start-0 z-1 d-flex align-items-center tw-gap-8 common-shadow-two"
-                                data-aos="fade-up" data-aos-anchor-placement="top-bottom" data-aos-duration="800">
-                                <img src="{{asset('assets/marketing/images/shapes/revenue-shape.png')}}" alt=""
-                                    class="flower animate__wobble__two position-absolute tw-end-100 bottom-100 tw--m-24-px z-n1" />
 
-                                <div class="">
-                                    <div class="tab-content" id="pills-tabContent">
-                                        <div class="tab-pane fade show active" id="pills-Daily" role="tabpanel"
-                                            aria-labelledby="pills-Daily-tab" tabindex="0">
-                                            <span class="tw-text-sm text-neutral-500 tw-mb-1 text-uppercase">Revenue</span>
-                                            <h5 class="tw-mb-6 counter">
-                                                $4820.00
-                                            </h5>
-                                        </div>
-                                        <div class="tab-pane fade" id="pills-Weekly" role="tabpanel"
-                                            aria-labelledby="pills-Weekly-tab" tabindex="0">
-                                            <span class="tw-text-sm text-neutral-500 tw-mb-1 text-uppercase">Revenue</span>
-                                            <h5 class="tw-mb-6 counter">
-                                                $2445.00
-                                            </h5>
-                                        </div>
-                                        <div class="tab-pane fade" id="pills-Monthly" role="tabpanel"
-                                            aria-labelledby="pills-Monthly-tab" tabindex="0">
-                                            <span class="tw-text-sm text-neutral-500 tw-mb-1 text-uppercase">Revenue</span>
-                                            <h5 class="tw-mb-6 counter">
-                                                $8221.00
-                                            </h5>
-                                        </div>
-                                    </div>
 
-                                    <ul class="nav nav-pills common-tab d-flex align-items-center tw-gap-205"
-                                        id="pills-tab" role="tablist">
-                                        <li class="nav-item" role="presentation">
-                                            <button
-                                                class="nav-link bg-transparent hover--translate-y-1 tw-transition-all tw-duration-300 text-neutral-500 tw-text-sm fw-medium p-0 active"
-                                                id="pills-Daily-tab" data-bs-toggle="pill" data-bs-target="#pills-Daily"
-                                                type="button" role="tab" aria-controls="pills-Daily"
-                                                aria-selected="true">
-                                                Daily
-                                            </button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button
-                                                class="nav-link bg-transparent hover--translate-y-1 tw-transition-all tw-duration-300 text-neutral-500 tw-text-sm fw-medium p-0"
-                                                id="pills-Weekly-tab" data-bs-toggle="pill"
-                                                data-bs-target="#pills-Weekly" type="button" role="tab"
-                                                aria-controls="pills-Weekly" aria-selected="false">
-                                                Weekly
-                                            </button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button
-                                                class="nav-link bg-transparent hover--translate-y-1 tw-transition-all tw-duration-300 text-neutral-500 tw-text-sm fw-medium p-0"
-                                                id="pills-Monthly-tab" data-bs-toggle="pill"
-                                                data-bs-target="#pills-Monthly" type="button" role="tab"
-                                                aria-controls="pills-Monthly" aria-selected="false">
-                                                Monthly
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="">
-                                    <img src="{{asset('assets/marketing/images/thumbs/revenue-chart.png')}}" alt="" />
-                                </div>
-                            </div>
-                            <!-- Revenue -->
-                        </div>
-                    </div>
-                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+        <style>
+            /* Scoped design tokens */
+            .cfu-hero {
+              --cfu-primary: #0052CC;
+              --cfu-primary-dark: hsl(249, 63%, 15%)
+              ;
+              --cfu-primary-light: #4C9AFF;
+              --cfu-ink: #172B4D;
+              --cfu-ink-light: #42526E;
+              --cfu-neutral-100: #F4F5F7;
+              --cfu-neutral-200: #EBECF0;
+              --cfu-white: #FFFFFF;
+              --cfu-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              --cfu-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+              --cfu-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            }
+          
+            /* Local reset within hero only */
+            .cfu-hero, .cfu-hero * { box-sizing: border-box; }
+          
+            .cfu-hero {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+              overflow-x: hidden;
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 80px 24px 80px;
+              background: radial-gradient(ellipse at top, #F7F8FC 0%, #FFFFFF 100%);
+              position: relative;
+              overflow: hidden;
+            }
+          
+            /* Advanced Background Animations */
+            .cfu-hero::before,
+            .cfu-hero::after {
+              content: '';
+              position: absolute;
+              border-radius: 50%;
+              opacity: 0.6;
+              filter: blur(80px);
+              animation: cfu-morphing 20s ease-in-out infinite;
+            }
+          
+            .cfu-hero::before {
+              top: -10%;
+              right: -5%;
+              width: 600px;
+              height: 600px;
+              background: radial-gradient(circle, rgba(79, 172, 254, 0.15) 0%, transparent 70%);
+              animation-delay: 0s;
+            }
+          
+            .cfu-hero::after {
+              bottom: -15%;
+              left: -5%;
+              width: 700px;
+              height: 700px;
+              background: radial-gradient(circle, rgba(102, 126, 234, 0.12) 0%, transparent 70%);
+              animation-delay: 3s;
+            }
+          
+            .cfu-floating-shapes {
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              top: 0;
+              left: 0;
+              pointer-events: none;
+              overflow: hidden;
+            }
+          
+            .cfu-shape {
+              position: absolute;
+              border-radius: 50%;
+              filter: blur(60px);
+              opacity: 0.4;
+            }
+          
+            .cfu-shape-1 {
+              top: 20%;
+              left: 10%;
+              width: 300px;
+              height: 300px;
+              background: var(--cfu-gradient-3);
+              animation: cfu-float-1 15s ease-in-out infinite;
+            }
+          
+            .cfu-shape-2 {
+              top: 60%;
+              right: 15%;
+              width: 250px;
+              height: 250px;
+              background: var(--cfu-gradient-1);
+              animation: cfu-float-2 18s ease-in-out infinite;
+            }
+          
+            .cfu-shape-3 {
+              bottom: 10%;
+              left: 50%;
+              width: 200px;
+              height: 200px;
+              background: var(--cfu-gradient-2);
+              animation: cfu-float-3 12s ease-in-out infinite;
+            }
+          
+            .cfu-container {
+              max-width: 1280px;
+              width: 100%;
+              position: relative;
+              z-index: 2;
+            }
+          
+            .cfu-hero-content {
+              text-align: center;
+              max-width: 900px;
+              margin: 0 auto;
+            }
+          
+            .cfu-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
+              padding: 10px 20px;
+              background: rgba(255, 255, 255, 0.95);
+              backdrop-filter: blur(10px);
+              border: 1px solid rgba(0, 82, 204, 0.1);
+              border-radius: 100px;
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--cfu-primary);
+              box-shadow: 0 4px 20px rgba(0, 82, 204, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+              margin-bottom: 40px;
+              animation: cfu-badge-entrance 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+              transition: all 0.3s ease;
+            }
+          
+            .cfu-badge:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 25px rgba(0, 82, 204, 0.12), 0 2px 5px rgba(0, 0, 0, 0.08);
+            }
+          
+            .cfu-badge-dot {
+              width: 8px;
+              height: 8px;
+              background: var(--cfu-primary);
+              border-radius: 50%;
+              animation: cfu-pulse-dot 2s ease-in-out infinite;
+            }
+          
+            .cfu-hero h1 {
+              font-size: clamp(48px, 8vw, 88px);
+              font-weight: 800;
+              letter-spacing: -0.03em;
+              line-height: 1.1;
+              margin-bottom: 24px;
+            }
+          
+            .cfu-title-line {
+              display: block;
+              animation: cfu-title-slide-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+              /* line-height: 1.2; */
+              padding-bottom: 10px;
+            }
+          
+            .cfu-title-line:nth-child(1) {
+              color: var(--cfu-ink);
+              animation-delay: 0.5s;
+            }
+          
+            .cfu-title-line:nth-child(2) {
+              background: linear-gradient(135deg, var(--cfu-primary) 0%, var(--cfu-primary-light) 50%, var(--cfu-primary) 100%);
+              background-size: 200% auto;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              animation: cfu-title-slide-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s both, 
+                         cfu-gradient-flow 8s ease infinite;
+            }
+          
+            .cfu-subtitle {
+              font-size: clamp(18px, 2.5vw, 22px);
+              font-weight: 400;
+              line-height: 1.7;
+              color: var(--cfu-ink-light);
+              max-width: 720px;
+              margin: 0 auto 48px;
+              animation: cfu-fade-in-up 1.2s ease 0.8s both;
+            }
+          
+            .cfu-cta-group {
+              display: flex;
+              gap: 16px;
+              justify-content: center;
+              align-items: center;
+              flex-wrap: wrap;
+              animation: cfu-fade-in-up 1.2s ease 1s both;
+            }
+          
+            .cfu-btn {
+              position: relative;
+              padding: 18px 36px;
+              font-size: 16px;
+              font-weight: 600;
+              border-radius: 12px;
+              border: none;
+              cursor: pointer;
+              text-decoration: none;
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
+              transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+              overflow: hidden;
+            }
+          
+            .cfu-btn::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+              transform: translateX(-100%);
+              transition: transform 0.6s;
+            }
+          
+            .cfu-btn:hover::before { transform: translateX(100%); }
+          
+            .cfu-btn-primary {
+              background: linear-gradient(135deg, var(--cfu-primary) 0%, var(--cfu-primary-light) 100%);
+              color: var(--cfu-white);
+              box-shadow: 0 8px 24px rgba(0, 82, 204, 0.25), 0 4px 8px rgba(0, 82, 204, 0.15);
+            }
+          
+            .cfu-btn-primary:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 12px 32px rgba(0, 82, 204, 0.35), 0 6px 12px rgba(0, 82, 204, 0.2);
+              color: var(--cfu-white);
+            }
+          
+            .cfu-btn-primary:active { transform: translateY(-1px); }
+          
+            .cfu-btn-secondary {
+              background: var(--cfu-white);
+              color: var(--cfu-ink);
+              border: 2px solid var(--cfu-neutral-200);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+          
+            .cfu-btn-secondary:hover {
+              transform: translateY(-3px);
+              border-color: var(--cfu-primary);
+              color: var(--cfu-primary);
+              box-shadow: 0 8px 20px rgba(0, 82, 204, 0.15);
+            }
+          
+            .cfu-btn-icon { transition: transform 0.3s ease; }
+            .cfu-btn:hover .cfu-btn-icon { transform: translateX(4px); }
+          
+            .cfu-stats {
+              margin-top: 100px;
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              gap: 48px;
+              animation: cfu-fade-in-up 1.2s ease 1.2s both;
+            }
+          
+            .cfu-stat {
+              text-align: center;
+              padding: 32px 24px;
+              background: rgba(255, 255, 255, 0.7);
+              backdrop-filter: blur(10px);
+              border-radius: 20px;
+              border: 1px solid rgba(0, 82, 204, 0.08);
+              transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+          
+            .cfu-stat:hover {
+              transform: translateY(-8px);
+              background: rgba(255, 255, 255, 0.95);
+              box-shadow: 0 12px 32px rgba(0, 82, 204, 0.12);
+              border-color: rgba(0, 82, 204, 0.2);
+            }
+          
+            .cfu-stat-number {
+              font-size: clamp(40px, 5vw, 56px);
+              font-weight: 800;
+              background: linear-gradient(135deg, var(--cfu-primary) 0%, var(--cfu-primary-light) 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              margin-bottom: 12px;
+              display: block;
+              line-height: 1;
+            }
+          
+            .cfu-stat-label {
+              font-size: 15px;
+              color: var(--cfu-ink-light);
+              font-weight: 500;
+              letter-spacing: 0.01em;
+            }
+          
+            /* Animations */
+            @keyframes cfu-gradient-flow {
+              0%, 100% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+            }
+          
+            @keyframes cfu-badge-entrance {
+              0% { opacity: 0; transform: scale(0.8) translateY(-20px); }
+              100% { opacity: 1; transform: scale(1) translateY(0); }
+            }
+          
+            @keyframes cfu-title-slide-up {
+              0% { opacity: 0; transform: translateY(40px); }
+              100% { opacity: 1; transform: translateY(0); }
+            }
+          
+            @keyframes cfu-fade-in-up {
+              0% { opacity: 0; transform: translateY(30px); }
+              100% { opacity: 1; transform: translateY(0); }
+            }
+          
+            @keyframes cfu-pulse-dot {
+              0%, 100% { transform: scale(1); opacity: 1; }
+              50% { transform: scale(1.3); opacity: 0.7; }
+            }
+          
+            @keyframes cfu-morphing {
+              0%, 100% { transform: translate(0, 0) scale(1); }
+              33% { transform: translate(30px, -30px) scale(1.1); }
+              66% { transform: translate(-20px, 20px) scale(0.9); }
+            }
+          
+            @keyframes cfu-float-1 {
+              0%, 100% { transform: translate(0, 0) rotate(0deg); }
+              33% { transform: translate(30px, -40px) rotate(5deg); }
+              66% { transform: translate(-25px, 30px) rotate(-5deg); }
+            }
+          
+            @keyframes cfu-float-2 {
+              0%, 100% { transform: translate(0, 0) rotate(0deg); }
+              33% { transform: translate(-35px, 25px) rotate(-5deg); }
+              66% { transform: translate(30px, -30px) rotate(5deg); }
+            }
+          
+            @keyframes cfu-float-3 {
+              0%, 100% { transform: translate(0, 0) rotate(0deg); }
+              33% { transform: translate(25px, 35px) rotate(5deg); }
+              66% { transform: translate(-30px, -25px) rotate(-5deg); }
+            }
+          
+            /* Responsive Design */
+            @media (max-width: 768px) {
+              .cfu-hero { padding: 80px 20px 60px; }
+              .cfu-badge { font-size: 13px; padding: 8px 16px; margin-bottom: 32px; }
+              .cfu-hero h1 { margin-bottom: 20px; }
+              .cfu-subtitle { font-size: 17px; margin-bottom: 36px; }
+              .cfu-cta-group { flex-direction: column; width: 100%; }
+              .cfu-btn { width: 100%; justify-content: center; padding: 16px 28px; }
+              .cfu-stats { margin-top: 60px; gap: 24px; grid-template-columns: 1fr; }
+              .cfu-stat { padding: 24px 20px; }
+            }
+          
+            @media (max-width: 480px) {
+              .cfu-shape-1, .cfu-shape-2, .cfu-shape-3 { width: 150px; height: 150px; }
+            }
+
+
+            .cfu-title-line {
+  display: block;
+  padding-bottom: 10px;
+  animation: cfu-title-slide-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both, cfu-gradient-flow 8s ease infinite;
+  background: linear-gradient(135deg, var(--cfu-primary) 0%, var(--cfu-primary-light) 50%, var(--cfu-primary) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cfu-title-line:nth-child(1) {
+  animation-delay: 0.5s;
+}
+
+.cfu-title-line:nth-child(2) {
+  animation-delay: 0.6s;
+}
+          </style>
+          
+          <section class="cfu-hero">
+            <div class="cfu-floating-shapes">
+              <div class="cfu-shape cfu-shape-1"></div>
+              <div class="cfu-shape cfu-shape-2"></div>
+              <div class="cfu-shape cfu-shape-3"></div>
             </div>
-        </section>
+          
+            <div class="cfu-container">
+              <div class="cfu-hero-content">
+                <div class="cfu-badge">
+                  <div class="cfu-badge-dot"></div>
+                  Trusted by 2.3M+ Professionals Worldwide
+                </div>
+          
+                <h1>
+                  <span class="cfu-title-line">Where talent meets</span>
+                  <span class="cfu-title-line">Opportunity</span>
+                </h1>
+          
+                <p class="cfu-subtitle">
+                  Where talent meets opportunity. Publish a polished portfolio, match with clients, 
+                  create orders and milestones, manage projects with teammates, and get paid — 
+                  with AI drafting your bio, case studies, and proposals from your CV.
+                </p>
+          
+                <div class="cfu-cta-group">
+                  <a href="#" class="cfu-btn cfu-btn-primary">
+                    Get Started Free
+                    <svg class="cfu-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </a>
+                  <a href="#" class="cfu-btn cfu-btn-secondary">
+                    See How It Works
+                  </a>
+                </div>
+          
+                <div class="cfu-stats">
+                  <div class="cfu-stat">
+                    <span class="cfu-stat-number">88%</span>
+                    <div class="cfu-stat-label">Average Revenue Uplift</div>
+                  </div>
+                  <div class="cfu-stat">
+                    <span class="cfu-stat-number">5,000+</span>
+                    <div class="cfu-stat-label">Client Reviews</div>
+                  </div>
+                  <div class="cfu-stat">
+                    <span class="cfu-stat-number">99.8%</span>
+                    <div class="cfu-stat-label">Client Satisfaction</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <!-- Banner Section End -->
 
         <!-- brand slider start -->

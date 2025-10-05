@@ -2,8 +2,8 @@
 
 @section('title', 'Verify Your Account - ProMatch')
 
-@section('card-content')
 
+@section('card-content')
 <div class="otp-wrapper">
     <div class="otp-header">
         <div class="otp-icon">
@@ -13,34 +13,49 @@
             </svg>
         </div>
         <h1 class="otp-title">Check your email</h1>
-        <p class="otp-subtitle">We sent a verification code to<br><strong id="userEmail">user@example.com</strong></p>
+        <p class="otp-subtitle">
+            We sent a verification code to<br>
+            <strong id="userEmail">{{ request('email') ?? session('verify_email') }}</strong>
+        </p>
     </div>
 
-    <form id="otpForm" action="{{ url('/api/auth/otp/verify') }}" method="POST">
+    {{-- ✅ Post to WEB route so session is present --}}
+    <form id="otpForm" action="{{ route('otp.verify') }}" method="POST" autocomplete="off">
         @csrf
-        <input type="hidden" name="email" id="emailValue" value="{{ request('email') }}">
 
         <div class="otp-inputs">
-            @for($i=1;$i<=6;$i++)
-            <input type="text" maxlength="1" pattern="[0-9]" class="otp-input" id="otp{{ $i }}" autocomplete="off" inputmode="numeric">
-        @endfor </div>
+            @for ($i = 1; $i <= 6; $i++)
+                <input type="text" maxlength="1" pattern="[0-9]"
+                       class="otp-input" id="otp{{ $i }}" inputmode="numeric" autocomplete="one-time-code">
+            @endfor
+        </div>
 
-        <input type="hidden" name="otp" id="otpValue">
+        {{-- ✅ Server expects "code" --}}
+        <input type="hidden" name="code" id="otpValue">
 
         <button type="submit" class="btn btn-primary" id="verifyBtn" disabled>
             <span id="btnText">Verify Code</span>
         </button>
+
+        @error('code')
+            <p class="text-red-600 mt-3">{{ $message }}</p>
+        @enderror
+        @if (session('status'))
+            <p class="text-green-600 mt-3">{{ session('status') }}</p>
+        @endif
     </form>
 
     <div class="otp-footer">
-        <p class="resend-text">
-            Didn't receive the code?
-            <button type="button" class="resend-btn" id="resendBtn">Resend</button>
-        </p>
-        <p class="timer-text" id="timerText"></p>
+        <form id="resendForm" action="{{ route('otp.resend') }}" method="POST">
+            @csrf
+            <p class="resend-text">
+                Didn't receive the code?
+                <button type="submit" class="resend-btn" id="resendBtn" disabled>Resend</button>
+            </p>
+            <p class="timer-text" id="timerText"></p>
+        </form>
     </div>
 </div>
-
 @endsection
 
 @push('styles')
@@ -184,151 +199,64 @@
 </style>
 @endpush
 
+
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('.otp-input');
+document.addEventListener('DOMContentLoaded', function () {
+    const inputs   = document.querySelectorAll('.otp-input');
     const verifyBtn = document.getElementById('verifyBtn');
-    const btnText = document.getElementById('btnText');
-    const resendBtn = document.getElementById('resendBtn');
+    const otpValue  = document.getElementById('otpValue');
     const timerText = document.getElementById('timerText');
-    const otpValue = document.getElementById('otpValue');
-    const form = document.getElementById('otpForm');
+    const resendBtn = document.getElementById('resendBtn');
 
-    let resendTimer;
-    let timeLeft = 60;
+    // enable web one-time-code autofill on supported browsers
+    inputs[0].setAttribute('autocomplete','one-time-code');
 
-    // Auto-focus first input
     inputs[0].focus();
 
-    // Handle input
-    inputs.forEach((input, index) => {
+    function updateHiddenAndButton() {
+        const code = Array.from(inputs).map(i => i.value).join('');
+        otpValue.value = code;
+        verifyBtn.disabled = (code.length !== 6);
+    }
+
+    inputs.forEach((input, idx) => {
         input.addEventListener('input', (e) => {
-            const value = e.target.value;
-            
-            // Only allow numbers
-            if (value && !/^\d$/.test(value)) {
-                e.target.value = '';
-                return;
-            }
-
-            if (value) {
-                input.classList.add('filled');
-                
-                // Move to next input
-                if (index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                }
-            } else {
-                input.classList.remove('filled');
-            }
-
-            validateOTP();
+            const v = e.target.value.replace(/\D/g,'').slice(0,1);
+            e.target.value = v;
+            if (v && idx < inputs.length - 1) inputs[idx+1].focus();
+            updateHiddenAndButton();
         });
-
-        // Handle backspace
         input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && !input.value && index > 0) {
-                inputs[index - 1].focus();
-                inputs[index - 1].value = '';
-                inputs[index - 1].classList.remove('filled');
-                validateOTP();
+            if (e.key === 'Backspace' && !input.value && idx > 0) {
+                inputs[idx-1].focus(); inputs[idx-1].value = '';
+                updateHiddenAndButton();
             }
         });
-
-        // Handle paste
         input.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const pastedData = e.clipboardData.getData('text').trim();
-            
-            if (/^\d{6}$/.test(pastedData)) {
-                pastedData.split('').forEach((char, i) => {
-                    if (inputs[i]) {
-                        inputs[i].value = char;
-                        inputs[i].classList.add('filled');
-                    }
-                });
+            const t = (e.clipboardData || window.clipboardData).getData('text');
+            if (/^\d{6}$/.test(t)) {
+                e.preventDefault();
+                t.split('').forEach((ch,i)=>{ if(inputs[i]) inputs[i].value = ch; });
                 inputs[inputs.length - 1].focus();
-                validateOTP();
+                updateHiddenAndButton();
             }
         });
     });
 
-    function validateOTP() {
-        const otp = Array.from(inputs).map(input => input.value).join('');
-        otpValue.value = otp;
-        verifyBtn.disabled = otp.length !== 6;
+    // simple resend timer
+    let timeLeft = 60;
+    function tick() {
+        timeLeft--;
+        timerText.textContent = timeLeft > 0
+            ? `Resend available in ${timeLeft}s`
+            : '';
+        resendBtn.disabled = timeLeft > 0;
+        if (timeLeft > 0) setTimeout(tick, 1000);
     }
+    tick(); // start
 
-    function startResendTimer() {
-        timeLeft = 60;
-        resendBtn.disabled = true;
-        
-        resendTimer = setInterval(() => {
-            timeLeft--;
-            timerText.textContent = `Resend available in ${timeLeft}s`;
-            
-            if (timeLeft === 0) {
-                clearInterval(resendTimer);
-                resendBtn.disabled = false;
-                timerText.textContent = '';
-            }
-        }, 1000);
-    }
-
-    resendBtn.addEventListener('click', async function() {
-        // Call resend API here
-        btnText.textContent = 'Sending...';
-        
-        // Simulate API call
-        setTimeout(() => {
-            btnText.textContent = 'Verify Code';
-            inputs.forEach(input => {
-                input.value = '';
-                input.classList.remove('filled');
-            });
-            inputs[0].focus();
-            startResendTimer();
-        }, 1000);
-    });
-
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        if (verifyBtn.disabled) return;
-        
-        btnText.innerHTML = '<span class="loading-spinner"></span>';
-        verifyBtn.disabled = true;
-
-        // Simulate API call
-        setTimeout(() => {
-            // On success
-            // window.location.href = '/dashboard';
-            
-            // On error
-            inputs.forEach(input => {
-                input.classList.add('error');
-                input.value = '';
-                input.classList.remove('filled');
-            });
-            
-            setTimeout(() => {
-                inputs.forEach(input => input.classList.remove('error'));
-                inputs[0].focus();
-            }, 300);
-            
-            btnText.textContent = 'Verify Code';
-            verifyBtn.disabled = false;
-        }, 1500);
-    });
-
-    // Start initial timer
-    startResendTimer();
-
-    // Load email from session/localStorage
-    const email = localStorage.getItem('user_email') || 'user@example.com';
-    document.getElementById('userEmail').textContent = email;
-    document.getElementById('emailValue').value = email;
+    // IMPORTANT: let the form actually submit (no e.preventDefault()).
 });
 </script>
 @endpush

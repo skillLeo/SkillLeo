@@ -21,6 +21,38 @@ use App\Http\Controllers\Auth\PreSignupController;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
+
+
+Route::get('/login', [AuthController::class, 'loginshow'])->name('login');
+
+
+Route::post('/login/submit', [AuthController::class, 'submitLogin'])->name('login.submit');
+
+Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
+Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify');
+Route::post('/otp/resend', [OtpController::class, 'resend'])->name('otp.resend');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Route::get('/health/mail', function () {
     try {
         Mail::raw('This is a plain-text test from SkillLeo.', function ($m) {
@@ -36,6 +68,7 @@ Route::get('/health/mail', function () {
 });
 
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
+Route::get('/register', [RegisterController::class, 'register'])->name('register');
 
 
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
@@ -50,23 +83,25 @@ Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
 
 
 
+// routes/web.php
+
+
 Route::post('/register', [PreSignupController::class, 'sendLink'])
-    ->middleware('throttle:6,1')      // rate-limit abuse
+    ->middleware('throttle:6,1')
     ->name('register.submit');
 
 Route::get('/register/confirm/{token}', [PreSignupController::class, 'confirm'])
-    ->middleware(['signed'])          // validates URL signature + expiry
+    ->middleware('signed')   // protects the link against tampering + enforces expiry
     ->name('register.confirm');
 
+// Optional: “check inbox” page + resend button
+Route::get('/email/verify', fn() => view('auth.verify-notice'))->name('verification.notice');
 Route::post('/register/resend', [PreSignupController::class, 'resend'])
     ->middleware('throttle:3,1')
     ->name('register.resend');
 
 
-// submit signup -> create user (unverified) -> send link -> show “check inbox”
-// Route::post('/register', [RegisterController::class, 'submit'])->name('register.submit');
-
-// verification link (signed)
+ 
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->middleware(['signed']) // link integrity
     ->name('verification.verify');
@@ -80,7 +115,7 @@ Route::post('/email/resend', [EmailVerificationController::class, 'resend'])
 
 
 
-Route::get('/verify-otp', [OtpController::class, 'view'])->name('otp.view');
+
 
 // OAuth
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');

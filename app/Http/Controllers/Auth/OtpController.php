@@ -1,54 +1,78 @@
 <?php
-
+// app/Http/Controllers/Auth/OtpController.php
+// app/Http/Controllers/Auth/OtpController.php
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\OtpService;
+use App\Services\Auth\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class OtpController extends Controller
 {
-    public function __construct(protected OtpService $otpService) {}
+    public function __construct(
+        protected OtpService $otp,
+        protected AuthService $authService
+    ) {}
 
-    public function view(Request $request)
+    public function show(Request $request)
     {
-        // email provided via query (?email=)
-        return view('auth.otp', ['email' => $request->query('email')]);
-    }
-
-    public function send(Request $request)
-    {
-        $data = $request->validate(['email' => ['required','email']]);
-        $user = User::where('email', strtolower($data['email']))->first();
-
-        if (! $user) {
-            return response()->json(['message'=>'No account found for that email'], 404);
-        }
-
-        $this->otpService->createAndSend($user, $request->ip());
-        return response()->json(['message'=>'OTP sent']);
+        return view('auth.otp', [
+            'email'    => $request->get('email'),
+            'seconds'  => $this->otp->remainingSeconds((string) session('login.challenge_id')),
+        ]);
     }
 
     public function verify(Request $request)
     {
-        $data = $request->validate([
-            'email' => ['required','email'],
-            'otp' => ['required','digits:6'],
-        ]);
+        $data = $request->validate(['code' => ['required','digits:6']]);
 
-        $user = User::where('email', strtolower($data['email']))->first();
-        if (! $user) return response()->json(['message'=>'User not found'], 404);
+        $challengeId = (string) $request->session()->get('login.challenge_id');
+        $pendingId   = (int) $request->session()->get('login.pending_user_id');
 
-        if (! $this->otpService->verify($user, $data['otp'])) {
-            return response()->json(['message'=>'Invalid or expired code'], 422);
+        if (! $challengeId || ! $pendingId) {
+            return back()->withErrors(['code' => 'Session expired. Please sign in again.']);
         }
 
-        Auth::login($user, true);
-        return response()->json([
-            'message' => 'Email verified',
-            'redirect' => $user->is_profile_complete ? url('/'.($user->username ?? 'dashboard')) : url('/onboarding'),
+        $ok = $this->otp->verify(
+            $challengeId,
+            $data['code'],
+            $request->session()->getId(),
+            $request->ip(),
+            (string) $request->userAgent()
+        );
+
+        if (! $ok) {
+            return back()->withErrors(['code' => 'Invalid or expired code.']);
+        }
+
+        $user = User::withoutGlobalScopes()->findOrFail($pendingId);
+        $remember = (bool) session('login.remember');
+        Auth::login($user, $remember);
+
+        // optional login metadata
+        $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
+
+        // cleanup
+        $request->session()->forget([
+            'login.pending_user_id',
+            'login.challenge_id',
+            'login.remember',
+            'login.started_at',
         ]);
+
+        return redirect()->intended(route('tenant.profile'));
+    }
+
+    public function resend(Request $request)
+    {
+        $pendingId = (int) $request->session()->get('login.pending_user_id');
+        $user = User::withoutGlobalScopes()->findOrFail($pendingId);
+        $challengeId = $this->otp->resend($user, $request->session()->getId());
+        $request->session()->put('login.challenge_id', $challengeId);
+
+        return back()->with('status', 'New code sent.');
     }
 }

@@ -1,66 +1,93 @@
 <?php
 
+// app/Services/Auth/OtpService.php
 namespace App\Services\Auth;
 
-use App\Models\EmailOtp;
+use App\Mail\OtpCodeMail;
 use App\Models\User;
-use App\Notifications\OtpCodeNotification;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class OtpService
 {
-    public int $ttlMinutes = 10;
-    public int $maxAttempts = 5;
-    public int $resendCooldownSec = 60;
+    // 120 seconds TTL
+    private int $ttlSeconds = 120;
 
-    public function createAndSend(User $user, ?string $ip = null): EmailOtp
+    public function beginLogin(User $user, string $sessionId, string $ip, string $ua): string
     {
-        // Enforce 60s cooldown
-        $latest = EmailOtp::where('user_id',$user->id)->latest()->first();
-        if ($latest && $latest->created_at->gt(now()->subSeconds($this->resendCooldownSec))) {
-            return $latest; // silently ignore, UI should throttle
-        }
+        // Invalidate previous challenge on this session
+        $prev = Cache::pull("otp:idx:{$sessionId}:login");
 
-        // Expire previous actives
-        EmailOtp::where('user_id',$user->id)->where('status','active')
-            ->update(['status'=>'expired']);
+        $challengeId = Str::uuid()->toString();
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        $otp = EmailOtp::create([
-            'user_id' => $user->id,
-            'code' => str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT),
-            'expires_at' => now()->addMinutes($this->ttlMinutes),
-            'ip' => $ip,
-            'status' => 'active',
-        ]);
+        // Hash with bcrypt (slow hash, thwarts offline guessing)
+        $hash = password_hash($code, PASSWORD_BCRYPT);
 
-        $user->notify(new OtpCodeNotification($otp->code));
-        return $otp;
+        $payload = [
+            'user_id'   => $user->id,
+            'hash'      => $hash,
+            'expires_at'=> now()->addSeconds($this->ttlSeconds)->getTimestamp(),
+            'attempts'  => 0,
+            'max_attempts' => 5,
+            'ip'        => $ip,
+            'ua'        => $ua,
+            'session'   => $sessionId,
+        ];
+
+        Cache::put("otp:login:{$challengeId}", $payload, $this->ttlSeconds + 60);
+        Cache::put("otp:idx:{$sessionId}:login", $challengeId, $this->ttlSeconds + 60);
+
+        // Queue email (includes deep-link autofill)
+        Mail::to($user->email)->queue(new OtpCodeMail($user->name ?? 'there', $code, $this->ttlSeconds));
+
+        return $challengeId;
     }
 
-    public function verify(User $user, string $code): bool
+    public function resend(User $user, string $sessionId): string
     {
-        $record = EmailOtp::where('user_id',$user->id)
-            ->where('status','active')->latest()->first();
+        // rotate challenge
+        $oldId = Cache::pull("otp:idx:{$sessionId}:login");
+        if ($oldId) Cache::forget("otp:login:{$oldId}");
 
-        if (! $record) return false;
+        return $this->beginLogin($user, $sessionId, request()->ip(), (string) request()->userAgent());
+    }
 
-        if ($record->expires_at->isPast()) {
-            $record->update(['status'=>'expired']);
+    public function verify(string $challengeId, string $code, string $sessionId, string $ip, string $ua): bool
+    {
+        $key = "otp:login:{$challengeId}";
+        $payload = Cache::get($key);
+        if (! $payload) return false;
+
+        // Bind to session & basic risk signals
+        if ($payload['session'] !== $sessionId) return false;
+
+        if (time() > $payload['expires_at']) {
+            Cache::forget($key);
             return false;
         }
 
-        $record->increment('attempts');
-        if ($record->attempts > $this->maxAttempts) {
-            $record->update(['status'=>'locked']);
+        if ($payload['attempts'] >= $payload['max_attempts']) {
+            Cache::forget($key);
             return false;
         }
 
-        if (! hash_equals($record->code, $code)) {
-            return false;
+        $payload['attempts']++;
+        Cache::put($key, $payload, $this->ttlSeconds); // persist attempts
+
+        $ok = password_verify($code, $payload['hash']);
+        if ($ok) {
+            Cache::forget($key);
         }
 
-        $record->update(['consumed_at'=>now(),'status'=>'consumed']);
-        $user->forceFill(['email_verified_at'=> $user->email_verified_at ?? now()])->save();
+        return $ok;
+    }
 
-        return true;
+    public function remainingSeconds(string $challengeId): int
+    {
+        $payload = Cache::get("otp:login:{$challengeId}");
+        if (! $payload) return 0;
+        return max(0, $payload['expires_at'] - time());
     }
 }

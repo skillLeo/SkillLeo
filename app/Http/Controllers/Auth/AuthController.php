@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -9,7 +8,7 @@ use App\Services\Auth\OtpService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -18,118 +17,81 @@ class AuthController extends Controller
         protected OtpService $otpService
     ) {}
 
+    /**
+     * Show login page
+     */
+    public function loginshow()
+    {
+        return view('auth.login');
+    }
 
-
-
-
-
-
-
-
-
-
+    /**
+     * Handle login submission
+     */
     public function submitLogin(Request $request)
     {
+        // Validate login fields
         $data = $request->validate([
+            'website'  => ['nullable','size:0'], // honeypot
             'email'    => ['required','email'],
             'password' => ['required','string'],
             'remember' => ['sometimes','boolean'],
         ]);
 
-        $user = User::where('email', strtolower($data['email']))->first();
+        $email = strtolower(trim($data['email']));
+        $plainPassword = (string) $data['password'];
 
-        // Basic credential check
-        if (! $user || ! $user->password || ! Hash::check($data['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
+        // Find user - bypass tenant global scopes
+        $user = User::withoutGlobalScopes()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        // Invalid user or missing password
+        if (! $user || ! $user->password) {
+            Log::warning('Login failed: user not found or password null', ['email' => $email]);
+            return back()
+                ->withErrors(['email' => 'Invalid credentials'])
+                ->withInput($request->except('password'));
         }
 
-        // Create & email OTP, stash pending login in session
-        $this->otpService->createAndSend($user, $request->ip());
+        // Check password
+        if (! Hash::check($plainPassword, $user->password)) {
+            Log::notice('Login failed: password mismatch', ['uid' => $user->id]);
+            return back()
+                ->withErrors(['email' => 'Invalid credentials'])
+                ->withInput($request->except('password'));
+        }
+
+        // ✅ Begin OTP login (2FA)
+        $challengeId = $this->otpService->beginLogin(
+            $user,
+            $request->session()->getId(),
+            $request->ip(),
+            (string) $request->userAgent()
+        );
+
+        // Store temporary login session info
         $request->session()->put('login.pending_user_id', $user->id);
+        $request->session()->put('login.challenge_id', $challengeId);
         $request->session()->put('login.remember', (bool) ($data['remember'] ?? false));
         $request->session()->put('login.started_at', now()->timestamp);
 
+        // Redirect to OTP page
         return redirect()->route('otp.show', ['email' => $user->email]);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name' => ['nullable','string','max:120'],
-            'email' => ['required','email','max:255'],
-            'password' => ['required', Password::min(8)],
-            'intent' => ['nullable','in:professional,client'],
-            'tenant_name' => ['nullable','string','max:160'],
-        ]);
-
-        // Ensure uniqueness within tenant scope (tenant null at this point)
-        if (User::whereNull('tenant_id')->where('email', strtolower($data['email']))->exists()) {
-            return response()->json(['message'=>'Email already registered.'], 422);
-        }
-
-        $user = $this->authService->registerEmail($data);
-        $this->otpService->createAndSend($user, $request->ip());
-
-        return response()->json([
-            'message' => 'Registered. Please verify OTP sent to your email.',
-            'next' => route('otp.view', ['email' => $user->email]),
-        ], 201);
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required','string'],
-            'remember' => ['sometimes','boolean'],
-        ]);
-    
-        $user = User::where('email', strtolower($credentials['email']))->first();
-        if (! $user || ! $user->password || ! \Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 422);
-        }
-    
-        // Start OTP flow (always, like LinkedIn/Microsoft 2-step)
-        $this->otpService->createAndSend($user, $request->ip());
-    
-        // Stash "pending login" in session
-        $request->session()->put('login.pending_user_id', $user->id);
-        $request->session()->put('login.remember', (bool) ($credentials['remember'] ?? false));
-        $request->session()->put('login.started_at', now()->timestamp);
-    
-        return response()->json([
-            'message' => 'We sent a 6-digit code to your email.',
-            'next'    => route('otp.view', ['email' => $user->email]),
-        ]);
-    }
-    
-
-    public function me(Request $request)
-    {
-        return response()->json($request->user());
-    }
-
+    /**
+     * Log user out
+     */
     public function logout(Request $request)
     {
-        $user = $request->user();
-        if ($user) {
-            $user->currentAccessToken()?->delete(); // revoke current API token
+        if ($request->user()) {
+            $request->user()->currentAccessToken()?->delete();
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
-        return response()->json(['message'=>'Logged out']);
+
+        return redirect('/login')->with('status', 'Logged out');
     }
 }

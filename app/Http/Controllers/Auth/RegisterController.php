@@ -16,6 +16,8 @@ class RegisterController extends Controller
 
     public function submit(Request $request)
     {
+        dd($request->password);
+
         $data = $request->validate([
             'name'     => ['required','string','max:120'],
             'email'    => ['required','email','max:255','unique:users,email'],
@@ -42,5 +44,10 @@ class RegisterController extends Controller
         // Show “check your inbox”
         return redirect()->route('verification.notice')
             ->with('status', 'We sent a verification link to your email.');
+    }
+
+    public function register(Request $request)
+    {
+        return view('auth.register');
     }
 }

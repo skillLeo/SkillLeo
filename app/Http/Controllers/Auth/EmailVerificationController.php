@@ -45,7 +45,7 @@ class EmailVerificationController extends Controller
         $user = $userId ? User::find($userId) : null;
 
         if (! $user) {
-            return redirect()->route('register.show')->withErrors([
+            return redirect()->route('register')->withErrors([
                 'email' => 'Session expired. Please sign up again.',
             ]);
         }
