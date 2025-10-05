@@ -15,23 +15,21 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name')->nullable();
-            $table->string('email');
+            $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password')->nullable(); // nullable for OAuth-only
+            $table->string('password')->nullable();
             $table->string('avatar_url')->nullable();
-            $table->string('username')->nullable()->unique(); // optional vanity, can move to profile table later
+            $table->string('username', 50)->nullable()->unique();
             $table->string('locale', 12)->default('en');
             $table->string('timezone', 64)->default('UTC');
-            $table->string('status', 24)->default('active'); // active|disabled
+            $table->string('status', 24)->default('active');
             $table->boolean('is_profile_complete')->default(false);
-            $table->string('intent', 24)->nullable(); // professional|client (from onboarding)
+            $table->string('intent', 24)->nullable(); // professional|client|super_admin
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
             $table->unsignedInteger('login_count')->default(0);
-            $table->json('meta')->nullable(); // future-proof
+            $table->json('meta')->nullable();
             $table->timestamps();
-
-            $table->unique(['tenant_id', 'email']); // same email allowed across different tenants
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

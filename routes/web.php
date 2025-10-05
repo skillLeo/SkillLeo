@@ -109,6 +109,7 @@ Route::middleware('auth')->group(function() {
     
     // Logout
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('logout', [AuthController::class, 'logout_get'])->name('logout_get');
     
     // Settings - Connected Accounts (All authenticated users)
     Route::prefix('settings')->name('settings.')->group(function() {

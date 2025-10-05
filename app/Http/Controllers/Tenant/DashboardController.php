@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Session;
 
 class DashboardController extends Controller
 {
-        public function profile()
+        public function index()
         {
             return view('tenant.dashboard');
         }

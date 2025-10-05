@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,11 +12,11 @@ return new class extends Migration {
             $table->timestamp('expires_at');
             $table->timestamp('consumed_at')->nullable();
             $table->unsignedTinyInteger('attempts')->default(0);
-            $table->string('status', 20)->default('active'); // active|expired|consumed|locked
-            $table->string('ip', 64)->nullable();
+            $table->string('status')->default('pending');
+            $table->string('ip')->nullable();
             $table->timestamps();
-
-            $table->index(['user_id', 'status']);
+            
+            $table->index(['user_id', 'status', 'expires_at']);
         });
     }
     public function down(): void {

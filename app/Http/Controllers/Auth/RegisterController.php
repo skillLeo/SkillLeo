@@ -99,46 +99,33 @@ class RegisterController extends Controller
 
     public function existing(Request $request)
     {
-        $email       = strtolower((string) $request->query('email'));
-        $masked      = (string) ($request->query('masked') ?? $this->maskEmail($email));
+        $email = strtolower((string) $request->query('email'));
+        $masked = (string) ($request->query('masked') ?? $this->maskEmail($email));
         $hasPassword = (bool) $request->query('hasPassword', false);
         $providersParam = (string) $request->query('providers', '');
-        
-        // Convert comma-separated string to array and filter empty values
         $providers = array_filter(explode(',', $providersParam));
 
-        // Double-check user still exists
-        $user = User::withoutGlobalScopes()
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$user) {
-            return redirect()->route('register')
-                ->withErrors(['email' => 'Please try again.']);
+            return redirect()->route('register')->withErrors(['email' => 'Please try again.']);
         }
 
         return view('auth.account-exists', [
-            'email'       => $email,
+            'email' => $email,
             'maskedEmail' => $masked,
             'hasPassword' => $hasPassword,
-            'providers'   => $providers, // Array of only linked providers
+            'providers' => $providers,
         ]);
     }
 
     private function maskEmail(string $email): string
     {
-        if (!str_contains($email, '@')) {
-            return $email;
-        }
-
+        if (!str_contains($email, '@')) return $email;
         [$local, $domain] = explode('@', $email, 2);
-        
-        if (strlen($local) <= 2) {
-            $localMasked = substr($local, 0, 1) . str_repeat('*', max(0, strlen($local) - 1));
-        } else {
-            $localMasked = substr($local, 0, 1) . str_repeat('*', strlen($local) - 2) . substr($local, -1);
-        }
-        
+        $localMasked = strlen($local) <= 2
+            ? substr($local, 0, 1) . str_repeat('*', max(0, strlen($local) - 1))
+            : substr($local, 0, 1) . str_repeat('*', strlen($local) - 2) . substr($local, -1);
         return $localMasked . '@' . $domain;
     }
 }

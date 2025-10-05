@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,9 +9,9 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('plan')->default('starter'); // starter|pro|agency|enterprise
+            $table->string('plan')->default('starter');
             $table->unsignedSmallInteger('seats_limit')->default(1);
-            $table->string('status')->default('active'); // active|suspended
+            $table->string('status')->default('active');
             $table->timestamps();
         });
     }

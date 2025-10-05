@@ -1,6 +1,6 @@
 <header class="onboarding-header">
     <div class="header-content">
-        <a href="{{ route('tenant.dashboard') }}" class="header-logo" aria-label="ProMatch Home">
+        <a href="#" class="header-logo" aria-label="ProMatch Home">
             <img src="{{ asset('assets/images/logos/croped/logo_light.png') }}" 
                  alt="ProMatch" 
                  class="logo-light" 
