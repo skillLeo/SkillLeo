@@ -1,8 +1,10 @@
 <?php
+// app/Http/Controllers/Auth/OAuthController.php
 
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Auth\SocialAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +17,7 @@ final class OAuthController extends Controller
     {
         return match ($provider) {
             'google'   => ['openid', 'email', 'profile'],
-            'linkedin' => ['openid', 'profile', 'email'], // OIDC scopes
+            'linkedin' => ['openid', 'profile', 'email'],
             'github'   => [],
             default    => [],
         };
@@ -23,7 +25,6 @@ final class OAuthController extends Controller
 
     private function driver(string $provider)
     {
-        // Map 'linkedin' -> 'linkedin-openid' driver + its own config key
         if ($provider === 'linkedin') {
             $driverName = 'linkedin-openid';
             $redirect   = config('services.linkedin-openid.redirect');
@@ -33,74 +34,79 @@ final class OAuthController extends Controller
         }
 
         $driver = Socialite::driver($driverName)->redirectUrl($redirect);
-
-        // Be explicit: ensure redirect_uri is present on the outbound request
-        if ($provider === 'linkedin') {
-            $driver->with(['redirect_uri' => $redirect]);
-        }
+        if ($provider === 'linkedin') $driver->with(['redirect_uri' => $redirect]);
 
         $scopes = $this->scopes($provider);
-        if (!empty($scopes)) {
-            $driver->scopes($scopes);
-        }
+        if ($scopes) $driver->scopes($scopes);
 
-        if (env('OAUTH_STATELESS', false)) {
-            $driver->stateless();
-        }
-
+        if (env('OAUTH_STATELESS', false)) $driver->stateless();
         return $driver;
     }
 
     public function redirect(string $provider): RedirectResponse
     {
-        abort_unless(in_array($provider, ['google', 'github', 'linkedin']), 404);
-
-        try {
-            return $this->driver($provider)->redirect();
-        } catch (\Throwable $e) {
-            Log::error("OAuth redirect error for {$provider}: " . $e->getMessage());
-            return redirect('/')->withErrors(['oauth' => 'Unable to connect to ' . ucfirst($provider)]);
+        abort_unless(in_array($provider, ['google','github','linkedin']), 404);
+        try { return $this->driver($provider)->redirect(); }
+        catch (\Throwable $e) {
+            Log::error("OAuth redirect error for {$provider}: ".$e->getMessage());
+            return redirect('/')->withErrors(['oauth' => "Unable to connect to ".ucfirst($provider)]);
         }
     }
 
     public function callback(string $provider, SocialAuthService $service)
     {
-        abort_unless(in_array($provider, ['google', 'github', 'linkedin']), 404);
-
-        if (request()->has('error')) {
-            $msg = request('error_description') ?? request('error') ?? 'Login cancelled';
-            Log::warning("OAuth error for {$provider}: {$msg}");
-            return redirect('/')->withErrors(['oauth' => $msg]);
-        }
+        abort_unless(in_array($provider, ['google','github','linkedin']), 404);
 
         try {
-            $pUser = $this->driver($provider)->user();
+            $pUser   = $this->driver($provider)->user();
+            $uid     = (string) $pUser->getId();
+            $email   = strtolower($pUser->getEmail() ?? '');
 
-            if (!$pUser->getEmail()) {
-                return redirect('/')->withErrors(['oauth' => 'Email not provided by ' . ucfirst($provider)]);
+            // 1) already linked?
+            if ($identity = $service->findIdentity($provider, $uid)) {
+                Auth::login($identity->user, true);
+                return redirect()->intended('/dashboard');
             }
 
-            $user = $service->findOrCreate($provider, $pUser);
-
-            if (!$user->email_verified_at) {
-                $user->forceFill(['email_verified_at' => now()])->save();
+            // 2) linking mode? (user is already signed-in and asked to connect)
+            if (Auth::check() && session('oauth.mode') === 'link' && session('oauth.link.user_id') === auth()->id()) {
+                $service->linkIdentityToUser(auth()->user(), $provider, $pUser);
+                session()->forget(['oauth.mode','oauth.link.user_id']);
+                return redirect()->route('settings.connected-accounts')->with('status', ucfirst($provider).' connected.');
             }
 
+            // 3) not linking; check if email matches an existing account
+            if ($email && ($existing = User::whereRaw('LOWER(email)=?',[$email])->first())) {
+                // DO NOT link automatically. Ask them to sign in first.
+                return redirect()->route('register.existing', [
+                    'email'       => $email,
+                    'masked'      => $this->maskEmail($email),
+                    'hasPassword' => $existing->password ? '1' : '0',
+                    'providers'   => implode(',', $service->detectProvidersForUser($existing)),
+                ])->with('status', 'To connect '.ucfirst($provider).', please sign in first, then link it from Settings.');
+            }
+
+            // 4) brand new user → create and link
+            $user = $service->createUserWithIdentity($provider, $pUser);
+            if (!$user->email_verified_at && $email) $user->forceFill(['email_verified_at'=>now()])->save();
             Auth::login($user, true);
-
-            return redirect($user->is_profile_complete
-                ? '/' . ($user->username ?? 'dashboard')
-                : '/account-type');
+            return redirect('/account-type');
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
-            Log::error("Invalid state for {$provider}: " . $e->getMessage());
+            Log::warning("Invalid state for {$provider}: ".$e->getMessage());
             return redirect('/')->withErrors(['oauth' => 'Session expired. Please try again.']);
         } catch (\Throwable $e) {
-            Log::error("OAuth callback error for {$provider}: " . $e->getMessage(), [
-                'exception' => $e->getMessage(),
-                'trace'     => $e->getTraceAsString(),
-            ]);
+            Log::error("OAuth callback error for {$provider}: ".$e->getMessage(), ['trace'=>$e->getTraceAsString()]);
             return redirect('/')->withErrors(['oauth' => 'Login failed. Please try again.']);
         }
+    }
+
+    private function maskEmail(string $email): string
+    {
+        if (!str_contains($email,'@')) return $email;
+        [$l,$d] = explode('@',$email,2);
+        $l = strlen($l)<=2 ? substr($l,0,1).str_repeat('*',max(0,strlen($l)-1))
+                           : substr($l,0,1).str_repeat('*',strlen($l)-2).substr($l,-1);
+        return $l.'@'.$d;
     }
 }

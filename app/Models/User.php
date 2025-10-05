@@ -25,10 +25,13 @@ class User extends Authenticatable
     ];
 
     public function tenant() { return $this->belongsTo(Tenant::class); }
-    public function oauthIdentities() { return $this->hasMany(OAuthIdentity::class); }
     public function devices() { return $this->hasMany(UserDevice::class); }
 
 
-
+// In app/Models/User.php
+public function oauthIdentities()
+{
+    return $this->hasMany(OAuthIdentity::class);
+}
     
 }

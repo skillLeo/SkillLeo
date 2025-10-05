@@ -23,6 +23,46 @@ use Illuminate\Support\Facades\Log;
 
 
 
+
+
+
+use App\Http\Controllers\Settings\ConnectedAccountsController;
+
+Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
+
+// Settings → Connected accounts
+Route::middleware('auth')->group(function () {
+    Route::get('/settings/connected-accounts', [ConnectedAccountsController::class, 'index'])
+        ->name('settings.connected-accounts');
+
+    // start a link flow (redirects to provider with "mode=link")
+    Route::post('/settings/connected-accounts/{provider}/link', [ConnectedAccountsController::class, 'startLink'])
+        ->name('settings.connected-accounts.link');
+
+    // unlink an existing provider
+    Route::delete('/settings/connected-accounts/{provider}', [ConnectedAccountsController::class, 'unlink'])
+        ->name('settings.connected-accounts.unlink');
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Route::get('/login', [AuthController::class, 'loginshow'])->name('login');
 
 
@@ -93,6 +133,9 @@ Route::post('/register', [PreSignupController::class, 'sendLink'])
 Route::get('/register/confirm/{token}', [PreSignupController::class, 'confirm'])
     ->middleware('signed')   // protects the link against tampering + enforces expiry
     ->name('register.confirm');
+
+    Route::get('/register/existing', [RegisterController::class, 'existing'])->name('register.existing');
+
 
 // Optional: “check inbox” page + resend button
 Route::get('/email/verify', fn() => view('auth.verify-notice'))->name('verification.notice');
