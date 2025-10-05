@@ -3,24 +3,27 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OtpCodeNotification extends Notification
+class OtpCodeNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public string $code) {}
+    public function __construct(private string $code) {}
 
-    public function via($notifiable): array {
+    public function via(object $notifiable): array {
         return ['mail'];
     }
 
-    public function toMail($notifiable) {
-        return (new \Illuminate\Notifications\Messages\MailMessage)
-            ->subject('Your verification code')
-            ->greeting('Hi '.$notifiable->name)
-            ->line('Use this code to verify your email:')
+    public function toMail(object $notifiable): MailMessage {
+        return (new MailMessage)
+            ->subject('Your ProMatch verification code')
+            ->greeting('Hi '.$notifiable->name ?: 'there')
+            ->line('Use this 6-digit code to finish signing in:')
             ->line('**'.$this->code.'**')
-            ->line('This code expires in 10 minutes.');
+            ->line('This code expires in 10 minutes.')
+            ->line('If you didn’t request this, you can ignore this email.');
     }
 }

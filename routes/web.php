@@ -3,7 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{LandingController, MarketingController};
 use App\Http\Controllers\Auth\GatewayController;
-    use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\OtpController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\EmailVerificationController;
     use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Tenant\OnboardingController as TenantOnboardingController;
 use App\Http\Controllers\Client\OnboardingController as ClientOnboardingController;
@@ -14,8 +17,22 @@ use App\Http\Controllers\Client\OnboardingController as ClientOnboardingControll
 |--------------------------------------------------------------------------
 */
 
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
+Route::get('/health/mail', function () {
+    try {
+        Mail::raw('This is a plain-text test from SkillLeo.', function ($m) {
+            $m->to('hassam.dev.571@gmail.com')   // any inbox you can check
+              ->subject('SMTP live test');
+        });
 
+        return '✅ Mail dispatched. Check the inbox (and spam).';
+    } catch (\Throwable $e) {
+        Log::error('MAIL ERROR: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response('❌ Mail failed: '.$e->getMessage(), 500);
+    }
+});
 
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 
@@ -31,9 +48,22 @@ Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
 // optional: quick debug to see the exact URL Socialite sends
 
 
+Route::post('/login', [AuthController::class, 'submitLogin'])->name('login.submit');
 
 
+// submit signup -> create user (unverified) -> send link -> show “check inbox”
+Route::post('/register', [RegisterController::class, 'submit'])->name('register.submit');
 
+// verification link (signed)
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed']) // link integrity
+    ->name('verification.verify');
+
+// lightweight “check your inbox” screen + resend
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+Route::post('/email/resend', [EmailVerificationController::class, 'resend'])
+    ->middleware('throttle:5,1')
+    ->name('verification.resend');
 
 
 

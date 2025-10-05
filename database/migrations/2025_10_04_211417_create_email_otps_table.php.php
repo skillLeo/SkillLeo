@@ -14,8 +14,10 @@ return new class extends Migration {
             $table->timestamp('consumed_at')->nullable();
             $table->unsignedTinyInteger('attempts')->default(0);
             $table->string('status', 20)->default('active'); // active|expired|consumed|locked
-            $table->ipAddress('ip')->nullable();
+            $table->string('ip', 64)->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'status']);
         });
     }
     public function down(): void {

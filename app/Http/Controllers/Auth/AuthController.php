@@ -18,6 +18,52 @@ class AuthController extends Controller
         protected OtpService $otpService
     ) {}
 
+
+
+
+
+
+
+
+
+
+
+    public function submitLogin(Request $request)
+    {
+        $data = $request->validate([
+            'email'    => ['required','email'],
+            'password' => ['required','string'],
+            'remember' => ['sometimes','boolean'],
+        ]);
+
+        $user = User::where('email', strtolower($data['email']))->first();
+
+        // Basic credential check
+        if (! $user || ! $user->password || ! Hash::check($data['password'], $user->password)) {
+            return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
+        }
+
+        // Create & email OTP, stash pending login in session
+        $this->otpService->createAndSend($user, $request->ip());
+        $request->session()->put('login.pending_user_id', $user->id);
+        $request->session()->put('login.remember', (bool) ($data['remember'] ?? false));
+        $request->session()->put('login.started_at', now()->timestamp);
+
+        return redirect()->route('otp.show', ['email' => $user->email]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -49,28 +95,26 @@ class AuthController extends Controller
             'password' => ['required','string'],
             'remember' => ['sometimes','boolean'],
         ]);
-
+    
         $user = User::where('email', strtolower($credentials['email']))->first();
-        if (! $user || ! $user->password || ! Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! $user->password || ! \Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 422);
         }
-        if (is_null($user->email_verified_at)) {
-            return response()->json(['message' => 'Email not verified. Please verify OTP.','next'=>route('otp.view',['email'=>$user->email])], 403);
-        }
-
-        Auth::login($user, $credentials['remember'] ?? false);
-
-        // Sanctum token for API/mobile (optional)
-        $token = $user->createToken('web')->plainTextToken;
-
-        app(AuthService::class)->recordLogin($user, $request->ip(), $request->userAgent());
-
+    
+        // Start OTP flow (always, like LinkedIn/Microsoft 2-step)
+        $this->otpService->createAndSend($user, $request->ip());
+    
+        // Stash "pending login" in session
+        $request->session()->put('login.pending_user_id', $user->id);
+        $request->session()->put('login.remember', (bool) ($credentials['remember'] ?? false));
+        $request->session()->put('login.started_at', now()->timestamp);
+    
         return response()->json([
-            'message' => 'Logged in',
-            'token' => $token,
-            'user' => $user->only(['id','name','email','username','avatar_url','intent','is_profile_complete']),
+            'message' => 'We sent a 6-digit code to your email.',
+            'next'    => route('otp.view', ['email' => $user->email]),
         ]);
     }
+    
 
     public function me(Request $request)
     {
