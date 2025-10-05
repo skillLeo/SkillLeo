@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
     use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Tenant\OnboardingController as TenantOnboardingController;
 use App\Http\Controllers\Client\OnboardingController as ClientOnboardingController;
+use App\Http\Controllers\Auth\PreSignupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,11 +49,22 @@ Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
 // optional: quick debug to see the exact URL Socialite sends
 
 
-Route::post('/login', [AuthController::class, 'submitLogin'])->name('login.submit');
+
+Route::post('/register', [PreSignupController::class, 'sendLink'])
+    ->middleware('throttle:6,1')      // rate-limit abuse
+    ->name('register.submit');
+
+Route::get('/register/confirm/{token}', [PreSignupController::class, 'confirm'])
+    ->middleware(['signed'])          // validates URL signature + expiry
+    ->name('register.confirm');
+
+Route::post('/register/resend', [PreSignupController::class, 'resend'])
+    ->middleware('throttle:3,1')
+    ->name('register.resend');
 
 
 // submit signup -> create user (unverified) -> send link -> show “check inbox”
-Route::post('/register', [RegisterController::class, 'submit'])->name('register.submit');
+// Route::post('/register', [RegisterController::class, 'submit'])->name('register.submit');
 
 // verification link (signed)
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
