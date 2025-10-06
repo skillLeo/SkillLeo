@@ -8,7 +8,7 @@ class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
-            'SocialiteProviders\\LinkedIn\\LinkedInExtendSocialite@handle',
+            \SocialiteProviders\LinkedIn\LinkedInExtendSocialite::class.'@handle',
         ],
     ];
-    }
+}
