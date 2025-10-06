@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+use Illuminate\Support\Facades\Log;
+
 
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
@@ -12,11 +14,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Support\Facades\Log;
+ 
+
+
 class OAuthController extends Controller
 {
     private array $providers = ['google', 'linkedin', 'github'];
-
     public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, $this->providers, true), 404);
@@ -27,7 +30,6 @@ class OAuthController extends Controller
         if ($provider === 'linkedin') {
             $driver->scopes(['openid', 'profile', 'email']);
         }
-
         return $driver->redirect();
     }
 
