@@ -17,15 +17,17 @@ use Laravel\Socialite\Facades\Socialite;
 
 class OAuthController extends Controller
 {
+
+
+
+
+    
     private array $providers = ['google', 'linkedin', 'github'];
 
     public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, $this->providers, true), 404);
-
         $driver = $this->driver($provider, $request);
-
-        // LinkedIn OAuth 2.0 with OpenID Connect - critical: use space-separated string, not array
         if ($provider === 'linkedin') {
             $driver->scopes(['profile', 'email', 'openid']);
         }

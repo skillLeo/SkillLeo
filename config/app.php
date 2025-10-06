@@ -34,6 +34,7 @@ return [
     ],
 
     'providers' => [
+        \SocialiteProviders\Manager\ServiceProvider::class,
 
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
