@@ -29,12 +29,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
-        ->whereIn('provider', ['google', 'linkedin-openid', 'github'])
-        ->name('oauth.redirect');
+    ->whereIn('provider', ['google','github','linkedin','linkedin-openid']);
 
-    Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
-        ->whereIn('provider', ['google', 'linkedin-openid', 'github'])
-        ->name('oauth.callback');
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
+    ->whereIn('provider', ['google','github','linkedin','linkedin-openid']);
 
 
 });
