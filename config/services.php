@@ -15,10 +15,12 @@ return [
         'redirect'      => env('GITHUB_REDIRECT_URI'),
     ],
 
-'linkedin-openid' => [  // ← Change from 'linkedin' to 'linkedin-openid'
+'linkedin-openid' => [  
     'client_id'     => env('LINKEDIN_CLIENT_ID'),
     'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
     'redirect'      => env('LINKEDIN_REDIRECT_URI'),
+    'scopes'        => ['openid','profile','email'],
+
 ],
 
     'postmark' => [

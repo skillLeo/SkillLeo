@@ -27,17 +27,17 @@ use App\Http\Controllers\Settings\ConnectedAccountsController;
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 
-Route::middleware('guest')->group(function () {
-    Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
-    ->whereIn('provider', ['google','github','linkedin','linkedin-openid']);
+// Route::middleware('guest')->group(function () {
+
+
+
+// });
+
+Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
+->whereIn('provider', ['google','github','linkedin-openid']);
 
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
-    ->whereIn('provider', ['google','github','linkedin','linkedin-openid']);
-
-
-});
-
-
+->whereIn('provider', ['google','github','linkedin-openid']);
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
 

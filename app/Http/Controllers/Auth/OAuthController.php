@@ -46,7 +46,6 @@ class OAuthController extends Controller
     {
         abort_unless(in_array($provider, $this->providers, true), 404);
 
-        // Handle LinkedIn errors
         if ($request->filled('error')) {
             $error = $request->query('error');
             $desc = $request->query('error_description', 'Authorization failed');
@@ -193,26 +192,33 @@ class OAuthController extends Controller
 
     /* ---------------------- helpers ---------------------- */
 
-    private function driver(string $provider, Request $request)
-    {
-        $driver = Socialite::driver($provider);
+   private function normalizeProvider(string $provider): string
+{
+    return $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+}
 
-        // Ensure redirect URL matches the current host
-        $driver->redirectUrl($this->callbackUrl($provider));
+private function driver(string $provider)
+{
+    // Socialite driver name
+    $driverName = $provider === 'linkedin-openid' ? 'linkedin' : $provider;
 
-        // LinkedIn requires state parameter - don't use stateless mode
-        if ($provider === 'linkedin-openid') {
-            // LinkedIn MUST use stateful mode
-            return $driver;
-        }
+    $driver = Socialite::driver($driverName);
 
-        // Other providers can be stateless if configured
-        if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
-            $driver->stateless();
-        }
+    // Use the redirect configured under the CANONICAL key (linkedin-openid)
+    $driver->redirectUrl($this->callbackUrl($provider));
 
+    if ($provider === 'linkedin-openid') {
+        $driver->scopes(config('services.linkedin-openid.scopes', ['openid','profile','email']));
+        // keep stateful (do NOT call stateless())
         return $driver;
     }
+
+    if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
+        $driver->stateless();
+    }
+    return $driver;
+}
+
 
     private function callbackUrl(string $provider): string
     {
@@ -237,7 +243,6 @@ class OAuthController extends Controller
         $name = $s->getName();
         if ($name) return $name;
 
-        // LinkedIn specific handling
         $raw = $s->user ?? [];
 
         // Try new OpenID Connect format
