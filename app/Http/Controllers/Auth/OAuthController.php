@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
-use Illuminate\Support\Facades\Log;
-
 
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
@@ -14,22 +12,22 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
- 
-
 
 class OAuthController extends Controller
 {
     private array $providers = ['google', 'linkedin', 'github'];
+
     public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, $this->providers, true), 404);
 
         $driver = $this->driver($provider, $request);
 
-        // LinkedIn now uses OpenID Connect - use proper scopes
+        // LinkedIn OAuth 2.0 with OpenID Connect - critical: use space-separated string, not array
         if ($provider === 'linkedin') {
-            $driver->scopes(['openid', 'profile', 'email']);
+            $driver->scopes(['profile', 'email', 'openid']);
         }
+
         return $driver->redirect();
     }
 
@@ -42,7 +40,7 @@ class OAuthController extends Controller
             $error = $request->query('error');
             $desc = $request->query('error_description', 'Authorization failed');
             
-            Log::error("OAuth Error - {$provider}", [
+            \Log::error("OAuth Error - {$provider}", [
                 'error' => $error,
                 'description' => $desc,
                 'query' => $request->query()
@@ -166,7 +164,7 @@ class OAuthController extends Controller
             return redirect()->route('tenant.profile', ['username' => $user->username]);
 
         } catch (\Exception $e) {
-            Log::error("OAuth Callback Error - {$provider}", [
+            \Log::error("OAuth Callback Error - {$provider}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

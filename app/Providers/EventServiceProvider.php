@@ -7,8 +7,6 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
-        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
-            \SocialiteProviders\LinkedIn\LinkedInExtendSocialite::class.'@handle',
-        ],
+        // Remove the LinkedIn listener - not needed for basic OAuth 2.0
     ];
 }
