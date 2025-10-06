@@ -40,7 +40,7 @@ class OAuthController extends Controller
             $error = $request->query('error');
             $desc = $request->query('error_description', 'Authorization failed');
             
-            \Log::error("OAuth Error - {$provider}", [
+            Log::error("OAuth Error - {$provider}", [
                 'error' => $error,
                 'description' => $desc,
                 'query' => $request->query()
@@ -164,7 +164,7 @@ class OAuthController extends Controller
             return redirect()->route('tenant.profile', ['username' => $user->username]);
 
         } catch (\Exception $e) {
-            \Log::error("OAuth Callback Error - {$provider}", [
+            Log::error("OAuth Callback Error - {$provider}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
