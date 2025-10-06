@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/Auth/GatewayController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -10,8 +11,9 @@ class GatewayController extends Controller
     {
         return view('auth.account-type');
     }
+
     public function otp()
     {
         return view('auth.otp');
     }
-}   
+}

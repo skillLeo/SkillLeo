@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/Client/OnboardingController.php
 
 namespace App\Http\Controllers\Client;
 
@@ -16,14 +17,14 @@ class OnboardingController extends Controller
     public function storeInfo(Request $request)
     {
         $validated = $request->validate([
-            'account_type' => 'required|in:company,individual',
-            'company_name' => 'required_if:account_type,company',
-            'company_size' => 'nullable',
-            'industry' => 'nullable',
+            'account_type'  => 'required|in:company,individual',
+            'company_name'  => 'required_if:account_type,company',
+            'company_size'  => 'nullable',
+            'industry'      => 'nullable',
             'contact_email' => 'required|email',
-            'phone' => 'nullable',
-            'website' => 'nullable|url',
-            'about' => 'nullable|max:500',
+            'phone'         => 'nullable',
+            'website'       => 'nullable|url',
+            'about'         => 'nullable|max:500',
         ]);
 
         Session::put('client.onboarding.info', $validated);
@@ -38,11 +39,11 @@ class OnboardingController extends Controller
     public function storeProject(Request $request)
     {
         $validated = $request->validate([
-            'project_title' => 'required|max:100',
+            'project_title'       => 'required|max:100',
             'project_description' => 'required|max:2000',
-            'project_category' => 'required',
-            'skills' => 'required',
-            'project_type' => 'required|in:one-time,ongoing',
+            'project_category'    => 'required',
+            'skills'              => 'required',
+            'project_type'        => 'required|in:one-time,ongoing',
         ]);
 
         Session::put('client.onboarding.project', $validated);
@@ -58,11 +59,11 @@ class OnboardingController extends Controller
     {
         $validated = $request->validate([
             'budget_range' => 'required',
-            'currency' => 'nullable',
-            'budget_min' => 'nullable|numeric',
-            'budget_max' => 'nullable|numeric',
-            'timeline' => 'required',
-            'start_date' => 'required',
+            'currency'     => 'nullable',
+            'budget_min'   => 'nullable|numeric',
+            'budget_max'   => 'nullable|numeric',
+            'timeline'     => 'required',
+            'start_date'   => 'required|date',
         ]);
 
         Session::put('client.onboarding.budget', $validated);
@@ -77,13 +78,13 @@ class OnboardingController extends Controller
     public function storePreferences(Request $request)
     {
         $validated = $request->validate([
-            'remote_ok' => 'boolean',
-            'flexible_hours' => 'boolean',
-            'nda_required' => 'boolean',
-            'communication_frequency' => 'required',
-            'channels' => 'array',
-            'timezone' => 'required',
-            'team_size' => 'required',
+            'remote_ok'              => 'boolean',
+            'flexible_hours'         => 'boolean',
+            'nda_required'           => 'boolean',
+            'communication_frequency'=> 'required',
+            'channels'               => 'array',
+            'timezone'               => 'required',
+            'team_size'              => 'required',
         ]);
 
         Session::put('client.onboarding.preferences', $validated);
@@ -93,9 +94,9 @@ class OnboardingController extends Controller
     public function review()
     {
         $data = [
-            'info' => Session::get('client.onboarding.info'),
-            'project' => Session::get('client.onboarding.project'),
-            'budget' => Session::get('client.onboarding.budget'),
+            'info'        => Session::get('client.onboarding.info'),
+            'project'     => Session::get('client.onboarding.project'),
+            'budget'      => Session::get('client.onboarding.budget'),
             'preferences' => Session::get('client.onboarding.preferences'),
         ];
 
@@ -104,8 +105,8 @@ class OnboardingController extends Controller
 
     public function publish(Request $request)
     {
-        // Create project logic here
+        // persist project here...
         Session::forget('client.onboarding');
-        return redirect()->route('clients')->with('success', 'Project posted successfully!');
+        return redirect()->route('home')->with('success', 'Project posted successfully!');
     }
 }

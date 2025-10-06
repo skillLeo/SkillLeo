@@ -172,9 +172,18 @@
                             </ul>
                         </li>
                         <li class="nav-menu__item">
-                            <a href="#"
-                                class="nav-menu__link hover--translate-y-1 text-heading tw-py-9 fw-semibold w-100">Contact</a>
+                            <button 
+                               class="nav-menu__link hover--translate-y-1 text-heading tw-py-9 fw-semibold w-100"
+                               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                Logout
+                            </button>
+                        
+                            <form id="logout-form" action="{{ route('auth.logout') }}" method="POST" style="display:none;">
+                                @csrf
+                            </form>
                         </li>
+                        
+                        
                     </ul>
                     <!-- Nav menu End  -->
 

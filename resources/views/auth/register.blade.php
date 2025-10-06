@@ -65,7 +65,7 @@
                   </div>
       
                   <!-- Form -->
-                  <form action="{{ route('register.submit') }}" method="POST" novalidate>
+                  <form action="{{ route('auth.register.submit') }}" method="POST" novalidate>
                     @csrf
                   
                     {{-- Honeypot (bots fill this) --}}
@@ -231,7 +231,7 @@
       
                   <!-- Footer -->
                   <div class="auth-footer">
-                      Already have an account? <a href="{{route('login')}}">Log in</a>
+                      Already have an account? <a href="{{route('auth.register')}}">Log in</a>
                   </div>
               </div>               </div>
             </div>

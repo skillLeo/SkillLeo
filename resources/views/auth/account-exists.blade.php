@@ -359,7 +359,7 @@
     {{-- Path A: Sign in to existing account --}}
     @if($hasPassword)
       {{-- Email/password account → ask only for password --}}
-      <form method="POST" action="{{ route('login.submit') }}" autocomplete="off" style="margin-top:24px">
+      <form method="POST" action="{{ login('auth.register.submit') }}" autocomplete="off" style="margin-top:24px">
         @csrf
         <input type="hidden" name="email" value="{{ $email }}">
         <input type="hidden" name="website" value="">
@@ -411,7 +411,7 @@
     @empty
       <div class="help-text">
         We couldn’t verify a linked provider for this email. Please
-        <a class="small-link" href="{{ route('register') }}">use a different email</a>
+        <a class="small-link" href="{{ route('auth.register') }}">use a different email</a>
         or contact support.
       </div>
     @endforelse
@@ -423,7 +423,7 @@
     <div class="hr-or"><span>or</span></div>
 
     {{-- Path B: Use a different email --}}
-    <a href="{{ route('register') }}" class="btn-ghost">Use a different email</a>
+    <a href="{{ route('auth.register') }}" class="btn-ghost">Use a different email</a>
 
   </div>
 </div>

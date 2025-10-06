@@ -594,7 +594,7 @@
                 </div>
     
                 <!-- Email Sign Up Form -->
-                <form class="email-form" action="{{ route('register.submit') }}" method="POST">
+                <form class="email-form" action="{{ route('auth.register.submit') }}" method="POST">
                     @csrf
                     <div class="form-group">
                         <label for="email">Work email</label>

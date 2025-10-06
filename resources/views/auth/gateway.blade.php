@@ -114,7 +114,7 @@
         </div>
 
         <div class="account-type-footer">
-            {{-- <p class="footer-text">Already have an account? <a href="{{ route('login') }}" class="footer-link">Sign in</a></p> --}}
+            {{-- <p class="footer-text">Already have an account? <a href="{{ login('auth.register') }}" class="footer-link">Sign in</a></p> --}}
         </div>
     </div>
 @endsection

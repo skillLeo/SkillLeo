@@ -64,7 +64,7 @@
                   </div>
       
                   <!-- Form -->
-                  <form action="{{ route('login.submit') }}" method="POST" novalidate class="stack-md">
+                  <form action="{{ route('auth.login.submit') }}" method="POST" novalidate class="stack-md">
                     @csrf
                     {{-- Honeypot --}}
                     <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;">
@@ -200,7 +200,7 @@
       
                   <!-- Footer -->
                   <div class="auth-footer">
-                      Dont have account? <a href="{{route('register')}}">Join Now</a>
+                      Dont have account? <a href="{{route('auth.register')}}">Join Now</a>
                   </div>
               </div>               </div>
             </div>

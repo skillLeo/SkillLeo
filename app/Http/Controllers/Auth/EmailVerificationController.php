@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/Auth/EmailVerificationController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -6,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class EmailVerificationController extends Controller
 {
@@ -20,7 +20,7 @@ class EmailVerificationController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (! hash_equals((string)$hash, sha1($user->getEmailForVerification()))) {
+        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             abort(403, 'Invalid verification link.');
         }
 
@@ -29,10 +29,10 @@ class EmailVerificationController extends Controller
             event(new Verified($user));
         }
 
-        if ($user->account_status === 'pending_onboarding' || !$user->is_profile_complete==='start') {
+        if ($user->account_status === 'pending_onboarding' || $user->is_profile_complete === 'start') {
             return redirect()->route('auth.account-type')->with('status', 'Welcome! Please complete your onboarding.');
         }
-        
-        return redirect()->intended(route('tenant.profile'));  
+
+        return redirect()->intended(route('tenant.profile', ['username' => $user->username]));
     }
 }

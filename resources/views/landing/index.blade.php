@@ -520,7 +520,7 @@
                 </p>
           
                 <div class="cfu-cta-group">
-                  <a href="{{route('register')}}" class="cfu-btn cfu-btn-primary">
+                  <a href="{{route('auth.register')}}" class="cfu-btn cfu-btn-primary">
                     Get Started Free
                     <svg class="cfu-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
                       <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>

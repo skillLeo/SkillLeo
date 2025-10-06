@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
@@ -24,9 +23,9 @@ class OnboardingController extends Controller
     public function storePersonal(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
+            'first_name' => ['required','string','max:255'],
+            'last_name'  => ['required','string','max:255'],
+            'username'   => ['required','string','max:255','unique:users,username'],
         ]);
 
         Session::put('onboarding.personal', $validated);
@@ -42,9 +41,9 @@ class OnboardingController extends Controller
     public function storeLocation(Request $request)
     {
         $validated = $request->validate([
-            'country' => 'required|string',
-            'state' => 'required|string',
-            'city' => 'required|string',
+            'country' => ['required','string'],
+            'state'   => ['required','string'],
+            'city'    => ['required','string'],
         ]);
 
         Session::put('onboarding.location', $validated);
@@ -112,14 +111,14 @@ class OnboardingController extends Controller
     public function storePreferences(Request $request)
     {
         $validated = $request->validate([
-            'currency' => 'required|string',
-            'rate' => 'required|numeric',
-            'unit' => 'required|string',
-            'availability' => 'required|string',
-            'hours_per_week' => 'required|string',
-            'remote_work' => 'boolean',
-            'open_to_work' => 'boolean',
-            'long_term' => 'boolean',
+            'currency'       => ['required','string'],
+            'rate'           => ['required','numeric'],
+            'unit'           => ['required','string'],
+            'availability'   => ['required','string'],
+            'hours_per_week' => ['required','string'],
+            'remote_work'    => ['boolean'],
+            'open_to_work'   => ['boolean'],
+            'long_term'      => ['boolean'],
         ]);
 
         Session::put('onboarding.preferences', $validated);
@@ -129,14 +128,13 @@ class OnboardingController extends Controller
 
     public function review()
     {
-        // Gather all session data
         $data = [
-            'personal' => Session::get('onboarding.personal'),
-            'location' => Session::get('onboarding.location'),
-            'skills' => Session::get('onboarding.skills'),
-            'experience' => Session::get('onboarding.experience'),
-            'portfolio' => Session::get('onboarding.portfolio'),
-            'education' => Session::get('onboarding.education'),
+            'personal'    => Session::get('onboarding.personal'),
+            'location'    => Session::get('onboarding.location'),
+            'skills'      => Session::get('onboarding.skills'),
+            'experience'  => Session::get('onboarding.experience'),
+            'portfolio'   => Session::get('onboarding.portfolio'),
+            'education'   => Session::get('onboarding.education'),
             'preferences' => Session::get('onboarding.preferences'),
         ];
 
@@ -145,63 +143,62 @@ class OnboardingController extends Controller
 
     public function publish(Request $request)
     {
-        // Get all onboarding data from session
-        $personal = Session::get('onboarding.personal');
-        $location = Session::get('onboarding.location');
-        $skills = Session::get('onboarding.skills');
-        $experience = Session::get('onboarding.experience');
-        $portfolio = Session::get('onboarding.portfolio');
-        $education = Session::get('onboarding.education');
+        $personal    = Session::get('onboarding.personal');
+        $location    = Session::get('onboarding.location');
+        $skills      = Session::get('onboarding.skills');
+        $experience  = Session::get('onboarding.experience');
+        $portfolio   = Session::get('onboarding.portfolio');
+        $education   = Session::get('onboarding.education');
         $preferences = Session::get('onboarding.preferences');
 
-        // Create or update user
         $user = Auth::user();
-        
-        if (!$user) {
-            // If not authenticated, create new user
+
+        if (! $user) {
+            $request->validate([
+                'email'    => ['required','email','unique:users,email'],
+                'password' => ['required','string','min:8'],
+            ]);
+
             $user = User::create([
-                'first_name' => $personal['first_name'],
-                'last_name' => $personal['last_name'],
-                'username' => $personal['username'],
-                'email' => $request->input('email'), // Assuming you collect this
-                'password' => bcrypt($request->input('password')), // Assuming you collect this
+                'first_name' => $personal['first_name'] ?? null,
+                'last_name'  => $personal['last_name'] ?? null,
+                'username'   => $personal['username'] ?? null,
+                'email'      => strtolower($request->input('email')),
+                'password'   => bcrypt($request->input('password')),
             ]);
         }
 
-        // Create or update profile
         UserProfile::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'country' => $location['country'],
-                'state' => $location['state'],
-                'city' => $location['city'],
-                'skills' => json_encode($skills),
-                'experience' => json_encode($experience),
-                'portfolio' => json_encode($portfolio),
-                'education' => json_encode($education),
-                'currency' => $preferences['currency'],
-                'rate' => $preferences['rate'],
-                'rate_unit' => $preferences['unit'],
-                'availability' => $preferences['availability'],
-                'hours_per_week' => $preferences['hours_per_week'],
-                'remote_work' => $preferences['remote_work'] ?? false,
-                'open_to_work' => $preferences['open_to_work'] ?? false,
-                'long_term' => $preferences['long_term'] ?? false,
-                'is_public' => $request->has('makePublic'),
+                'country'         => $location['country'] ?? null,
+                'state'           => $location['state'] ?? null,
+                'city'            => $location['city'] ?? null,
+                'skills'          => json_encode($skills ?? []),
+                'experience'      => json_encode($experience ?? []),
+                'portfolio'       => json_encode($portfolio ?? []),
+                'education'       => json_encode($education ?? []),
+                'currency'        => $preferences['currency'] ?? null,
+                'rate'            => $preferences['rate'] ?? null,
+                'rate_unit'       => $preferences['unit'] ?? null,
+                'availability'    => $preferences['availability'] ?? null,
+                'hours_per_week'  => $preferences['hours_per_week'] ?? null,
+                'remote_work'     => (bool) ($preferences['remote_work'] ?? false),
+                'open_to_work'    => (bool) ($preferences['open_to_work'] ?? false),
+                'long_term'       => (bool) ($preferences['long_term'] ?? false),
+                'is_public'       => $request->boolean('makePublic'),
                 'onboarding_completed' => true,
             ]
         );
 
-        // Clear session data
         Session::forget('onboarding');
 
-        return redirect()->route('tenant.profile')->with('success', 'Profile created successfully!');
+        return redirect()->route('tenant.profile', ['username' => $user->username])
+            ->with('success', 'Profile created successfully!');
     }
 
-
-
     public function accountType()
-{
-    return view('onboarding.account-type');
-}
+    {
+        return view('onboarding.account-type');
+    }
 }

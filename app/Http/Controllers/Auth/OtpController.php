@@ -1,6 +1,6 @@
 <?php
 // app/Http/Controllers/Auth/OtpController.php
-// app/Http/Controllers/Auth/OtpController.php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -20,8 +20,8 @@ class OtpController extends Controller
     public function show(Request $request)
     {
         return view('auth.otp', [
-            'email'    => $request->get('email'),
-            'seconds'  => $this->otp->remainingSeconds((string) session('login.challenge_id')),
+            'email'   => $request->get('email'),
+            'seconds' => $this->otp->remainingSeconds((string) session('login.challenge_id')),
         ]);
     }
 
@@ -52,10 +52,8 @@ class OtpController extends Controller
         $remember = (bool) session('login.remember');
         Auth::login($user, $remember);
 
-        // optional login metadata
         $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
 
-        // cleanup
         $request->session()->forget([
             'login.pending_user_id',
             'login.challenge_id',
@@ -63,7 +61,11 @@ class OtpController extends Controller
             'login.started_at',
         ]);
 
-        return redirect()->intended(route('tenant.profile'));
+        if ($user->account_status === 'pending_onboarding' || $user->is_profile_complete === 'start') {
+            return redirect()->route('auth.account-type');
+        }
+
+        return redirect()->intended(route('tenant.profile', ['username' => $user->username]));
     }
 
     public function resend(Request $request)
