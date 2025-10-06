@@ -66,5 +66,8 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
     ],
+    'aliases' => [
+    'Socialite' => Laravel\Socialite\Facades\Socialite::class,
+],
 
 ];

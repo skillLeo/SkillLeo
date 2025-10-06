@@ -27,7 +27,7 @@ use App\Http\Controllers\Settings\ConnectedAccountsController;
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 
-// Route::middleware('guest')->group(function () {
+Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
         ->whereIn('provider', ['google', 'linkedin', 'github'])
         ->name('oauth.redirect');
@@ -37,23 +37,15 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
         ->name('oauth.callback');
 
 
-// });
-
-// Route::get('{provider}/redirect', [OAuthController::class, 'redirect'])
-// ->whereIn('provider', ['google', 'linkedin', 'github'])
-// ->name('oauth.redirect');
-// Route::get('{provider}/callback', [OAuthController::class, 'callback'])
-// ->whereIn('provider', ['google', 'linkedin', 'github'])
-// ->name('oauth.callback');
-
-
-
-
-
+});
 
 
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
+
+
+
+
 
 Route::prefix('marketing')->name('marketing.')->group(function () {
     Route::get('features', [MarketingController::class, 'features'])->name('features');

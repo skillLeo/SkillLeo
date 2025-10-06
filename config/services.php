@@ -2,17 +2,7 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
-    */
+ 
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
@@ -25,11 +15,10 @@ return [
         'redirect'      => env('GITHUB_REDIRECT_URI'),
     ],
 
-    // ✅ This must exist and the key must be exactly "linkedin"
-    'linkedin' => [
+     'linkedin' => [
         'client_id'     => env('LINKEDIN_CLIENT_ID'),
         'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
-        'redirect'      => env('LINKEDIN_REDIRECT_URI'),
+        'redirect'      => env('LINKEDIN_REDIRECT_URI', rtrim(env('APP_URL'), '/').'/auth/linkedin/callback'),
     ],
 
     'postmark' => [
