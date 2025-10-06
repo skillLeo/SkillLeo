@@ -20,6 +20,8 @@ class OAuthController extends Controller
 {
 
 
+ 
+    
 
 
 
@@ -191,11 +193,6 @@ class OAuthController extends Controller
     }
 
     /* ---------------------- helpers ---------------------- */
-
-   private function normalizeProvider(string $provider): string
-{
-    return $provider === 'linkedin' ? 'linkedin-openid' : $provider;
-}
 
 private function driver(string $provider)
 {
