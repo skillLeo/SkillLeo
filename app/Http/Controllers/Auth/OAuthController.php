@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+
 use Illuminate\Support\Facades\Log;
 
 
@@ -21,7 +22,7 @@ class OAuthController extends Controller
 
 
 
-    
+
     private array $providers = ['google', 'linkedin', 'github'];
 
     public function redirect(Request $request, string $provider)
@@ -43,7 +44,7 @@ class OAuthController extends Controller
         if ($request->filled('error')) {
             $error = $request->query('error');
             $desc = $request->query('error_description', 'Authorization failed');
-            
+
             Log::error("OAuth Error - {$provider}", [
                 'error' => $error,
                 'description' => $desc,
@@ -70,7 +71,14 @@ class OAuthController extends Controller
             $now = now();
 
             $user = DB::transaction(function () use (
-                $provider, $providerUid, $email, $name, $nickname, $avatar, $social, $now
+                $provider,
+                $providerUid,
+                $email,
+                $name,
+                $nickname,
+                $avatar,
+                $social,
+                $now
             ) {
                 // 1) Already linked?
                 $identity = OAuthIdentity::where([
@@ -166,7 +174,6 @@ class OAuthController extends Controller
             }
 
             return redirect()->route('tenant.profile', ['username' => $user->username]);
-
         } catch (\Exception $e) {
             Log::error("OAuth Callback Error - {$provider}", [
                 'error' => $e->getMessage(),
@@ -226,16 +233,16 @@ class OAuthController extends Controller
 
         // LinkedIn specific handling
         $raw = $s->user ?? [];
-        
+
         // Try new OpenID Connect format
         if (isset($raw['name'])) {
             return $raw['name'];
         }
-        
+
         // Try older format
         $first = $raw['given_name'] ?? $raw['localizedFirstName'] ?? null;
         $last = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
-        
+
         return trim(($first ?: '') . ' ' . ($last ?: '')) ?: null;
     }
 
