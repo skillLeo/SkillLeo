@@ -15,11 +15,11 @@ return [
         'redirect'      => env('GITHUB_REDIRECT_URI'),
     ],
 
-     'linkedin' => [
-        'client_id'     => env('LINKEDIN_CLIENT_ID'),
-        'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
-        'redirect'      => env('LINKEDIN_REDIRECT_URI', rtrim(env('APP_URL'), '/').'/auth/linkedin/callback'),
-    ],
+'linkedin' => [
+    'client_id'     => env('LINKEDIN_CLIENT_ID'),
+    'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
+    'redirect'      => env('LINKEDIN_REDIRECT_URI'),
+],
 
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
