@@ -26,6 +26,56 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+
+
+
+
+
+
+    public function selectAccountType(Request $request)
+    {
+        $request->validate([
+            'type' => ['required', 'in:freelancer,client'],
+        ]);
+    
+        $user = $request->user();
+    
+        // Map account types → redirect destinations
+        $redirects = [
+            'freelancer' => route('tenant.onboarding.welcome'),
+            'client'     => route('client.onboarding.info'),
+        ];
+    
+        // Map user type → professional account_status values
+        $statusMap = [
+            'freelancer' => 'professional',
+            'client'     => 'client',
+        ];
+    
+        // Update account details cleanly
+        $user->update([
+            'account_status'      => $statusMap[$request->type],
+            'is_profile_complete' => 'personal', // string marker for onboarding step
+            'meta' => array_merge($user->meta ?? [], [
+                'account_type' => $request->type,
+            ]),
+        ]);
+    
+        return redirect($redirects[$request->type])
+            ->with('status', 'Welcome! Let’s complete your onboarding.');
+    }
+    
+    
+
+
+
+
+
+
+
+
+
+    
     /**
      * Handle login submission
      */

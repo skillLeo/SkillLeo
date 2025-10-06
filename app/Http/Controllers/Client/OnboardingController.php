@@ -106,6 +106,6 @@ class OnboardingController extends Controller
     {
         // Create project logic here
         Session::forget('client.onboarding');
-        return redirect()->route('client.dashboard')->with('success', 'Project posted successfully!');
+        return redirect()->route('clients')->with('success', 'Project posted successfully!');
     }
 }

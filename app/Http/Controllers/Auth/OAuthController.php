@@ -4,169 +4,197 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\Auth\SocialAuthService;
-use Illuminate\Http\RedirectResponse;
+use App\Models\OAuthIdentity;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
-final class OAuthController extends Controller
+class OAuthController extends Controller
 {
-    private function scopes(string $provider): array
+    /** Supported OAuth providers */
+    private array $providers = ['google', 'linkedin', 'github'];
+
+    /**
+     * Redirect to provider
+     */
+    public function redirect(string $provider)
     {
-        return match ($provider) {
-            'google'   => ['openid', 'email', 'profile'],
-            'linkedin' => ['openid', 'profile', 'email'],
-            'github'   => [],
-            default    => [],
-        };
-    }
+        abort_unless(in_array($provider, $this->providers, true), 404);
 
-    private function driver(string $provider)
-    {
+        $driver = Socialite::driver($provider);
+
         if ($provider === 'linkedin') {
-            $driverName = 'linkedin-openid';
-            $redirect   = config('services.linkedin-openid.redirect');
-        } else {
-            $driverName = $provider;
-            $redirect   = config("services.{$provider}.redirect");
+            $driver->scopes(['r_liteprofile', 'r_emailaddress']);
         }
 
-        $driver = Socialite::driver($driverName)->redirectUrl($redirect);
-        if ($provider === 'linkedin') {
-            $driver->with(['redirect_uri' => $redirect]);
-        }
-
-        $scopes = $this->scopes($provider);
-        if ($scopes) {
-            $driver->scopes($scopes);
-        }
-
-        if (env('OAUTH_STATELESS', false)) {
+        if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
             $driver->stateless();
         }
-        
-        return $driver;
+
+        return $driver->redirect();
     }
 
-    public function redirect(string $provider): RedirectResponse
+    /**
+     * Handle callback from provider
+     */
+    public function callback(Request $request, string $provider)
     {
-        Log::info("=== OAUTH REDIRECT START ===", ['provider' => $provider]);
-        
-        abort_unless(in_array($provider, ['google','github','linkedin']), 404);
-        
-        try {
-            $redirectUrl = $this->driver($provider)->redirect();
-            Log::info("OAuth redirect successful", ['provider' => $provider]);
-            return $redirectUrl;
-        } catch (\Throwable $e) {
-            Log::error("OAuth redirect error", [
-                'provider' => $provider,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect('/')->withErrors(['oauth' => "Unable to connect to ".ucfirst($provider)]);
+        abort_unless(in_array($provider, $this->providers, true), 404);
+
+        $driver = Socialite::driver($provider);
+
+        if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
+            $driver->stateless();
         }
-    }
 
-    public function callback(string $provider, SocialAuthService $service)
-    {
-        Log::info("=== OAUTH CALLBACK START ===", [
-            'provider' => $provider,
-            'query_params' => request()->query()
-        ]);
-        
-        abort_unless(in_array($provider, ['google','github','linkedin']), 404);
+        $social = $driver->user();
 
-        try {
-            // Get user from provider
-            $pUser = $this->driver($provider)->user();
-            $uid = (string) $pUser->getId();
-            $email = strtolower($pUser->getEmail() ?? '');
-            
-            Log::info("Provider user retrieved", [
+        $providerUserId   = (string) ($social->getId() ?? '');
+        $providerEmail    = $social->getEmail();
+        $providerName     = $social->getName() ?: trim(($social->user['localizedFirstName'] ?? '') . ' ' . ($social->user['localizedLastName'] ?? ''));
+        $providerNickname = $social->getNickname();
+        $avatar           = $social->getAvatar();
+
+        if (!$providerUserId) {
+            abort(400, 'Provider did not return a user ID.');
+        }
+
+        $now = Carbon::now();
+
+        $user = DB::transaction(function () use ($provider, $providerUserId, $providerEmail, $providerName, $providerNickname, $avatar, $social, $now) {
+            // 1) Find existing identity
+            $identity = OAuthIdentity::where([
                 'provider' => $provider,
-                'uid' => $uid,
-                'email' => $email
-            ]);
+                'provider_user_id' => $providerUserId,
+            ])->first();
 
-            // 1) Check if identity already linked
-            if ($identity = $service->findIdentity($provider, $uid)) {
-                Log::info("Identity found, logging in user", ['user_id' => $identity->user->id]);
-                Auth::login($identity->user, true);
-                return redirect()->intended('/dashboard');
-            }
+            if ($identity) {
+                $user = $identity->user;
+                $this->refreshUserProfile($user, $providerName, $providerEmail, $avatar);
 
-            // 2) Check if in linking mode (user wants to connect this provider)
-            if (Auth::check() && 
-                session('oauth.mode') === 'link' && 
-                session('oauth.link.user_id') === auth()->id()) {
-                
-                Log::info("Linking mode detected", ['user_id' => auth()->id()]);
-                $service->linkIdentityToUser(auth()->user(), $provider, $pUser);
-                session()->forget(['oauth.mode','oauth.link.user_id']);
-                return redirect()->route('settings.connected-accounts')
-                    ->with('status', ucfirst($provider).' connected.');
-            }
-
-            // 3) Check if email matches existing account
-            if ($email && ($existing = User::whereRaw('LOWER(email)=?',[$email])->first())) {
-                Log::info("Email matches existing user", [
-                    'email' => $email,
-                    'user_id' => $existing->id,
-                    'has_password' => !empty($existing->password)
+                $identity->update([
+                    'avatar_url'        => $avatar ?? $identity->avatar_url,
+                    'provider_username' => $providerNickname ?? $identity->provider_username,
+                    'access_token'      => $social->token ?? null,
+                    'refresh_token'     => $social->refreshToken ?? null,
+                    'token_expires_at'  => isset($social->expiresIn) ? $now->copy()->addSeconds((int) $social->expiresIn) : null,
+                    'provider_raw'      => $social->user ?? [],
                 ]);
-                
-                // Show account exists page
-                return redirect()->route('register.existing', [
-                    'email' => $email,
-                    'masked' => $this->maskEmail($email),
-                    'hasPassword' => $existing->password ? '1' : '0',
-                    'providers' => implode(',', $service->detectProvidersForUser($existing)),
-                ])->with('status', 'To connect '.ucfirst($provider).', please sign in first, then link it from Settings.');
+
+                $user->update([
+                    'last_login_at' => $now,
+                    'login_count'   => $user->login_count + 1,
+                ]);
+
+                return $user;
             }
 
-            // 4) Brand new user - create account
-            Log::info("Creating new user from OAuth", [
-                'provider' => $provider,
-                'email' => $email
-            ]);
-            
-            $user = $service->createUserWithIdentity($provider, $pUser);
-            
-            if (!$user->email_verified_at && $email) {
-                $user->forceFill(['email_verified_at' => now()])->save();
-            }
-            
-            Log::info("New user created, logging in", ['user_id' => $user->id]);
-            Auth::login($user, true);
-            
-            return redirect('/account-type');
+            // 2) Find by email if exists
+            $user = $providerEmail ? User::where('email', $providerEmail)->first() : null;
 
-        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
-            Log::warning("Invalid OAuth state", [
-                'provider' => $provider,
-                'error' => $e->getMessage()
-            ]);
-            return redirect('/register')->withErrors(['oauth' => 'Session expired. Please try again.']);
-            
-        } catch (\Throwable $e) {
-            Log::error("OAuth callback error", [
-                'provider' => $provider,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return redirect('/register')->withErrors(['oauth' => 'Login failed. Please try again.']);
+            // 3) Create new user if not found
+            if (!$user) {
+                $user = User::create([
+                    'tenant_id'           => null,
+                    'name'                => $providerName ?: ($providerNickname ?: 'User'),
+                    'email'               => $providerEmail ?: "{$providerUserId}@{$provider}.oauth.local",
+                    'avatar_url'          => $avatar,
+                    'email_verified_at'   => $providerEmail ? Carbon::now() : null,
+                    'password'            => null,
+                    'username'            => $this->uniqueUsername($providerNickname ?: ($providerName ?: 'user')),
+                    'locale'              => 'en',
+                    'timezone'            => 'UTC',
+                    'is_active'              => 'active',
+                    'is_profile_complete' => 'start',
+                    'last_login_at'       => $now,
+                    'login_count'         => 1,
+                    'meta'                => ['created_via' => $provider],
+                    
+                    'account_status'      => 'pending_onboarding', 
+                    
+
+                ]);
+            } else {
+                $this->refreshUserProfile($user, $providerName, $providerEmail, $avatar);
+                $user->update([
+                    'last_login_at' => $now,
+                    'login_count'   => $user->login_count + 1,
+                ]);
+            }
+
+            // 4) Create or update OAuth identity (with user_id)
+            OAuthIdentity::updateOrCreate(
+                [
+                    'provider' => $provider,
+                    'provider_user_id' => $providerUserId,
+                ],
+                [
+                    'user_id'           => $user->id,
+                    'provider_username' => $providerNickname,
+                    'avatar_url'        => $avatar,
+                    'access_token'      => $social->token ?? null,
+                    'refresh_token'     => $social->refreshToken ?? null,
+                    'token_expires_at'  => isset($social->expiresIn)
+                        ? $now->copy()->addSeconds((int) $social->expiresIn)
+                        : null,
+                    'provider_raw'      => $social->user ?? [],
+                ]
+            );
+
+            return $user;
+        });
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+
+        if ($user->account_status === 'pending_onboarding' || !$user->is_profile_complete==='start') {
+            return redirect()->route('auth.account-type')->with('status', 'Welcome! Please complete your onboarding.');
+        }
+        
+        return redirect()->intended(route('tenant.profile'));   
+    
+    }
+
+    /**
+     * Update user basic info non-destructively
+     */
+    private function refreshUserProfile(User $user, ?string $name, ?string $email, ?string $avatar): void
+    {
+        $changes = [];
+
+        if (!$user->name && $name) $changes['name'] = $name;
+        if (!$user->avatar_url && $avatar) $changes['avatar_url'] = $avatar;
+        if (!$user->email_verified_at && $email && str_contains($email, '@')) {
+            $changes['email'] = $user->email ?: $email;
+            $changes['email_verified_at'] = Carbon::now();
+        }
+
+        if (!empty($changes)) {
+            $user->update($changes);
         }
     }
 
-    private function maskEmail(string $email): string
+    /**
+     * Generate a unique username
+     */
+    private function uniqueUsername(string $seed): string
     {
-        if (!str_contains($email,'@')) return $email;
-        [$l,$d] = explode('@',$email,2);
-        $l = strlen($l)<=2 
-            ? substr($l,0,1).str_repeat('*',max(0,strlen($l)-1))
-            : substr($l,0,1).str_repeat('*',strlen($l)-2).substr($l,-1);
-        return $l.'@'.$d;
+        $base = Str::of($seed)->lower()->ascii()->slug('_');
+        $base = (string) Str::limit($base ?: 'user', 40, '');
+        $username = $base;
+        $n = 0;
+
+        while (User::where('username', $username)->exists()) {
+            $n++;
+            $username = Str::limit($base, 40, '') . "_{$n}";
+            if ($n > 5000) {
+                $username = 'user_' . Str::random(8);
+                break;
+            }
+        }
+        return $username;
     }
 }

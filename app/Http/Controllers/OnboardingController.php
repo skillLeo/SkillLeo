@@ -195,8 +195,7 @@ class OnboardingController extends Controller
         // Clear session data
         Session::forget('onboarding');
 
-        // Redirect to dashboard or welcome page
-        return redirect()->route('dashboard')->with('success', 'Profile created successfully!');
+        return redirect()->route('tenant.profile')->with('success', 'Profile created successfully!');
     }
 
 

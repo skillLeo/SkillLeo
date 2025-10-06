@@ -20,8 +20,7 @@ class SuperAdminSeeder extends Seeder
                 'name' => 'Super Admin',
                 'username' => 'admin',
                 'password' => Hash::make('Admin@12345'), // Change this in production!
-                'intent' => 'super_admin',
-                'is_profile_complete' => true,
+                'is_profile_complete' => 'completed',
                 'email_verified_at' => now(),
                 'status' => 'active',
             ]

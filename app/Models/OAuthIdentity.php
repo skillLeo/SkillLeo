@@ -1,36 +1,32 @@
 <?php
 
-
-// app/Models/OAuthIdentity.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OAuthIdentity extends Model
 {
+    protected $table = 'o_auth_identities'; // match migration name
+
     protected $fillable = [
         'user_id',
         'provider',
-        'provider_uid',
-        'email',
+        'provider_user_id',
+        'provider_username',
+        'avatar_url',
         'access_token',
         'refresh_token',
-        'expires_at',
-        'profile',
+        'token_expires_at',
+        'provider_raw',
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
-        'profile' => 'array',
+        'provider_raw' => 'array',
+        'token_expires_at' => 'datetime',
     ];
 
-    protected $hidden = [
-        'access_token',
-        'refresh_token',
-    ];
-
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

@@ -8,10 +8,10 @@ class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
         \SocialiteProviders\Manager\SocialiteWasCalled::class => [
-            // Standard LinkedIn provider with OpenID Connect support
             \SocialiteProviders\LinkedIn\LinkedInExtendSocialite::class.'@handle',
         ],
     ];
+    
 
     public function boot(): void
     {

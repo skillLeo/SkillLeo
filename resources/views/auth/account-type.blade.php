@@ -51,12 +51,13 @@
                     </li>
                 </ul>
 
-                <button type="button" class="account-type-btn" data-redirect="{{ route('tenant.onboarding.welcome') }}">
+                <button type="button" class="account-type-btn" data-type="freelancer" data-redirect="{{ route('tenant.onboarding.welcome') }}">
                     <span>Continue as Professional</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </button>
+                
 
                 <div class="account-type-badge">Most popular</div>
             </div>
@@ -100,7 +101,7 @@
                     </li>
                 </ul>
 
-                <button type="button" class="account-type-btn" data-redirect="{{ route('client.onboarding.info') }}">
+                <button type="button" class="account-type-btn" data-type="client" data-redirect="{{ route('client.onboarding.info') }}">
                     <span>Continue as Client</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -273,25 +274,90 @@
         padding: var(--space-lg);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+.form-card{
+    background: var(--card);
+}
+
+
+
+
+/* === Widen the content area (page level) === */
+.onboarding-content,
+.form-card {
+  max-width: 1200px !important;      /* was 640/740 */
+  width: min(1200px, 100% - 64px) !important;
+  margin-inline: auto !important;
+}
+
+/* === Widen this page's section === */
+.account-type-wrapper {
+  max-width: 1120px !important;
+  margin-inline: auto !important;
+}
+
+/* === Stable grid: 1 col mobile -> 2 cols desktop === */
+.account-type-grid {
+  display: grid !important;
+  grid-template-columns: 1fr;         /* mobile */
+  gap: 40px !important;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .account-type-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-content: center;
+  }
+}
+
+/* remove any previous flex/width that forces full rows */
+.account-type-card {
+  max-width: none !important;
+  flex: initial !important;
+}
+
 </style>
 @endpush
-
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const cards = document.querySelectorAll('.account-type-card');
-    
+
     cards.forEach(card => {
-        const btn = card.querySelector('.account-type-btn');
-        
-        card.addEventListener('click', function(e) {
-            if (e.target.closest('.account-type-btn')) return;
-            btn.click();
-        });
-        
-        btn.addEventListener('click', function() {
-            const redirect = this.getAttribute('data-redirect');
-            if (redirect) window.location.href = redirect;
+        card.addEventListener('click', async function () {
+            const type = card.dataset.type;
+
+            try {
+                const res = await fetch("{{ route('auth.select-account-type') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({ type })
+                });
+
+                if (res.redirected) {
+                    window.location.href = res.url;
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    console.error('Unexpected response:', data);
+                }
+            } catch (err) {
+                console.error('Error selecting account type:', err);
+            }
         });
     });
 });

@@ -8,10 +8,18 @@ use Illuminate\Support\Facades\Session;
 
 class OnboardingController extends Controller
 {
-    // public function profile()
-    // {
-    //     return view('tenant.profile.index');
-    // }
+     
+
+
+
+
+
+
+
+
+
+
+
 
 
     public function profile()
@@ -214,7 +222,6 @@ class OnboardingController extends Controller
     public function storepublish()
     {
         return view('tenant.onboarding.publish');
-        // Session::forget('tenant.onboarding');
-        // return redirect()->route('tenant.dashboard')->with('success', 'Profile created successfully!');
+    
     }
 }

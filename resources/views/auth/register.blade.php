@@ -173,16 +173,7 @@
                     });
                     </script>
                   
-                    {{-- If you have two audience types, keep it. If not, set a hidden default. --}}
-                    <div class="form-group">
-                      <label class="form-label">Account type</label>
-                      <div>
-                        <label><input type="radio" name="intent" value="professional" {{ old('intent','professional')==='professional'?'checked':'' }}> Professional</label>
-                        <label class="ms-3"><input type="radio" name="intent" value="client" {{ old('intent')==='client'?'checked':'' }}> Client</label>
-                      </div>
-                      @error('intent')<small class="text-danger">{{ $message }}</small>@enderror
-                    </div>
-                    {{-- Or: <input type="hidden" name="intent" value="professional"> --}}
+              
                   
                     <div class="checkbox-group">
                       <input

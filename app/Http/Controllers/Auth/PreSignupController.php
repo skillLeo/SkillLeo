@@ -17,116 +17,64 @@ use Illuminate\Support\Str;
 
 class PreSignupController extends Controller
 {
+    
+    
     public function __construct(protected AuthService $authService) {}
 
-    public function sendLink(Request $request)
-    {
-        Log::info('Registration started', ['email' => $request->email]);
+public function sendLink(Request $request)
+{
+    $data = $request->validate([
+        'name'     => ['required','string','max:120'],
+        'email'    => ['required','email','max:255'],
+        'password' => ['required', Password::min(8)],
+    ]);
 
-        // Validate
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', Password::min(8)],
-            'intent' => ['required', 'in:professional,client'],
-        ]);
+    $data['email'] = strtolower(trim($data['email']));
 
-        $data['email'] = strtolower(trim($data['email']));
+    $token = (string) Str::uuid();
 
-        // Check if user exists
-        $existing = User::whereRaw('LOWER(email) = ?', [$data['email']])->first();
+    Cache::put("signup:{$token}", [
+        'name'     => $data['name'],
+        'email'    => $data['email'],
+        'password' => $data['password'], // will be hashed later
+        'ip'       => $request->ip(),
+        'ua'       => (string) $request->userAgent(),
+    ], now()->addMinutes(60));
 
-        if ($existing) {
-            Log::info('User exists, redirecting to account-exists');
-            
-            $hasPassword = !empty($existing->password);
-            $providers = method_exists($existing, 'oauthIdentities')
-                ? $existing->oauthIdentities()->pluck('provider')->toArray()
-                : [];
+    $url = URL::temporarySignedRoute('register.confirm', now()->addMinutes(60), ['token' => $token]);
 
-            return redirect()->route('register.existing', [
-                'email' => $data['email'],
-                'masked' => $this->maskEmail($data['email']),
-                'hasPassword' => $hasPassword ? '1' : '0',
-                'providers' => implode(',', $providers),
-            ])->withInput(['email' => $data['email']]);
-        }
+    Mail::to($data['email'])->send(new SignupLinkMail($data['name'], $url));
 
-        // Create token and cache payload
-        $token = (string) Str::uuid();
+    $request->session()->put('signup_token', $token);
+    $request->session()->put('signup_email', $data['email']);
 
-        $payload = [
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'], // plain, will be hashed by AuthService
-            'intent' => $data['intent'],
-            'tenant_name' => $data['name'],
-            'ip' => $request->ip(),
-            'ua' => (string) $request->userAgent(),
-        ];
+    return redirect()->route('verification.notice')
+        ->with('status', 'We emailed you a secure link to create your account.');
+}
 
-        Cache::put("signup:{$token}", $payload, now()->addMinutes(60));
-        Log::info('Token cached', ['token' => $token]);
-
-        // Create signed URL
-        $url = URL::temporarySignedRoute(
-            'register.confirm',
-            now()->addMinutes(60),
-            ['token' => $token]
-        );
-
-        // Send email
-        Mail::to($payload['email'])->send(new SignupLinkMail($payload['name'], $url));
-        Log::info('Registration email sent');
-
-        // Store in session
-        $request->session()->put('signup_token', $token);
-        $request->session()->put('signup_email', $payload['email']);
-
-        return redirect()
-            ->route('verification.notice')
-            ->with('status', 'We emailed you a secure link to create your account.');
+public function confirm(Request $request, string $token)
+{
+    $payload = Cache::pull("signup:{$token}");
+    if (! $payload) {
+        return redirect('/login')->withErrors(['link' => 'This link is invalid or has expired.']);
     }
 
-    public function confirm(Request $request, string $token)
-    {
-        $cacheKey = "signup:{$token}";
-        $payload = Cache::pull($cacheKey);
-
-        if (!$payload) {
-            return redirect('/login')->withErrors(['link' => 'This link is invalid or has expired.']);
-        }
-
-        // Check if user already exists
-        if (User::where('email', $payload['email'])->exists()) {
-            return redirect('/login')->with('status', 'Your account is already set up. Please sign in.');
-        }
-
-        // Create user
-        $user = DB::transaction(function () use ($payload) {
-            $user = $this->authService->registerEmail([
-                'name' => $payload['name'],
-                'email' => $payload['email'],
-                'password' => $payload['password'],
-                'intent' => $payload['intent'],
-                'tenant_name' => $payload['tenant_name'],
-            ]);
-
-            $user->forceFill(['email_verified_at' => now()])->save();
-
-            return $user;
-        });
-
-        // Login user
-        Auth::login($user, true);
-        $this->authService->recordLogin(
-            $user,
-            $payload['ip'] ?? $request->ip(),
-            $payload['ua'] ?? $request->userAgent()
-        );
-
-        return redirect('/account-type')->with('status', 'Your account is ready. Welcome!');
+    if (\App\Models\User::where('email', $payload['email'])->exists()) {
+        return redirect('/login')->with('status', 'Your account is already set up. Please sign in.');
     }
+
+    $user = DB::transaction(function () use ($payload) {
+        $user = $this->authService->registerEmail($payload);
+        $user->forceFill(['email_verified_at' => now()])->save();
+        return $user;
+    });
+
+    if ($user->account_status === 'pending_onboarding' || !$user->is_profile_complete==='start') {
+        return redirect()->route('auth.account-type')->with('status', 'Welcome! Please complete your onboarding.');
+    }
+    
+    return redirect()->intended(route('tenant.profile'));  
+}
 
     private function maskEmail(string $email): string
     {

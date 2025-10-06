@@ -16,15 +16,18 @@ return new class extends Migration
             $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name')->nullable();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password')->nullable();
             $table->string('avatar_url')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            
+            $table->string('password')->nullable();
             $table->string('username', 50)->nullable()->unique();
             $table->string('locale', 12)->default('en');
             $table->string('timezone', 64)->default('UTC');
-            $table->string('status', 24)->default('active');
-            $table->boolean('is_profile_complete')->default(false);
-            $table->string('intent', 24)->nullable(); // professional|client|super_admin
+            $table->string('is_active', 24)->default('active');
+            $table->string('account_status')
+            ->default('pending_onboarding')
+            ->comment('pending_onboarding, onboarding_incomplete, onboarded, suspended');
+            $table->string('is_profile_complete')->default('start');
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
             $table->unsignedInteger('login_count')->default(0);

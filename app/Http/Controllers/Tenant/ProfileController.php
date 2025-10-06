@@ -17,9 +17,8 @@ class ProfileController extends Controller
     {
         // Find user by username
         $user = User::where('username', $username)
-            ->where('intent', 'professional')
-            ->where('is_profile_complete', true)
-            ->where('status', 'active')
+            ->where('is_profile_complete', 'completed')
+            ->where('is_active', 'active')
             ->firstOrFail();
 
         // Load relationships if needed
@@ -41,9 +40,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if ($user->intent !== 'professional') {
-            abort(403, 'Only professionals can edit tenant profiles.');
-        }
+      
 
         return view('tenant.profile.edit', [
             'user' => $user,
@@ -57,9 +54,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if ($user->intent !== 'professional') {
-            abort(403);
-        }
+      
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],

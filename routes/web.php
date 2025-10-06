@@ -14,15 +14,21 @@ use App\Http\Controllers\Auth\{
 use App\Http\Controllers\Tenant\{
     OnboardingController as TenantOnboardingController,
     ProfileController as TenantProfileController,
-    DashboardController as TenantDashboardController
 };
 use App\Http\Controllers\Client\{
     OnboardingController as ClientOnboardingController,
-    DashboardController as ClientDashboardController
 };
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Settings\ConnectedAccountsController;
 
+
+
+
+
+
+Route::post('/auth/select-account-type', [AuthController::class, 'selectAccountType'])
+    ->middleware('auth')
+    ->name('auth.select-account-type');
+    
 /*
 |--------------------------------------------------------------------------
 | Public Routes - Landing & Marketing
@@ -45,7 +51,7 @@ Route::prefix('marketing')->name('marketing.')->group(function() {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function() {
+// Route::middleware('guest')->group(function() {
     
     // Login
     Route::get('login', [AuthController::class, 'loginshow'])->name('login');
@@ -54,44 +60,54 @@ Route::middleware('guest')->group(function() {
     // Registration
     Route::get('register', [RegisterController::class, 'register'])->name('register');
     Route::post('register', [PreSignupController::class, 'sendLink'])
-        ->middleware('throttle:6,1')
+        
         ->name('register.submit');
     Route::get('register/confirm/{token}', [PreSignupController::class, 'confirm'])
-        ->middleware('signed')
+        
         ->name('register.confirm');
     Route::get('register/existing', [RegisterController::class, 'existing'])
         ->name('register.existing');
     Route::post('register/resend', [PreSignupController::class, 'resend'])
-        ->middleware('throttle:3,1')
         ->name('register.resend');
     
     // Email Verification (Guest can access)
     Route::get('email/verify', [EmailVerificationController::class, 'notice'])
         ->name('verification.notice');
     Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware('signed')
         ->name('verification.verify');
     Route::post('email/resend', [EmailVerificationController::class, 'resend'])
-        ->middleware('throttle:5,1')
         ->name('verification.resend');
     
     // OTP Verification
     Route::get('otp', [OtpController::class, 'show'])->name('otp.show');
     Route::post('otp/verify', [OtpController::class, 'verify'])
-        ->middleware('throttle:5,10')
         ->name('otp.verify');
     Route::post('otp/resend', [OtpController::class, 'resend'])
-        ->middleware('throttle:1,2')
         ->name('otp.resend');
     
     // OAuth
-    Route::get('auth/{provider}/redirect', [OAuthController::class, 'redirect'])
-        ->whereIn('provider', ['google', 'github', 'linkedin'])
+ 
+// Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
+// ->whereIn('provider', ['google','github','linkedin'])
+// ->name('oauth.redirect');
+
+// Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
+// ->whereIn('provider', ['google','github','linkedin'])
+// ->name('oauth.callback');
+// });
+
+
+
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
+        ->whereIn('provider', ['google', 'linkedin', 'github'])
         ->name('oauth.redirect');
-    Route::get('auth/{provider}/callback', [OAuthController::class, 'callback'])
-        ->whereIn('provider', ['google', 'github', 'linkedin'])
+
+    Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])
+        ->whereIn('provider', ['google', 'linkedin', 'github'])
         ->name('oauth.callback');
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -99,7 +115,7 @@ Route::middleware('guest')->group(function() {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function() {
+// Route::middleware('auth')->group(function() {
     
     // Account type selection (after registration)
     Route::get('account-type', [GatewayController::class, 'accountType'])
@@ -120,17 +136,7 @@ Route::middleware('auth')->group(function() {
         Route::delete('connected-accounts/{provider}', [ConnectedAccountsController::class, 'unlink'])
             ->name('connected-accounts.unlink');
     });
-});
-
-/*
-|--------------------------------------------------------------------------
-| Tenant Routes (Freelancers/Professionals)
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:tenant'])->group(function() {
-    
-    // Onboarding Flow
+ 
     Route::prefix('onboarding')->name('tenant.onboarding.')->group(function() {
         Route::get('welcome', [TenantOnboardingController::class, 'welcome'])->name('welcome');
         Route::get('personal', [TenantOnboardingController::class, 'personal'])->name('personal');
@@ -152,18 +158,7 @@ Route::middleware(['auth', 'role:tenant'])->group(function() {
         Route::post('publish', [TenantOnboardingController::class, 'storepublish'])->name('publish.store');
     });
     
-    // Dashboard
-    Route::get('dashboard', [TenantDashboardController::class, 'index'])->name('tenant.dashboard');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Client Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:client'])->group(function() {
-    
+ 
     // Onboarding Flow
     Route::prefix('onboarding')->name('client.onboarding.')->group(function() {
         Route::get('info', [ClientOnboardingController::class, 'info'])->name('info');
@@ -178,28 +173,6 @@ Route::middleware(['auth', 'role:client'])->group(function() {
         Route::post('publish', [ClientOnboardingController::class, 'publish'])->name('publish');
     });
     
-    // Dashboard
-    Route::get('dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Super Admin Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function() {
-    Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    // Add more admin routes here
-});
-
-/*
-|--------------------------------------------------------------------------
-| Public Profile Routes (Username-based)
-|--------------------------------------------------------------------------
-| These must be at the end to avoid conflicts
-*/
-
 Route::get('{username}', [TenantProfileController::class, 'show'])
     ->where('username', '[a-zA-Z0-9_-]+')
     ->name('profile.show');
