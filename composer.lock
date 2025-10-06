@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6e95dae058c81b5e42786423996cd8b",
+    "content-hash": "f5c5755904421c881b49aedd8b0df9b7",
     "packages": [
         {
             "name": "brick/math",
@@ -4340,56 +4340,6 @@
                 "source": "https://github.com/SocialiteProviders/Google-Plus/tree/4.1.0"
             },
             "time": "2020-12-01T23:10:59+00:00"
-        },
-        {
-            "name": "socialiteproviders/linkedin",
-            "version": "5.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/SocialiteProviders/LinkedIn.git",
-                "reference": "963ae7908116215eb470c3751c41fab04b01ed05"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/SocialiteProviders/LinkedIn/zipball/963ae7908116215eb470c3751c41fab04b01ed05",
-                "reference": "963ae7908116215eb470c3751c41fab04b01ed05",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "php": "^8.0",
-                "socialiteproviders/manager": "^4.4"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "SocialiteProviders\\LinkedIn\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Brian Faust",
-                    "email": "hello@brianfaust.de"
-                }
-            ],
-            "description": "LinkedIn OAuth2 Provider for Laravel Socialite",
-            "keywords": [
-                "laravel",
-                "linkedin",
-                "oauth",
-                "provider",
-                "socialite"
-            ],
-            "support": {
-                "docs": "https://socialiteproviders.com/linkedin",
-                "issues": "https://github.com/socialiteproviders/providers/issues",
-                "source": "https://github.com/socialiteproviders/providers"
-            },
-            "time": "2024-11-27T10:35:28+00:00"
         },
         {
             "name": "socialiteproviders/manager",

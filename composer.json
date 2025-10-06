@@ -18,7 +18,6 @@
         "predis/predis": "^3.2",
         "socialiteproviders/github": "^4.1",
         "socialiteproviders/google": "^4.1",
-        "socialiteproviders/linkedin": "^5.0",
         "spatie/laravel-permission": "^6.21",
         "stancl/tenancy": "^3.9"
     },

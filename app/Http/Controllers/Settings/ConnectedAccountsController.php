@@ -18,13 +18,13 @@ class ConnectedAccountsController extends Controller
             ->orderBy('provider')->get()
             ->groupBy('provider');
 
-            $providers = ['google','linkedin','github'];
-        return view('settings.connected-accounts', compact('linked','providers'));
+            $providers = ['google','linkedin-openid','github'];
+            return view('settings.connected-accounts', compact('linked','providers'));
     }
 
     public function startLink(Request $request, string $provider)
     {
-        abort_unless(in_array($provider, ['google','linkedin','github']), 404);
+        abort_unless(in_array($provider, ['google','linkedin-openid','github']), 404);
         // Flag the OAuth flow as "linking"
         $request->session()->put('oauth.mode', 'link');
         $request->session()->put('oauth.link.user_id', $request->user()->id);
@@ -34,7 +34,7 @@ class ConnectedAccountsController extends Controller
 
     public function unlink(Request $request, string $provider)
     {
-        abort_unless(in_array($provider, ['google','linkedin','github']), 404);
+        abort_unless(in_array($provider, ['google','linkedin-openid','github']), 404);
         $request->user()->oauthIdentities()
             ->where('provider', $provider)
             ->delete();

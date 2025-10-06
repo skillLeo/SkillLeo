@@ -23,18 +23,24 @@ class OAuthController extends Controller
 
 
 
-    private array $providers = ['google', 'linkedin', 'github'];
+
+    private array $providers = ['google', 'linkedin-openid', 'github'];  // ← Use 'linkedin-openid'
 
     public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, $this->providers, true), 404);
+    
         $driver = $this->driver($provider, $request);
-        if ($provider === 'linkedin') {
-            $driver->scopes(['profile', 'email', 'openid']);
-        }
-
+        
+        // DEBUG
+        Log::info('OAuth Redirect', [
+            'provider' => $provider,
+            'redirect_url' => $this->callbackUrl($provider),
+        ]);
+        
         return $driver->redirect();
     }
+ 
 
     public function callback(Request $request, string $provider)
     {
@@ -195,7 +201,7 @@ class OAuthController extends Controller
         $driver->redirectUrl($this->callbackUrl($provider));
 
         // LinkedIn requires state parameter - don't use stateless mode
-        if ($provider === 'linkedin') {
+        if ($provider === 'linkedin-openid') {
             // LinkedIn MUST use stateful mode
             return $driver;
         }

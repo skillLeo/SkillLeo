@@ -8,10 +8,6 @@ use SocialiteProviders\Manager\SocialiteWasCalled;
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
-        SocialiteWasCalled::class => [
-            \SocialiteProviders\GitHub\GitHubExtendSocialite::class.'@handle',
-            \SocialiteProviders\Google\GoogleExtendSocialite::class.'@handle',
-            \SocialiteProviders\LinkedIn\LinkedInExtendSocialite::class.'@handle',
-        ],
+        // Remove all SocialiteProviders listeners - not needed for built-in drivers
     ];
 }
