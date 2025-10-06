@@ -36,14 +36,14 @@ class PreSignupController extends Controller
             'ua'       => (string) $request->userAgent(),
         ], now()->addMinutes(60));
 
-        $url = URL::temporarySignedRoute('register.confirm', now()->addMinutes(60), ['token' => $token]);
+        $url = URL::temporarySignedRoute('auth.register.confirm', now()->addMinutes(60), ['token' => $token]);
 
         Mail::to($data['email'])->send(new SignupLinkMail($data['name'], $url));
 
         $request->session()->put('signup_token', $token);
         $request->session()->put('signup_email', $data['email']);
 
-        return redirect()->route('verification.notice')
+        return redirect()->route('auth.verification.notice')
             ->with('status', 'We emailed you a secure link to create your account.');
     }
 

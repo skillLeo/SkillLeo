@@ -10,7 +10,7 @@
       <div style="margin:12px 0;color:green;">{{ session('status') }}</div>
     @endif
 
-    <form method="POST" action="{{ route('verification.resend') }}" style="margin-top:12px;">
+    <form method="POST" action="{{ route('auth.verification.resend') }}" style="margin-top:12px;">
       @csrf
       <button class="btn btn-secondary" type="submit">Resend verification email</button>
     </form>
