@@ -20,8 +20,6 @@ class OAuthController extends Controller
 {
 
 
- 
-    
 
 
 
@@ -194,28 +192,24 @@ class OAuthController extends Controller
 
     /* ---------------------- helpers ---------------------- */
 
-private function driver(string $provider)
-{
-    // Socialite driver name
-    $driverName = $provider === 'linkedin-openid' ? 'linkedin' : $provider;
+    private function driver(string $provider, Request $request)
+    {
+        $driver = Socialite::driver($provider);
 
-    $driver = Socialite::driver($driverName);
+        // Ensure redirect URL matches the current host
+        $driver->redirectUrl($this->callbackUrl($provider));
 
-    // Use the redirect configured under the CANONICAL key (linkedin-openid)
-    $driver->redirectUrl($this->callbackUrl($provider));
+        if ($provider === 'linkedin-openid') {
+            return $driver;
+        }
 
-    if ($provider === 'linkedin-openid') {
-        $driver->scopes(config('services.linkedin-openid.scopes', ['openid','profile','email']));
-        // keep stateful (do NOT call stateless())
+        // Other providers can be stateless if configured
+        if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
+            $driver->stateless();
+        }
+
         return $driver;
     }
-
-    if (filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
-        $driver->stateless();
-    }
-    return $driver;
-}
-
 
     private function callbackUrl(string $provider): string
     {
