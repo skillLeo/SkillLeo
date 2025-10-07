@@ -24,9 +24,9 @@ protected $fillable = [
     'is_active',
     'account_status',
     'is_profile_complete',
-    'country',     // ← add
-    'state',       // ← add
-    'city',        // ← add
+    'country',     
+    'state',       
+    'city',        
     'meta',
 ];
 

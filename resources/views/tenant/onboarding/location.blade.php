@@ -154,505 +154,257 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
 
 @push('scripts')
 <script>
-  
-  // ===============================
-// ProMatch Location - ULTRA FAST Edition
-// Response times: 10-20ms (200x faster!)
-// ===============================
 (() => {
   "use strict";
 
-  // ---------- DOM Elements ----------
+  // ---------- DOM ----------
   const form = document.getElementById('locationForm');
   const countrySelect = document.getElementById('country');
-  const stateSelect = document.getElementById('state');
-  const citySelect = document.getElementById('city');
-  const stateGroup = document.getElementById('stateGroup');
-  const cityGroup = document.getElementById('cityGroup');
+  const stateSelect   = document.getElementById('state');
+  const citySelect    = document.getElementById('city');
+  const stateGroup    = document.getElementById('stateGroup');
+  const cityGroup     = document.getElementById('cityGroup');
 
-  const methodBtns = document.querySelectorAll('.method-btn');
+  const methodBtns    = document.querySelectorAll('.method-btn');
   const manualSection = document.getElementById('manualSection');
-  const gpsSection = document.getElementById('gpsSection');
-  const detectBtn = document.getElementById('detectBtn');
-  const detectedWrap = document.getElementById('detectedLocation');
-  const detectedText = document.getElementById('detectedText');
+  const gpsSection    = document.getElementById('gpsSection');
+  const detectBtn     = document.getElementById('detectBtn');
+  const detectedWrap  = document.getElementById('detectedLocation');
+  const detectedText  = document.getElementById('detectedText');
 
-  const continueBtn = document.getElementById('continueBtn');
-  const btnText = document.getElementById('btnText');
-  const backBtn = document.getElementById('backBtn');
-  const headerProgress = document.getElementById('headerProgress');
-  const stepText = document.getElementById('stepText');
+  const continueBtn   = document.getElementById('continueBtn');
+  const btnText       = document.getElementById('btnText');
+  const headerProgress= document.getElementById('headerProgress');
+  const stepText      = document.getElementById('stepText');
 
-  // ---------- State ----------
-  let selectedLocation = { method: 'manual' };
-  let countriesCache = [];
-  
-  const CURRENT_STEP = 2;
-  const TOTAL_STEPS = 8;
-  const NEXT_STEP_URL = '{{ route("tenant.onboarding.education") }}';
-
-  // ---------- API Functions (Lightning Fast!) ----------
+  // ---------- API (your existing /api/location endpoints) ----------
   const API = {
-    async countries(query = '') {
-      const url = `/api/location/countries${query ? `?q=${encodeURIComponent(query)}` : ''}`;
-      const response = await fetch(url, {
-        headers: { 
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest' 
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch countries');
-      return response.json();
-    },
-
-    async states(country) {
-      const url = `/api/location/states?country=${encodeURIComponent(country)}`;
-      const response = await fetch(url, {
-        headers: { 
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest' 
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch states');
-      return response.json();
-    },
-
-    async cities(country, state) {
-      const url = `/api/location/cities?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}`;
-      const response = await fetch(url, {
-        headers: { 
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest' 
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch cities');
-      return response.json();
-    },
-
-    async reverse(lat, lng) {
-      const url = `/api/location/reverse?lat=${lat}&lng=${lng}`;
-      const response = await fetch(url, {
-        headers: { 
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest' 
-        }
-      });
-      if (!response.ok) throw new Error('Failed to reverse geocode');
-      return response.json();
-    }
+    countries: () => fetchJSON(`/api/location/countries`),                         // [{name}]
+    states:    (countryName) => fetchJSON(`/api/location/states?country=${encodeURIComponent(countryName)}`), // [{name}]
+    cities:    (countryName, stateName) => fetchJSON(`/api/location/cities?country=${encodeURIComponent(countryName)}&state=${encodeURIComponent(stateName)}`),
   };
 
-  // ---------- UI Helpers ----------
-  const setSuccess = (el, on) => el?.classList.toggle('success', !!on);
-  
-  const resetSelect = (sel, placeholder) => {
-    sel.innerHTML = `<option value="">${placeholder}</option>`;
-    sel.disabled = true;
-    sel.classList.remove('success');
-  };
+  // ---------- Utils ----------
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+    return r.json();
+  }
 
-  const showLoading = (sel, text = 'Loading...') => {
-    sel.innerHTML = `<option value="">${text}</option>`;
-    sel.disabled = true;
-  };
+  const resetSelect = (sel, ph) => { sel.innerHTML = `<option value="">${ph}</option>`; sel.disabled = true; sel.classList.remove('success'); };
+  const setSuccess  = (el,on)=> el?.classList?.toggle('success',!!on);
+  const show        = el => el.style.display = 'block';
+  const hide        = el => el.style.display = 'none';
+  const tz          = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; } };
+  const norm        = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 
-  const populateSelect = (sel, items, placeholder) => {
-    sel.innerHTML = `<option value="">${placeholder}</option>`;
-    
-    items.forEach(item => {
-      const option = document.createElement('option');
-      option.value = item.name;
-      option.textContent = item.name;
-      sel.appendChild(option);
+  function selectByText(selectEl, target) {
+    if (!target) return false;
+    const needle = norm(target);
+    const options = Array.from(selectEl.options);
+    // exact first
+    let hit = options.find(o => norm(o.textContent) === needle);
+    if (!hit) hit = options.find(o => norm(o.textContent).includes(needle) || needle.includes(norm(o.textContent)));
+    if (!hit) return false;
+    selectEl.value = hit.value;
+    return true;
+  }
+
+  function updateProgress(step) {
+    const TOTAL = 8;
+    if (headerProgress) headerProgress.style.width = ((step/TOTAL)*100)+'%';
+    if (stepText) stepText.textContent = `Step ${step} of ${TOTAL}`;
+  }
+
+  function validate() {
+    const ok = !!(countrySelect.value && stateSelect.value && citySelect.value);
+    if (continueBtn) continueBtn.disabled = !ok;
+    return ok;
+  }
+
+  function setMethod(method) {
+    methodBtns.forEach(b=>{
+      const act = b.dataset.method === method;
+      b.classList.toggle('active', act);
+      b.setAttribute('aria-pressed', act ? 'true':'false');
     });
-    
-    sel.disabled = items.length === 0;
-  };
-
-  const updateProgress = (step) => {
-    if (headerProgress) {
-      headerProgress.style.width = `${(step / TOTAL_STEPS) * 100}%`;
-    }
-    if (stepText) {
-      stepText.textContent = `Step ${step} of ${TOTAL_STEPS}`;
-    }
-  };
-
-  const validateForm = () => {
-    const isValid = !!(
-      selectedLocation.country && 
-      selectedLocation.state && 
-      selectedLocation.city
-    );
-    if (continueBtn) continueBtn.disabled = !isValid;
-    return isValid;
-  };
-
-  // ---------- Load Countries (Initial Load) ----------
-  const loadCountries = async () => {
-    try {
-      showLoading(countrySelect, 'Loading countries...');
-      
-      const countries = await API.countries();
-      countriesCache = countries;
-
-      // Prioritize popular countries
-      const popular = ['Pakistan', 'United States', 'United Kingdom', 'Canada', 'India'];
-      const popularCountries = countries.filter(c => popular.includes(c.name));
-      const otherCountries = countries.filter(c => !popular.includes(c.name));
-
-      populateSelect(
-        countrySelect, 
-        [...popularCountries, ...otherCountries],
-        'Select your country'
-      );
-
-      countrySelect.disabled = false;
-
-    } catch (error) {
-      console.error('Error loading countries:', error);
-      countrySelect.innerHTML = '<option value="">Error loading countries</option>';
-      countrySelect.disabled = true;
-    }
-  };
-
-  // ---------- Event Handlers ----------
-
-  const handleCountryChange = async () => {
-    const countryName = countrySelect.value;
-
-    // Reset downstream
-    resetSelect(stateSelect, 'Select your state');
-    resetSelect(citySelect, 'Select your city');
-    stateGroup.style.display = 'none';
-    cityGroup.style.display = 'none';
-
-    selectedLocation.country = countryName || null;
-    selectedLocation.state = null;
-    selectedLocation.city = null;
-    
-    setSuccess(countrySelect, !!countryName);
-    setSuccess(stateSelect, false);
-    setSuccess(citySelect, false);
-
-    if (!countryName) {
-      validateForm();
-      return;
-    }
-
-    try {
-      showLoading(stateSelect, 'Loading states...');
-      stateGroup.style.display = 'block';
-
-      const states = await API.states(countryName);
-
-      if (states.length === 0) {
-        stateSelect.innerHTML = '<option value="">No states available</option>';
-        stateSelect.disabled = true;
-        return;
-      }
-
-      populateSelect(stateSelect, states, 'Select your state');
-      stateSelect.disabled = false;
-
-    } catch (error) {
-      console.error('Error loading states:', error);
-      stateSelect.innerHTML = '<option value="">Error loading states</option>';
-    } finally {
-      validateForm();
-    }
-  };
-
-  const handleStateChange = async () => {
-    const stateName = stateSelect.value;
-
-    // Reset downstream
-    resetSelect(citySelect, 'Select your city');
-    cityGroup.style.display = 'none';
-
-    selectedLocation.state = stateName || null;
-    selectedLocation.city = null;
-    
-    setSuccess(stateSelect, !!stateName);
-    setSuccess(citySelect, false);
-
-    if (!stateName || !selectedLocation.country) {
-      validateForm();
-      return;
-    }
-
-    try {
-      showLoading(citySelect, 'Loading cities...');
-      cityGroup.style.display = 'block';
-
-      const cities = await API.cities(selectedLocation.country, stateName);
-
-      if (cities.length === 0) {
-        citySelect.innerHTML = '<option value="">No cities available</option>';
-        citySelect.disabled = true;
-        return;
-      }
-
-      populateSelect(citySelect, cities, 'Select your city');
-      citySelect.disabled = false;
-
-    } catch (error) {
-      console.error('Error loading cities:', error);
-      citySelect.innerHTML = '<option value="">Error loading cities</option>';
-    } finally {
-      validateForm();
-    }
-  };
-
-  const handleCityChange = () => {
-    const cityName = citySelect.value;
-
-    selectedLocation.city = cityName || null;
-    setSuccess(citySelect, !!cityName);
-    
-    validateForm();
-  };
-
-  // ---------- Method Switching ----------
-
-  const setMethod = (method) => {
-    selectedLocation.method = method;
-
-    methodBtns.forEach(btn => {
-      const isActive = btn.dataset.method === method;
-      btn.classList.toggle('active', isActive);
-      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-    });
-
     if (method === 'manual') {
-      manualSection.style.display = 'block';
+      manualSection.style.display='block';
       gpsSection.classList.remove('show');
       detectedWrap.classList.remove('show');
     } else {
-      manualSection.style.display = 'none';
+      manualSection.style.display='none';
       gpsSection.classList.add('show');
     }
+  }
 
-    validateForm();
-  };
+  // ---------- Populate helpers ----------
+  function applyOptions(select, items, ph) {
+    resetSelect(select, ph);
+    items.forEach(({ name }) => {
+      const o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      select.appendChild(o);
+    });
+    select.disabled = items.length === 0;
+  }
 
-  // ---------- GPS Detection ----------
+  async function loadCountries() {
+    resetSelect(countrySelect, 'Loading countries...');
+    const list = await API.countries();
+    // Optional: float popular to top
+    const popular = new Set(['Pakistan','United States','United Kingdom','Canada','India']);
+    const top = list.filter(x => popular.has(x.name));
+    const rest = list.filter(x => !popular.has(x.name)).sort((a,b)=> a.name.localeCompare(b.name));
+    applyOptions(countrySelect, [...top, ...rest], 'Select your country');
+  }
 
-  const handleGPSDetection = async () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
-    }
+  async function onCountryChange() {
+    const country = countrySelect.value || '';
+    setSuccess(countrySelect, !!country);
 
-    // Update button state
-    detectBtn.innerHTML = '<div class="loading-spinner"></div> Detecting...';
+    resetSelect(stateSelect, 'Select your state');
+    resetSelect(citySelect,  'Select your city');
+    hide(cityGroup);
+
+    if (!country) { stateGroup.style.display='none'; validate(); return; }
+
+    stateGroup.style.display='block';
+    stateSelect.innerHTML = `<option value="">Loading states...</option>`;
+    const rows = await API.states(country);
+    applyOptions(stateSelect, rows, 'Select your state');
+    validate();
+  }
+
+  async function onStateChange() {
+    const country = countrySelect.value || '';
+    const state = stateSelect.value || '';
+    setSuccess(stateSelect, !!state);
+
+    resetSelect(citySelect, 'Select your city');
+    hide(cityGroup);
+    if (!country || !state) { validate(); return; }
+
+    cityGroup.style.display='block';
+    citySelect.innerHTML = `<option value="">Loading cities...</option>`;
+    const rows = await API.cities(country, state);
+    applyOptions(citySelect, rows, 'Select your city');
+    validate();
+  }
+
+  function onCityChange() {
+    setSuccess(citySelect, !!citySelect.value);
+    validate();
+  }
+
+  // ---------- ENGLISH reverse-geocode (fixes Urdu) ----------
+  async function reverseEnglish(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1&accept-language=en`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } }); // header + query both
+    if (!res.ok) throw new Error('Reverse geocode failed');
+    const data = await res.json();
+    const a = data.address || {};
+    const english = {
+      country: a.country || '',
+      country_code: (a.country_code || '').toUpperCase(),
+      state: a.state || a.region || a.province || a.state_district || '',
+      city: a.city || a.town || a.village || a.municipality || a.county || ''
+    };
+    return { english, raw: data };
+  }
+
+  // ---------- GPS flow (English only) ----------
+  async function detectLocation() {
+    if (!navigator.geolocation) return alert('Geolocation not supported');
+
     detectBtn.disabled = true;
-
+    detectBtn.innerHTML = '<div class="loading-spinner"></div> Detecting...';
     try {
-      // Get GPS coordinates
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
-        });
-      });
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 })
+      );
+      const { latitude: lat, longitude: lng } = pos.coords || {};
 
-      const { latitude, longitude } = position.coords;
+      // Force English results
+      const { english, raw } = await reverseEnglish(lat, lng);
 
-      // Reverse geocode to get location
-      const result = await API.reverse(latitude, longitude);
+      // Build clean JSON payload (English)
+      const payload = {
+        coords: { lat, lng },
+        timezone: tz(),
+        country: { name: english.country, iso2: english.country_code },
+        state:   { name: english.state },
+        city:    { name: english.city },
+        source:  'nominatim',
+        raw
+      };
 
-      const matched = result.matched || {};
-      const raw = result.raw || {};
+      // Expose JSON for debugging/usage
+      window.__gps_en = payload;
+      try { localStorage.setItem('gps_detected_en', JSON.stringify(payload)); } catch {}
 
-      // Use matched values (from our database) or fall back to raw
-      const country = matched.country || raw.country;
-      const state = matched.state || raw.state;
-      const city = matched.city || raw.city;
-
-      if (!country || !state || !city) {
-        throw new Error('Could not determine exact location');
-      }
-
-      // Update UI
+      // UI feedback
       setMethod('gps');
-      detectedText.textContent = `${city}, ${state}, ${country}`;
+      detectedText.textContent = `${payload.city.name}, ${payload.state.name}, ${payload.country.name}`;
       detectedWrap.classList.add('show');
 
-      // Set selected values
-      selectedLocation.country = country;
-      selectedLocation.state = state;
-      selectedLocation.city = city;
-      selectedLocation.latitude = latitude;
-      selectedLocation.longitude = longitude;
-
-      // Populate dropdowns with detected values
+      // Now populate selects using your existing APIs (already English)
       await loadCountries();
-      
-      if (countrySelect.querySelector(`option[value="${country}"]`)) {
-        countrySelect.value = country;
+      if (selectByText(countrySelect, payload.country.name)) {
         setSuccess(countrySelect, true);
-        await handleCountryChange();
+        await onCountryChange();
       }
 
-      if (stateSelect.querySelector(`option[value="${state}"]`)) {
-        stateSelect.value = state;
+      if (selectByText(stateSelect, payload.state.name)) {
         setSuccess(stateSelect, true);
-        await handleStateChange();
+        await onStateChange();
       }
 
-      if (citySelect.querySelector(`option[value="${city}"]`)) {
-        citySelect.value = city;
+      if (selectByText(citySelect, payload.city.name)) {
         setSuccess(citySelect, true);
-        handleCityChange();
+        onCityChange();
       }
 
-      validateForm();
-
-      // Success feedback
+      validate();
       detectBtn.innerHTML = '✓ Location Detected';
-      setTimeout(() => {
-        detectBtn.innerHTML = 'Detect My Location';
-      }, 3000);
+      setTimeout(()=> detectBtn.textContent = 'Detect My Location', 2000);
 
-    } catch (error) {
-      console.error('GPS detection error:', error);
-
-      let message = 'Unable to detect location. Please select manually.';
-
-      if (error.code === 1) {
-        message = 'Location permission denied. Please allow location access or select manually.';
-      } else if (error.code === 2) {
-        message = 'Location unavailable. Please check your GPS settings or select manually.';
-      } else if (error.code === 3) {
-        message = 'Location request timed out. Please try again or select manually.';
-      }
-
-      alert(message);
-      detectBtn.innerHTML = 'Detect My Location';
-
+    } catch (err) {
+      console.error(err);
+      alert('Unable to detect location in English. Please select manually.');
+      detectBtn.textContent = 'Detect My Location';
     } finally {
       detectBtn.disabled = false;
     }
-  };
+  }
 
-  // ---------- Event Listeners ----------
-
-  methodBtns.forEach(btn => {
-    btn.addEventListener('click', () => setMethod(btn.dataset.method));
-  });
-
-  countrySelect.addEventListener('change', handleCountryChange);
-  stateSelect.addEventListener('change', handleStateChange);
-  citySelect.addEventListener('change', handleCityChange);
-  detectBtn.addEventListener('click', handleGPSDetection);
-
-  // Keyboard navigation
-  [countrySelect, stateSelect, citySelect].forEach(select => {
-    select.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (validateForm()) {
-          form.requestSubmit();
-        }
-      }
-    });
-  });
-
-  // ---------- Form Submission ----------
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      alert('Please complete all location fields');
-      return;
-    }
-
-    // Add timezone
-    try {
-      selectedLocation.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch {
-      selectedLocation.timezone = 'UTC';
-    }
-
-    // Save to localStorage
-    try {
-      localStorage.setItem('onboarding_location', JSON.stringify(selectedLocation));
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error);
-    }
-
-    // Update UI
+  // ---------- Submit ----------
+  form.addEventListener('submit', (e)=>{
+    if (!validate()) { e.preventDefault(); return; }
     if (btnText) btnText.innerHTML = '<div class="loading-spinner"></div>';
     if (continueBtn) continueBtn.disabled = true;
-
-    updateProgress(CURRENT_STEP + 1);
-
-    // Submit form
-    setTimeout(() => {
-      form.submit();
-    }, 300);
+    if (headerProgress && stepText) {
+      const NEXT = 3;
+      headerProgress.style.width = ((NEXT/8)*100)+'%';
+      stepText.textContent = `Step ${NEXT} of 8`;
+    }
   });
 
-  // ---------- Initialization ----------
+  // ---------- Events ----------
+  methodBtns.forEach(btn => btn.addEventListener('click', ()=> setMethod(btn.dataset.method)));
+  if (detectBtn) detectBtn.addEventListener('click', detectLocation);
+  countrySelect.addEventListener('change', onCountryChange);
+  stateSelect.addEventListener('change', onStateChange);
+  citySelect.addEventListener('change', onCityChange);
 
-  const init = async () => {
-    updateProgress(CURRENT_STEP);
+  // ---------- Boot ----------
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    updateProgress(2);
     setMethod('manual');
-
-    // Reset selects
     resetSelect(stateSelect, 'Select your state');
-    resetSelect(citySelect, 'Select your city');
-
-    // Load countries (cached, super fast!)
+    resetSelect(citySelect,  'Select your city');
     await loadCountries();
-
-    // Try to restore from localStorage
-    try {
-      const saved = localStorage.getItem('onboarding_location');
-      if (saved) {
-        const data = JSON.parse(saved);
-
-        if (data.method === 'gps' && data.country && data.state && data.city) {
-          setMethod('gps');
-          selectedLocation = data;
-          
-          detectedText.textContent = `${data.city}, ${data.state}, ${data.country}`;
-          detectedWrap.classList.add('show');
-
-          // Populate selects
-          if (countrySelect.querySelector(`option[value="${data.country}"]`)) {
-            countrySelect.value = data.country;
-            setSuccess(countrySelect, true);
-            await handleCountryChange();
-
-            if (stateSelect.querySelector(`option[value="${data.state}"]`)) {
-              stateSelect.value = data.state;
-              setSuccess(stateSelect, true);
-              await handleStateChange();
-
-              if (citySelect.querySelector(`option[value="${data.city}"]`)) {
-                citySelect.value = data.city;
-                setSuccess(citySelect, true);
-                handleCityChange();
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to restore from localStorage:', error);
-    }
-  };
-
-  // Start when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  });
 })();
 </script>
 @endpush

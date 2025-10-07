@@ -4,9 +4,10 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
  
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
 
@@ -116,46 +117,53 @@ class OnboardingController extends Controller
 
 
 public function storeLocation(Request $request)
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    // Validate minimal strong inputs. We accept ISO2 country code and state/city IDs.
-    $data = $request->validate([
-        'country'       => ['required','string','size:2'],     // ISO2 code (e.g. US, PK)
-        'state_id'      => ['required','integer'],
-        'city_id'       => ['required','integer'],
+        // Validate and normalize inputs coming from manual select OR GPS flow
+        $data = $request->validate([
+            'country'        => ['required','string','max:120'],
+            'state'          => ['required','string','max:120'],
+            'city'           => ['required','string','max:120'],
+            'timezone'       => ['nullable','string','max:64'],
+            'coords.lat'     => ['nullable','numeric'],
+            'coords.lng'     => ['nullable','numeric'],
+            'source'         => ['nullable','in:manual,nominatim,gps'], // optional telemetry
+        ]);
 
-        // Friendly names come from hidden inputs (populated in JS before submit)
-        'country_name'  => ['nullable','string','max:120'],
-        'state_name'    => ['nullable','string','max:120'],
-        'city_name'     => ['nullable','string','max:120'],
-    ]);
+        // tidy/case – keep readable names
+        $country = Str::of($data['country'])->trim()->substr(0,120)->value();
+        $state   = Str::of($data['state'])->trim()->substr(0,120)->value();
+        $city    = Str::of($data['city'])->trim()->substr(0,120)->value();
 
-    // Decide what to store in users table (you currently have string columns)
-    // We'll store human-friendly names when provided, and also tuck codes/ids in meta.
-    $countryName = $data['country_name'] ?: $data['country'];
-    $stateName   = $data['state_name']   ?: (string) $data['state_id'];
-    $cityName    = $data['city_name']    ?: (string) $data['city_id'];
-
-    $user->forceFill([
-        'country'             => $countryName,
-        'state'               => $stateName,
-        'city'                => $cityName,
-        'is_profile_complete' => 'skills',
-        'meta' => array_merge($user->meta ?? [], [
-            'location' => [
-                'country_code' => strtoupper($data['country']),
-                'state_id'     => (int) $data['state_id'],
-                'city_id'      => (int) $data['city_id'],
+        // merge location telemetry into meta without nuking other keys
+        $meta = $user->meta ?? [];
+        $meta['location'] = [
+            'country' => $country,
+            'state'   => $state,
+            'city'    => $city,
+            'coords'  => [
+                'lat' => Arr::get($data, 'coords.lat'),
+                'lng' => Arr::get($data, 'coords.lng'),
             ],
-        ]),
-    ])->save();
+            'source'  => $request->input('source', 'manual'),
+        ];
 
-    return redirect()
-        ->route('tenant.onboarding.skills')
-        ->with('status', 'Location saved. Let’s add your skills.');
-}
+        $user->forceFill([
+            'country'             => $country,
+            'state'               => $state,
+            'city'                => $city,
+            // keep existing timezone unless a valid one is posted
+            'timezone'            => $data['timezone'] ?? $user->timezone,
+            // advance to next stage
+            'is_profile_complete' => 'skills',
+            'meta'                => $meta,
+        ])->save();
 
+        return redirect()
+            ->route('tenant.onboarding.skills')
+            ->with('status', 'Location saved. Let’s add your skills.');
+    }
 
 
 
