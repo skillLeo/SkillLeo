@@ -13,9 +13,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
+use App\Services\Auth\AuthRedirectService;
 
 class OAuthController extends Controller
 {
+    public function __construct(protected AuthRedirectService $redirects) {}
+
     // What Socialite actually supports (drivers)
     private const DRIVER_PROVIDERS = ['google', 'github', 'linkedin-openid'];
 
@@ -29,10 +32,8 @@ class OAuthController extends Controller
 
     public function redirect(Request $request, string $provider)
     {
-        // Validate the URL param
         abort_unless(in_array($provider, self::URL_PROVIDERS, true), 404);
 
-        // Map to the actual Socialite driver
         $driverName = $this->asDriver($provider);
         abort_unless(in_array($driverName, self::DRIVER_PROVIDERS, true), 404);
 
@@ -63,7 +64,6 @@ class OAuthController extends Controller
         }
 
         try {
-            // IMPORTANT: use $driverName, not $provider
             $social = $this->driver($driverName, $request)->user();
 
             $providerUid = (string) ($social->getId() ?? '');
@@ -153,8 +153,8 @@ class OAuthController extends Controller
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            // your onboarding redirects...
-            return redirect()->route('tenant.profile', ['username' => $user->username]);
+            // 🔁 Unified redirect logic (works for both new + existing users)
+            return redirect()->to($this->redirects->url($user));
 
         } catch (\Exception $e) {
             Log::error("OAuth Callback Error - {$driverName}", ['error' => $e->getMessage()]);
@@ -166,12 +166,8 @@ class OAuthController extends Controller
     private function driver(string $driverName, Request $request)
     {
         $driver = Socialite::driver($driverName);
-
-        // Use the service config redirect for the *driver* name.
-        // For linkedin-openid this reads config('services.linkedin-openid.redirect')
         $driver->redirectUrl($this->callbackUrl($driverName));
 
-        // Keep LinkedIn stateful (recommended). Others can be stateless if you want.
         if ($driverName !== 'linkedin-openid' && filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
             $driver->stateless();
         }
@@ -181,17 +177,12 @@ class OAuthController extends Controller
 
     private function callbackUrl(string $driverName): string
     {
-        // Reads config/services.php by *driver* key
         $configured = config("services.$driverName.redirect");
         if ($configured) {
             return $configured;
         }
-        // Fallback
         return rtrim(config('app.url'), '/') . "/auth/{$driverName}/callback";
     }
-
-    // ... keep the rest of your helpers as-is ...
-
 
     private function normalizedEmail(string $provider, SocialiteUser $s): ?string
     {
@@ -209,14 +200,12 @@ class OAuthController extends Controller
 
         $raw = $s->user ?? [];
 
-        // Try new OpenID Connect format
         if (isset($raw['name'])) {
             return $raw['name'];
         }
 
-        // Try older format
         $first = $raw['given_name'] ?? $raw['localizedFirstName'] ?? null;
-        $last = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
+        $last  = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
 
         return trim(($first ?: '') . ' ' . ($last ?: '')) ?: null;
     }

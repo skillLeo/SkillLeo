@@ -1,7 +1,9 @@
 <?php
 
 return [
-
+    'nominatim' => [
+        'email' => env('NOMINATIM_EMAIL', 'support@example.com'), // used in User-Agent
+    ],
  
     'google' => [
         'client_id'     => env('GOOGLE_CLIENT_ID'),

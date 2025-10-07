@@ -230,7 +230,7 @@
       
                   <!-- Footer -->
                   <div class="auth-footer">
-                      Already have an account? <a href="{{route('auth.register')}}">Log in</a>
+                      Already have an account? <a href="{{route('auth.login')}}">Log in</a>
                   </div>
               </div>               </div>
             </div>

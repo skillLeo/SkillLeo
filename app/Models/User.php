@@ -10,20 +10,26 @@ class User extends Authenticatable
 {
     use HasApiTokens, Notifiable;
 
-    protected $fillable = [
-        'tenant_id',
-        'name',
-        'email',
-        'password',
-        'avatar_url',
-        'username',
-        'locale',
-        'timezone',
-        'is_active',
-        'account_status', 
-        'is_profile_complete',
-        'meta',
-    ];
+// app/Models/User.php
+protected $fillable = [
+    'tenant_id',
+    'name',
+    'last_name',
+    'email',
+    'password',
+    'avatar_url',
+    'username',
+    'locale',
+    'timezone',
+    'is_active',
+    'account_status',
+    'is_profile_complete',
+    'country',     // ← add
+    'state',       // ← add
+    'city',        // ← add
+    'meta',
+];
+
 
     protected $hidden = ['password','remember_token'];
 

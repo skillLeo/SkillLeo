@@ -14,13 +14,18 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('name')->nullable();
-            $table->string('email')->unique();
-            $table->string('avatar_url')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            
-            $table->string('password')->nullable();
             $table->string('username', 50)->nullable()->unique();
+            $table->string('name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('email')->unique();
+            $table->string('password')->nullable();
+            $table->string('avatar_url')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('country')->nullable();
+            $table->string('state')->nullable();
+            $table->string('city')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+        
             $table->string('locale', 12)->default('en');
             $table->string('timezone', 64)->default('UTC');
             $table->string('is_active', 24)->default('active');

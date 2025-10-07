@@ -19,9 +19,12 @@ class ProfileController extends Controller
 
         $user->load(['tenant']);
 
-        return view('tenant.profile', [
+        return view('tenant.profile.index', [
             'user'    => $user,
             'isOwner' => Auth::check() && Auth::id() === $user->id,
+        ])->with([
+            'brandName'    => 'Codefixxaaaer',
+            'messageCount' => 2,
         ]);
     }
 

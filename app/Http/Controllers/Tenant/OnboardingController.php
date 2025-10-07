@@ -3,12 +3,268 @@
 
 namespace App\Http\Controllers\Tenant;
 
-use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+ 
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
 
 class OnboardingController extends Controller
 {
+
+    public function scratch(Request $request)
+    {
+        $user = $request->user();
+    
+        $user->update([
+            'is_profile_complete' => 'personal',
+        ]);
+    
+        return redirect()
+            ->route('tenant.onboarding.personal')
+            ->with('status', 'Youve started fresh! Please complete your personal details.');
+    }
+    
+
+ 
+    
+    public function storePersonal(Request $request)
+    {
+        $user = $request->user();
+    
+        $data = $request->validate([
+            'first_name' => ['required','string','max:120'],
+            'last_name'  => ['required','string','max:120'],
+            'username'   => [
+                'required','string','min:3','max:50',
+                'regex:/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/',
+                // unique among OTHER users (ignore current user id)
+                'unique:users,username,' . $user->id,
+            ],
+        ]);
+    
+        $user->forceFill([
+            'name'                => $data['first_name'],
+            'last_name'           => $data['last_name'],
+            'username'            => $data['username'],
+            'is_profile_complete' => 'location',  // ➜ next step
+        ])->save();
+    
+        return redirect()->route('tenant.onboarding.location')
+            ->with('status', 'Saved. Continue with your location.');
+    }
+    
+
+    public function checkUsername(Request $request)
+    {
+        $raw = (string) $request->query('username', '');
+        $username = Str::of($raw)
+            ->lower()->ascii()
+            ->replaceMatches('/[^a-z0-9_-]+/', '')
+            ->trim('-_')
+            ->limit(50, '')
+            ->value();
+    
+        if (strlen($username) < 3) {
+            return response()->json([
+                'status' => 'invalid',
+                'error'  => 'At least 3 characters (a-z, 0-9, _ or -).',
+            ], 422);
+        }
+    
+        $selfId = (int) optional($request->user())->id;
+        $owner  = User::select('id')->where('username', $username)->first();
+    
+        if (! $owner) {
+            return response()->json(['status' => 'available', 'username' => $username], 200);
+        }
+    
+        if ($selfId && (int) $owner->id === $selfId) {
+            return response()->json(['status' => 'self', 'username' => $username], 200);
+        }
+    
+        // taken by someone else → find a clean suggestion
+        $base = $username;
+        $candidates = [
+            "{$base}-" . now()->format('Y'),
+            "{$base}-" . random_int(10, 99),
+            "{$base}-" . random_int(100, 999),
+            substr($base, 0, 42) . '-' . random_int(1000, 9999),
+        ];
+    
+        $suggestion = null;
+        foreach ($candidates as $cand) {
+            $cand = Str::of($cand)->lower()->ascii()
+                ->replaceMatches('/[^a-z0-9_-]+/', '')
+                ->trim('-_')->limit(50, '')->value();
+            if (! User::where('username', $cand)->exists()) {
+                $suggestion = $cand;
+                break;
+            }
+        }
+    
+        return response()->json([
+            'status'     => 'taken',
+            'username'   => $username,
+            'suggestion' => $suggestion,
+        ], 409);
+    }
+    
+
+// app/Http/Controllers/Tenant/OnboardingController.php
+
+
+public function storeLocation(Request $request)
+{
+    $user = $request->user();
+
+    // Validate minimal strong inputs. We accept ISO2 country code and state/city IDs.
+    $data = $request->validate([
+        'country'       => ['required','string','size:2'],     // ISO2 code (e.g. US, PK)
+        'state_id'      => ['required','integer'],
+        'city_id'       => ['required','integer'],
+
+        // Friendly names come from hidden inputs (populated in JS before submit)
+        'country_name'  => ['nullable','string','max:120'],
+        'state_name'    => ['nullable','string','max:120'],
+        'city_name'     => ['nullable','string','max:120'],
+    ]);
+
+    // Decide what to store in users table (you currently have string columns)
+    // We'll store human-friendly names when provided, and also tuck codes/ids in meta.
+    $countryName = $data['country_name'] ?: $data['country'];
+    $stateName   = $data['state_name']   ?: (string) $data['state_id'];
+    $cityName    = $data['city_name']    ?: (string) $data['city_id'];
+
+    $user->forceFill([
+        'country'             => $countryName,
+        'state'               => $stateName,
+        'city'                => $cityName,
+        'is_profile_complete' => 'skills',
+        'meta' => array_merge($user->meta ?? [], [
+            'location' => [
+                'country_code' => strtoupper($data['country']),
+                'state_id'     => (int) $data['state_id'],
+                'city_id'      => (int) $data['city_id'],
+            ],
+        ]),
+    ])->save();
+
+    return redirect()
+        ->route('tenant.onboarding.skills')
+        ->with('status', 'Location saved. Let’s add your skills.');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function profile()
     {
         $user = (object) [
@@ -90,13 +346,7 @@ class OnboardingController extends Controller
         return view('tenant.onboarding.personal');
     }
 
-    public function storePersonal(Request $request)
-    {
-        // $validated = $request->validate([...]);
-        // Session::put('tenant.onboarding.personal', $validated);
-        return redirect()->route('tenant.onboarding.location');
-    }
-
+ 
     public function location()
     {
         return view('tenant.onboarding.location');
@@ -107,17 +357,6 @@ class OnboardingController extends Controller
         return view('tenant.onboarding.publish');
     }
 
-    public function storeLocation(Request $request)
-    {
-        $validated = $request->validate([
-            'country' => 'required|string',
-            'state'   => 'required|string',
-            'city'    => 'required|string',
-        ]);
-
-        Session::put('tenant.onboarding.location', $validated);
-        return redirect()->route('tenant.onboarding.skills');
-    }
 
     public function skills()
     {

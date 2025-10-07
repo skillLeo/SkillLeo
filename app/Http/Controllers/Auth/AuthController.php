@@ -19,40 +19,68 @@ class AuthController extends Controller
         protected OtpService $otpService
     ) {}
 
+
+
+
+    public function accountType()
+    {
+        return view('auth.account-type');
+    }
+
+    public function otp()
+    {
+        return view('auth.otp');
+    }
+
+
+
+
+
     public function loginshow()
     {
         return view('auth.login');
     }
 
+    /**
+     * After choosing account type on auth.account-type, set the next step correctly:
+     *  - freelancer/professional → 'personal'
+     *  - client                → 'info'
+     */
     public function selectAccountType(Request $request)
     {
         $request->validate([
             'type' => ['required', 'in:freelancer,client'],
         ]);
-
+    
         $user = $request->user();
-
+    
+        // Where to send after choosing
         $redirects = [
             'freelancer' => route('tenant.onboarding.welcome'),
             'client'     => route('client.onboarding.info'),
         ];
-
+    
+        // Map UI type -> persisted account_status
         $statusMap = [
             'freelancer' => 'professional',
             'client'     => 'client',
         ];
-
+    
+        // ✅ As requested:
+        //    - ALWAYS set is_profile_complete = 'personal'
+        //    - Set account_status from the selection
         $user->update([
             'account_status'      => $statusMap[$request->type],
-            'is_profile_complete' => 'personal',
+            'is_profile_complete' => 'welcome',
             'meta' => array_merge($user->meta ?? [], [
                 'account_type' => $request->type,
             ]),
         ]);
-
+    
         return redirect($redirects[$request->type])
             ->with('status', 'Welcome! Let’s complete your onboarding.');
     }
+    
 
     public function submitLogin(Request $request)
     {
@@ -90,17 +118,15 @@ class AuthController extends Controller
         $request->session()->put('login.remember', (bool) ($data['remember'] ?? false));
         $request->session()->put('login.started_at', now()->timestamp);
 
-        return redirect()->route('otp.show', ['email' => $user->email]);
+        return redirect()->route('auth.otp.show', ['email' => $user->email]);
     }
 
     public function logout(\Illuminate\Http\Request $request)
     {
-      
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         Auth::logout();
 
-        return redirect()->route('home')->with('status', 'Logged out successfully');
+        return redirect()->route('auth.login')->with('status', 'Logged out successfully');
     }
- 
 }

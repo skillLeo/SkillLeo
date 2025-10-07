@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/OtpController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -7,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\OtpService;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\AuthRedirectService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,7 +14,8 @@ class OtpController extends Controller
 {
     public function __construct(
         protected OtpService $otp,
-        protected AuthService $authService
+        protected AuthService $authService,
+        protected AuthRedirectService $redirects
     ) {}
 
     public function show(Request $request)
@@ -61,11 +62,8 @@ class OtpController extends Controller
             'login.started_at',
         ]);
 
-        if ($user->account_status === 'pending_onboarding' || $user->is_profile_complete === 'start') {
-            return redirect()->route('auth.account-type');
-        }
-
-        return redirect()->intended(route('tenant.profile', ['username' => $user->username]));
+        // 🔁 Unified redirect logic
+        return $this->redirects->intendedResponse($user);
     }
 
     public function resend(Request $request)

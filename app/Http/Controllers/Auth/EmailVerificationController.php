@@ -1,15 +1,17 @@
 <?php
-// app/Http/Controllers/Auth/EmailVerificationController.php
 
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\AuthRedirectService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 
 class EmailVerificationController extends Controller
 {
+    public function __construct(protected AuthRedirectService $redirects) {}
+
     public function notice(Request $request)
     {
         $email = $request->session()->get('verify_email');
@@ -29,10 +31,7 @@ class EmailVerificationController extends Controller
             event(new Verified($user));
         }
 
-        if ($user->account_status === 'pending_onboarding' || $user->is_profile_complete === 'start') {
-            return redirect()->route('auth.account-type')->with('status', 'Welcome! Please complete your onboarding.');
-        }
-
-        return redirect()->intended(route('tenant.profile', ['username' => $user->username]));
+        return redirect()->to($this->redirects->url($user))
+            ->with('status', 'Welcome! Please complete your onboarding.');
     }
 }

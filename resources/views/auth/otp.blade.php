@@ -20,7 +20,7 @@
     </div>
 
     {{-- ✅ Post to WEB route so session is present --}}
-    <form id="otpForm" action="{{ route('otp.verify') }}" method="POST" autocomplete="off">
+    <form id="otpForm" action="{{ route('auth.otp.verify') }}" method="POST" autocomplete="off">
         @csrf
 
         <div class="otp-inputs">
@@ -46,7 +46,7 @@
     </form>
 
     <div class="otp-footer">
-        <form id="resendForm" action="{{ route('otp.resend') }}" method="POST">
+        <form id="resendForm" action="{{ route('auth.otp.resend') }}" method="POST">
             @csrf
             <p class="resend-text">
                 Didn't receive the code?

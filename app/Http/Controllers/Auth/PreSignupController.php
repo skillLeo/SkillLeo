@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/PreSignupController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -7,14 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Mail\SignupLinkMail;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\Auth\AuthRedirectService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Cache, URL, Mail, DB};
+use Illuminate\Support\Facades\{Cache, URL, Mail, DB, Auth};
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Str;
 
 class PreSignupController extends Controller
 {
-    public function __construct(protected AuthService $authService) {}
+    public function __construct(
+        protected AuthService $authService,
+        protected AuthRedirectService $redirects
+    ) {}
 
     public function sendLink(Request $request)
     {
@@ -64,10 +67,12 @@ class PreSignupController extends Controller
             return $user;
         });
 
-        if ($user->account_status === 'pending_onboarding' || $user->is_profile_complete === 'start') {
-            return redirect()->route('auth.account-type')->with('status', 'Welcome! Please complete your onboarding.');
-        }
+        // ✅ Log them in right after confirming (you said: record is submitted then user is logged in)
+        Auth::login($user);
+        $request->session()->regenerate();
 
-        return redirect()->intended(route('tenant.profile', ['username' => $user->username]));
+        // 🔁 Unified redirect logic
+        return redirect()->to($this->redirects->url($user))
+            ->with('status', 'Welcome! Please complete your onboarding.');
     }
 }

@@ -24,9 +24,14 @@
                 Upload CV
             </button>
 
-            <button type="button" class="btn btn-secondary" id="manualBtn">
-                Start from scratch
-            </button>
+            <form method="POST" action="{{ route('tenant.onboarding.scratch') }}">
+                @csrf
+                <button type="submit" class="btn btn-secondary">
+                    Start from scratch
+                </button>
+            </form>
+            
+            
         </div>
 
         <div class="upload-drop" id="dropzone">
@@ -172,63 +177,132 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('fileInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const dropzone = document.getElementById('dropzone');
-    const manualBtn = document.getElementById('manualBtn');
-
-    uploadBtn.addEventListener('click', () => fileInput.click());
-    dropzone.addEventListener('click', () => fileInput.click());
+    document.addEventListener('DOMContentLoaded', () => {
+      const form       = document.getElementById('personalForm');
+      const firstName  = document.getElementById('firstName');
+      const lastName   = document.getElementById('lastName');
+      const username   = document.getElementById('username');   // ensure your input has this id
+      const submitBtn  = document.getElementById('continueBtn') || form.querySelector('button[type="submit"]');
     
-    manualBtn.addEventListener('click', () => {
-        window.location.href = '{{ route("tenant.onboarding.personal") }}';
-    });
-
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files?.[0];
-        if (file) processFile(file);
-    });
-
-    ['dragenter', 'dragover'].forEach(evt => {
-        dropzone.addEventListener(evt, (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-    });
-
-    ['dragleave', 'drop'].forEach(evt => {
-        dropzone.addEventListener(evt, (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-        });
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-        const file = e.dataTransfer?.files?.[0];
-        if (file) processFile(file);
-    });
-
-    function processFile(file) {
-        const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-        
-        if (!validTypes.includes(file.type)) {
-            alert('Please upload PDF or DOC file');
-            return;
+      const statusEl   = ensureStatusEl(username); // small helper to show messages
+      const suggestEl  = ensureSuggestEl(statusEl); // clickable “Use suggestion”
+      let userEdited   = false;
+      let reqStamp     = 0;
+      let debounceId;
+    
+      function slug(s) {
+        return (s || '')
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase().replace(/[^a-z0-9_-]+/g, '')
+          .replace(/^[-_]+|[-_]+$/g, '').slice(0, 50);
+      }
+    
+      function baseFromNames() {
+        const f = slug(firstName.value), l = slug(lastName.value);
+        return (f && l) ? slug(`${f}-${l}`) : '';
+      }
+    
+      function setState(type, text) {
+        statusEl.textContent = text || '';
+        statusEl.dataset.type = type || '';
+        username.classList.toggle('is-valid', type === 'ok');
+        username.classList.toggle('is-invalid', type === 'error');
+        submitBtn.disabled = (type !== 'ok');
+        if (type !== 'taken') suggestEl.classList.add('hidden');
+      }
+    
+      function checkNow(u) {
+        const stamp = ++reqStamp;
+        setState('loading', 'Checking…');
+    
+        fetch(`{{ route('api.username.check') }}?username=${encodeURIComponent(u)}`, {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(j => {
+          if (stamp !== reqStamp) return; // ignore stale responses
+    
+          if (j.status === 'available') {
+            setState('ok', 'Username is available');
+          } else if (j.status === 'self') {
+            setState('ok', 'This is already your username ✓');
+          } else if (j.status === 'taken') {
+            setState('error', 'That username is taken');
+            if (j.suggestion) {
+              suggestEl.textContent = `Use “${j.suggestion}”`;
+              suggestEl.onclick = (e) => {
+                e.preventDefault();
+                username.value = j.suggestion;
+                userEdited = true;
+                trigger();
+              };
+              suggestEl.classList.remove('hidden');
+            }
+          } else {
+            setState('error', j.error || 'Invalid username');
+          }
+        })
+        .catch(() => setState('error', 'Couldn’t check right now. Try again.'));
+      }
+    
+      function trigger() {
+        clearTimeout(debounceId);
+        const val = slug(username.value);
+        username.value = val;
+        if (val.length < 3) {
+          setState('error', 'At least 3 characters');
+          return;
         }
-
-        if (file.size > 8 * 1024 * 1024) {
-            alert('File must be under 8MB');
-            return;
+        debounceId = setTimeout(() => checkNow(val), 250);
+      }
+    
+      function maybeGenerate() {
+        if (userEdited) return;
+        const base = baseFromNames();
+        if (base && username.value.trim() === '') {
+          username.value = base;
+          trigger();
         }
-
-        uploadBtn.disabled = true;
-        uploadBtn.innerHTML = '<span class="loading-spinner"></span> Processing...';
-
-        setTimeout(() => {
-            window.location.href = '{{ route("tenant.onboarding.personal") }}';
-        }, 1000);
-    }
-});
-</script>
+      }
+    
+      firstName.addEventListener('input', maybeGenerate);
+      lastName.addEventListener('input',  maybeGenerate);
+    
+      username.addEventListener('input', () => { userEdited = true; trigger(); });
+      username.addEventListener('blur',  trigger);
+    
+      // initial state
+      if (username.value.trim() === '') maybeGenerate(); else trigger();
+    
+      // helpers
+      function ensureStatusEl(afterEl) {
+        let el = document.getElementById('usernameStatus');
+        if (!el) {
+          el = document.createElement('small');
+          el.id = 'usernameStatus';
+          el.style.display = 'block';
+          el.style.marginTop = '6px';
+          el.style.fontSize = '12px';
+          el.style.color = 'var(--text-muted,#666)';
+          afterEl.insertAdjacentElement('afterend', el);
+        }
+        return el;
+      }
+      function ensureSuggestEl(statusAfterEl) {
+        let a = document.getElementById('usernameSuggest');
+        if (!a) {
+          a = document.createElement('a');
+          a.id = 'usernameSuggest';
+          a.href = '#';
+          a.className = 'hidden';
+          a.style.display = 'inline-block';
+          a.style.marginLeft = '8px';
+          a.style.fontSize = '12px';
+          statusAfterEl.insertAdjacentElement('afterend', a);
+        }
+        return a;
+      }
+    });
+    </script>
+    
 @endpush

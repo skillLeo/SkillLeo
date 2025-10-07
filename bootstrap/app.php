@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest.only'   => \App\Http\Middleware\GuestOnly::class,
             'account.type' => \App\Http\Middleware\EnsureAccountTypeSelected::class,
             'role'         => \App\Http\Middleware\RoleMiddleware::class,
+            'onboarding' => \App\Http\Middleware\OnboardingGate::class,
+            'onboarding.post' => \App\Http\Middleware\OnboardingPostGate::class,  // NEW: POST guard
+
+
         ]);
 
         $middleware->redirectGuestsTo('/auth/login');

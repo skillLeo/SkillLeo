@@ -79,8 +79,8 @@
     </div>
 
     <p class="about-text">
-        {{ Str::limit($user->about, 110) }}
-        @if (Str::length($user->about) > 110)
+        {{ Illuminate\Support\Str::limit($user->about, 110) }}
+        @if (Illuminate\Support\Str::length($user->about) > 110)
             <a href="#" class="see-more-inline">
                 See more
                 {{-- <x-ui.icon name="arrow-right" size="xs" color="primary" /> --}}
