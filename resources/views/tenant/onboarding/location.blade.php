@@ -6,7 +6,6 @@
 
 <x-onboarding.form-header 
     skipUrl="{{ route('tenant.onboarding.education') }}"
-
     step="2"
     title="Where are you located?"
     subtitle="Help clients find you and set the right timezone"
@@ -18,15 +17,15 @@
     <div class="form-group">
         <label class="form-label">Choose how to set your location</label>
         <div class="method-buttons">
-            <button type="button" class="method-btn active" data-method="manual">
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button type="button" class="method-btn active" data-method="manual" aria-pressed="true">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Select Manually
             </button>
-            <button type="button" class="method-btn" data-method="gps">
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <button type="button" class="method-btn" data-method="gps" aria-pressed="false">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
                 Use GPS
@@ -35,10 +34,16 @@
     </div>
 
     <div id="manualSection">
-      <x-onboarding.select name="country"  id="country"  :options="[]" />
+        <x-onboarding.select
+            name="country"
+            id="country"
+            label="Country"
+            placeholder="Select your country"
+            required
+            :options="[]"
+        />
 
-
-        <div id="stateGroup" style="display: none;">
+        <div id="stateGroup" style="display:none;">
             <x-onboarding.select
                 name="state"
                 id="state"
@@ -48,7 +53,7 @@
             />
         </div>
 
-        <div id="cityGroup" style="display: none;">
+        <div id="cityGroup" style="display:none;">
             <x-onboarding.select
                 name="city"
                 id="city"
@@ -62,13 +67,13 @@
     <div class="gps-section" id="gpsSection">
         <p>Click the button below to automatically detect your location</p>
         <button type="button" class="btn btn-primary" id="detectBtn">Detect My Location</button>
-        <div class="detected-location" id="detectedLocation">
+        <div class="detected-location" id="detectedLocation" role="status" aria-live="polite">
             <strong>Location Detected:</strong> <span id="detectedText"></span>
         </div>
     </div>
 
     <x-onboarding.form-footer 
-skipUrl="{{ route('tenant.onboarding.education') }}"
+        skipUrl="{{ route('tenant.onboarding.education') }}"
         backUrl="{{ route('tenant.onboarding.personal') }}"
     />
 </form>
@@ -77,78 +82,18 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
 
 @push('styles')
 <style>
-.method-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
-    margin-top: var(--space-sm);
-}
-
-.method-btn {
-    padding: var(--space-md);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    font-family: var(--font-sans);
-    font-size: var(--fs-body);
-    font-weight: var(--fw-medium);
-    color: var(--text-body);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-}
-
-.method-btn.active {
-    border-color: var(--accent);
-    background: var(--accent-light);
-    color: var(--accent);
-}
-
-.method-btn:hover {
-    border-color: var(--accent);
-}
-
-.gps-section {
-    padding: var(--space-xl);
-    background: var(--apc-bg);
-    border-radius: var(--radius);
-    text-align: center;
-    margin-bottom: var(--space-lg);
-    display: none;
-}
-
-.gps-section.show {
-    display: block;
-}
-
-.gps-section p {
-    color: var(--text-body);
-    margin-bottom: var(--space-md);
-}
-
-.detected-location {
-    margin-top: var(--space-md);
-    padding: var(--space-sm) var(--space-md);
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: var(--radius);
-    color: var(--success);
-    font-size: var(--fs-subtle);
-    display: none;
-}
-
-.detected-location.show {
-    display: block;
-}
-
-@media (max-width: 640px) {
-    .method-buttons {
-        grid-template-columns: 1fr;
-    }
-}
+.method-buttons{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-top:var(--space-sm)}
+.method-btn{padding:var(--space-md);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition-base);font-family:var(--font-sans);font-size:var(--fs-body);font-weight:var(--fw-medium);color:var(--text-body);display:flex;align-items:center;justify-content:center;gap:var(--space-sm)}
+.method-btn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.method-btn:hover{border-color:var(--accent)}
+.gps-section{padding:var(--space-xl);background:var(--apc-bg);border-radius:var(--radius);text-align:center;margin-bottom:var(--space-lg);display:none}
+.gps-section.show{display:block}
+.gps-section p{color:var(--text-body);margin-bottom:var(--space-md)}
+.detected-location{margin-top:var(--space-md);padding:var(--space-sm) var(--space-md);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:var(--radius);color:var(--success);font-size:var(--fs-subtle);display:none}
+.detected-location.show{display:block}
+@media (max-width:640px){.method-buttons{grid-template-columns:1fr}}
+/* subtle success border on selects */
+select.success{border-color:var(--success);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
 </style>
 @endpush
 
@@ -177,11 +122,17 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
   const headerProgress= document.getElementById('headerProgress');
   const stepText      = document.getElementById('stepText');
 
-  // ---------- API (your existing /api/location endpoints) ----------
+  // hidden fields (created if missing)
+  const tzInput  = ensureHidden('timezone');
+  const latInput = ensureHidden('coords[lat]');
+  const lngInput = ensureHidden('coords[lng]');
+  const srcInput = ensureHidden('source');
+
+  // ---------- API endpoints ----------
   const API = {
-    countries: () => fetchJSON(`/api/location/countries`),                         // [{name}]
+    countries: () => fetchJSON(`/api/location/countries`), // [{name, iso2?}]
     states:    (countryName) => fetchJSON(`/api/location/states?country=${encodeURIComponent(countryName)}`), // [{name}]
-    cities:    (countryName, stateName) => fetchJSON(`/api/location/cities?country=${encodeURIComponent(countryName)}&state=${encodeURIComponent(stateName)}`),
+    cities:    (countryName, stateName) => fetchJSON(`/api/location/cities?country=${encodeURIComponent(countryName)}&state=${encodeURIComponent(stateName)}`), // [{name}]
   };
 
   // ---------- Utils ----------
@@ -198,11 +149,20 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
   const tz          = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; } };
   const norm        = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 
+  function ensureHidden(name) {
+    let el = form.querySelector(`input[name="${name}"]`);
+    if (!el) {
+      el = document.createElement('input');
+      el.type = 'hidden'; el.name = name;
+      form.appendChild(el);
+    }
+    return el;
+  }
+
   function selectByText(selectEl, target) {
     if (!target) return false;
     const needle = norm(target);
     const options = Array.from(selectEl.options);
-    // exact first
     let hit = options.find(o => norm(o.textContent) === needle);
     if (!hit) hit = options.find(o => norm(o.textContent).includes(needle) || needle.includes(norm(o.textContent)));
     if (!hit) return false;
@@ -232,9 +192,11 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
       manualSection.style.display='block';
       gpsSection.classList.remove('show');
       detectedWrap.classList.remove('show');
+      srcInput.value = 'manual';
     } else {
       manualSection.style.display='none';
       gpsSection.classList.add('show');
+      srcInput.value = 'nominatim';
     }
   }
 
@@ -252,7 +214,6 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
   async function loadCountries() {
     resetSelect(countrySelect, 'Loading countries...');
     const list = await API.countries();
-    // Optional: float popular to top
     const popular = new Set(['Pakistan','United States','United Kingdom','Canada','India']);
     const top = list.filter(x => popular.has(x.name));
     const rest = list.filter(x => !popular.has(x.name)).sort((a,b)=> a.name.localeCompare(b.name));
@@ -297,10 +258,10 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
     validate();
   }
 
-  // ---------- ENGLISH reverse-geocode (fixes Urdu) ----------
+  // ---------- Reverse geocode (English) ----------
   async function reverseEnglish(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1&accept-language=en`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } }); // header + query both
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
     if (!res.ok) throw new Error('Reverse geocode failed');
     const data = await res.json();
     const a = data.address || {};
@@ -313,7 +274,7 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
     return { english, raw: data };
   }
 
-  // ---------- GPS flow (English only) ----------
+  // ---------- GPS flow ----------
   async function detectLocation() {
     if (!navigator.geolocation) return alert('Geolocation not supported');
 
@@ -325,53 +286,44 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
       );
       const { latitude: lat, longitude: lng } = pos.coords || {};
 
-      // Force English results
       const { english, raw } = await reverseEnglish(lat, lng);
 
-      // Build clean JSON payload (English)
-      const payload = {
-        coords: { lat, lng },
-        timezone: tz(),
-        country: { name: english.country, iso2: english.country_code },
-        state:   { name: english.state },
-        city:    { name: english.city },
-        source:  'nominatim',
-        raw
-      };
-
-      // Expose JSON for debugging/usage
-      window.__gps_en = payload;
-      try { localStorage.setItem('gps_detected_en', JSON.stringify(payload)); } catch {}
+      // expose & cache
+      window.__gps_en = { coords:{lat,lng}, country:{name:english.country, iso2:english.country_code}, state:{name:english.state}, city:{name:english.city}, source:'nominatim', raw };
+      try { localStorage.setItem('gps_detected_en', JSON.stringify(window.__gps_en)); } catch {}
 
       // UI feedback
       setMethod('gps');
-      detectedText.textContent = `${payload.city.name}, ${payload.state.name}, ${payload.country.name}`;
+      detectedText.textContent = `${english.city}, ${english.state}, ${english.country}`;
       detectedWrap.classList.add('show');
 
-      // Now populate selects using your existing APIs (already English)
+      // set hidden inputs
+      tzInput.value  = tz();
+      latInput.value = lat;
+      lngInput.value = lng;
+
+      // populate selects to match English names
       await loadCountries();
-      if (selectByText(countrySelect, payload.country.name)) {
+      if (selectByText(countrySelect, english.country)) {
         setSuccess(countrySelect, true);
         await onCountryChange();
       }
-
-      if (selectByText(stateSelect, payload.state.name)) {
+      if (selectByText(stateSelect, english.state)) {
         setSuccess(stateSelect, true);
         await onStateChange();
       }
-
-      if (selectByText(citySelect, payload.city.name)) {
+      if (selectByText(citySelect, english.city)) {
         setSuccess(citySelect, true);
         onCityChange();
       }
 
       validate();
       detectBtn.innerHTML = '✓ Location Detected';
-      setTimeout(()=> detectBtn.textContent = 'Detect My Location', 2000);
+      setTimeout(()=> detectBtn.textContent = 'Detect My Location', 1600);
 
     } catch (err) {
       console.error(err);
-      alert('Unable to detect location in English. Please select manually.');
+      alert('Unable to detect location. Please select manually.');
       detectBtn.textContent = 'Detect My Location';
     } finally {
       detectBtn.disabled = false;
@@ -381,6 +333,7 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
   // ---------- Submit ----------
   form.addEventListener('submit', (e)=>{
     if (!validate()) { e.preventDefault(); return; }
+    tzInput.value = tzInput.value || tz();      // set timezone if empty
     if (btnText) btnText.innerHTML = '<div class="loading-spinner"></div>';
     if (continueBtn) continueBtn.disabled = true;
     if (headerProgress && stepText) {
@@ -398,13 +351,18 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
   citySelect.addEventListener('change', onCityChange);
 
   // ---------- Boot ----------
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    updateProgress(2);
-    setMethod('manual');
-    resetSelect(stateSelect, 'Select your state');
-    resetSelect(citySelect,  'Select your city');
-    await loadCountries();
-  });
+  (async ()=>{
+    try {
+      updateProgress(2);
+      setMethod('manual');
+      resetSelect(stateSelect, 'Select your state');
+      resetSelect(citySelect,  'Select your city');
+      tzInput.value = tz();
+      await loadCountries();
+    } catch (e) {
+      console.error(e);
+    }
+  })();
 })();
 </script>
 @endpush
