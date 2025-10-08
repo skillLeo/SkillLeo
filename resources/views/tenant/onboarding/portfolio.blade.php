@@ -6,7 +6,6 @@
 
 <x-onboarding.form-header 
     skipUrl="{{ route('tenant.onboarding.education') }}"
-
     step="5"
     title="Showcase your work"
     subtitle="Add 2-4 projects that best demonstrate your expertise"
@@ -14,11 +13,6 @@
 
 <form id="portfolioForm" action="{{ route('tenant.onboarding.portfolio.store') }}" method="POST">
     @csrf
-
-    <x-onboarding.alert type="info">
-        Optional but recommended for better visibility
-        <button type="button" class="btn btn-secondary" id="skipBtn" style="margin-top: var(--space-sm);">Skip for now</button>
-    </x-onboarding.alert>
 
     <div class="projects-list" id="projectsList">
         <div class="empty-state" id="emptyState">
@@ -37,16 +31,10 @@
 
     <input type="hidden" name="projects" id="projectsData">
 
-    <div style="background: var(--accent-light); border: 1px solid var(--accent); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg);">
-        <strong style="color: var(--accent); font-size: var(--fs-subtle); display: block; margin-bottom: var(--space-sm);">AI Assistant</strong>
-        <div style="display: flex; gap: var(--space-sm);">
-            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: var(--fs-subtle);" id="generateBtn">Generate from URL</button>
-            <button type="button" class="btn btn-secondary" style="flex: 1; font-size: var(--fs-subtle);" id="enhanceBtn">Enhance text</button>
-        </div>
-    </div>
-
     <x-onboarding.form-footer 
-skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.onboarding.experience') }}" />
+        skipUrl="{{ route('tenant.onboarding.education') }}" 
+        backUrl="{{ route('tenant.onboarding.experience') }}" 
+    />
 </form>
 
 @endsection
@@ -56,17 +44,19 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
 .projects-list { margin: var(--space-lg) 0; }
 
 .project-card {
+    position: relative;
+    margin-bottom: var(--space-md);
+}
+
+.display-card {
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: var(--space-lg);
     background: var(--card);
-    position: relative;
-    margin-bottom: var(--space-md);
     transition: all var(--transition-base);
 }
 
-.project-card:hover { box-shadow: var(--shadow-sm); }
-.edit-card { border-color: var(--accent); background: var(--apc-bg); }
+.display-card:hover { box-shadow: var(--shadow-sm); }
 
 .card-actions {
     position: absolute;
@@ -283,61 +273,43 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
 </style>
 @endpush
 
- 
 @push('scripts')
+@verbatim
 <script>
-/* ===== Portfolio Projects with Image Upload ===== */
 (() => {
   "use strict";
 
-  // DOM
-  const projectsList = document.getElementById('projectsList');
-  const emptyState = document.getElementById('emptyState');
-  const addBtn = document.getElementById('addBtn');
-  const continueBtn = document.getElementById('continueBtn');
-  const btnText = document.getElementById('btnText');
-  const generateBtn = document.getElementById('generateBtn');
-  const enhanceBtn = document.getElementById('enhanceBtn');
-  const skipBtn = document.getElementById('skipBtn');
-  const formEl = document.getElementById('portfolioForm');
+  const projectsList   = document.getElementById('projectsList');
+  const emptyState     = document.getElementById('emptyState');
+  const addBtn         = document.getElementById('addBtn');
+  const continueBtn    = document.getElementById('continueBtn');
+  const formEl         = document.getElementById('portfolioForm');
+  const projectsDataEl = document.getElementById('projectsData');
 
-  // State
-  /** @type {{id:number, title:string, description:string, link:string, image?:string}[]} */
   let projects = [];
   let projectIdCounter = 0;
   let editingId = null;
 
-  // Limits
+  // ---- Config ----
+  const MIN_PROJECTS = 2;       // change to 1 if you want to allow moving on with a single project
   const TITLE_MAX = 80;
   const DESC_MAX  = 280;
-  const FILE_MAX_MB = 6;       // raw upload limit (we still compress)
-  const IMG_MAX_W = 1600;      // resize bound
+  const IMG_MAX_W = 1600;
   const IMG_MAX_H = 1200;
-  const IMG_QUALITY = 0.86;    // 0..1
+  const IMG_QUALITY = 0.86;
 
-  // Utils
   const esc = (s) => String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const normURL = (url='') => { const v = String(url).trim(); if (!v) return ''; if (/^https?:\/\//i.test(v)) return v; return 'https://' + v.replace(/^\/+/, ''); };
   const hostnameFrom = (url) => { try { return new URL(normURL(url)).hostname.replace(/^www\./,''); } catch { return ''; } };
 
-  function toast(msg){
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(-6px)'; setTimeout(()=> t.remove(), 200); }, 2200);
+  // ---------- storage + pack ----------
+  function packAndStore(){
+    const data = projects.filter(p => (p.title || p.description || p.link || p.image));
+    try { localStorage.setItem('onboarding_portfolio', JSON.stringify(data)); } catch {}
+    projectsDataEl.value = JSON.stringify(data);
   }
 
-  // Storage
-  function saveAll(){
-    try {
-      const data = projects.filter(p => (p.title || p.description || p.link || p.image));
-      localStorage.setItem('onboarding_portfolio', JSON.stringify(data));
-      document.getElementById('projectsData').value = JSON.stringify(data);
-    } catch {}
-  }
-
-  function loadAll(){
+  function loadFromStorage(){
     try {
       const raw = localStorage.getItem('onboarding_portfolio');
       if (!raw) return;
@@ -355,14 +327,24 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     } catch {}
   }
 
-  // Rendering
+  // ---------- validation + continue state ----------
+  function validProjectsCount(){
+    return projects.filter(p => p.title.trim() && p.description.trim()).length;
+  }
+
+  function updateContinueState(){
+    if (!continueBtn) return;
+    continueBtn.disabled = validProjectsCount() < MIN_PROJECTS; // ✅ enable even while editing if enough valid rows
+  }
+
+  // ---------- rendering ----------
   function render(){
     projectsList.innerHTML = '';
     if (projects.length === 0) {
       emptyState.style.display = 'block';
       projectsList.appendChild(emptyState);
       updateContinueState();
-      saveAll();
+      packAndStore();
       return;
     }
     emptyState.style.display = 'none';
@@ -371,7 +353,7 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
       projectsList.insertAdjacentHTML('beforeend', html);
     });
     updateContinueState();
-    saveAll();
+    packAndStore();
   }
 
   function renderCard(p){
@@ -381,19 +363,16 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     return `
       <div class="project-card display-card" id="proj-${p.id}">
         <div class="card-actions">
-          <button type="button" class="card-edit" title="Edit" onclick="editProject(${p.id})" aria-label="Edit project">✎</button>
+          <button type="button" class="card-edit"   title="Edit"   onclick="editProject(${p.id})" aria-label="Edit project">✎</button>
           <button type="button" class="card-remove" title="Remove" onclick="removeProject(${p.id})" aria-label="Remove project">×</button>
         </div>
 
         ${hasImg ? `
           <div class="card-media">
-            <div class="media-wrap"><img src="${p.image}" alt="${esc(p.title || 'Project image')}" loading="lazy"></div>
+            <img src="${p.image}" alt="${esc(p.title || 'Project image')}" loading="lazy">
           </div>` : ''}
 
-        <div class="card-header">
-          <div class="card-title">${esc(p.title) || 'Untitled project'}</div>
-        </div>
-
+        <div class="card-title">${esc(p.title) || 'Untitled project'}</div>
         ${p.description ? `<div class="card-description">${esc(p.description)}</div>` : ''}
 
         <div class="card-footer">
@@ -408,9 +387,9 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
   function renderEdit(p){
     const hasImg = !!p.image;
     return `
-      <div class="project-card edit-card" id="proj-${p.id}">
+      <div class="project-card" id="proj-${p.id}">
         <div class="form-header-actions">
-          <button type="button" class="save-btn" onclick="saveProject(${p.id})">✓ Save</button>
+          <button type="button" class="save-btn"   onclick="saveProject(${p.id})">✓ Save</button>
           <button type="button" class="cancel-btn" onclick="cancelEdit(${p.id})">Cancel</button>
         </div>
 
@@ -445,7 +424,7 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
                   <button type="button" class="img-btn img-upload-btn" data-id="${p.id}">Upload image</button>
                   ${hasImg ? `<button type="button" class="img-btn img-remove-btn" data-id="${p.id}">Remove</button>` : ``}
                 </div>
-                <div class="img-hint">PNG/JPG/WebP • up to ${FILE_MAX_MB}MB • we'll resize and optimize automatically</div>
+                <div class="img-hint">PNG/JPG/WebP • we'll resize and optimize automatically</div>
               </div>
             </div>
             <input class="img-input" data-id="${p.id}" type="file" accept="image/*" hidden />
@@ -455,7 +434,7 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     `;
   }
 
-  // CRUD functions
+  // ---------- actions ----------
   function addProject(){
     const id = ++projectIdCounter;
     projects.unshift({ id, title:'', description:'', link:'', image:'' });
@@ -464,23 +443,23 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     setTimeout(() => {
       const first = document.querySelector(`#proj-${id} .form-input[data-field="title"]`);
       if (first) first.focus();
-    }, 60);
+    }, 50);
   }
 
   function editProject(id){ editingId = id; render(); }
-  
+
   function removeProject(id){
     projects = projects.filter(p => p.id !== id);
     if (editingId === id) editingId = null;
     render();
   }
-  
+
   function cancelEdit(id){
     const p = projects.find(x => x.id === id);
     if (p && !p.title && !p.description && !p.link && !p.image) { removeProject(id); }
     else { editingId = null; render(); }
   }
-  
+
   function saveProject(id){
     const p = projects.find(x => x.id === id);
     if (!p) return;
@@ -490,34 +469,31 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     }
     p.link = normURL(p.link);
     editingId = null;
-    saveAll();
+    packAndStore();
     render();
   }
 
-  // Update field
   function updateProjectField(id, field, value){
     const p = projects.find(x => x.id === id);
     if (!p) return;
-    if (field === 'title')        p.title = value.slice(0, TITLE_MAX);
+    if (field === 'title') p.title = value.slice(0, TITLE_MAX);
     else if (field === 'description') p.description = value.slice(0, DESC_MAX);
-    else if (field === 'link')    p.link = value.trim();
+    else if (field === 'link') p.link = value.trim();
+    packAndStore();
+    updateContinueState(); // ✅ live enable
   }
 
-  // Image processing functions (condensed for brevity)
   async function handlePickedFile(id, file){
-    if (!file || !file.type.startsWith('image/')) { toast('Please choose a valid image.'); return; }
+    if (!file || !file.type.startsWith('image/')) return;
     try {
       const dataUrl = await compressImage(file);
       const p = projects.find(x => x.id === id);
       if (p) {
         p.image = dataUrl;
-        saveAll();
+        packAndStore();
         render();
-        toast('Image added');
       }
-    } catch {
-      toast('Could not process that image.');
-    }
+    } catch {}
   }
 
   async function compressImage(file) {
@@ -528,8 +504,8 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ratio = Math.min(IMG_MAX_W / img.width, IMG_MAX_H / img.height);
-          canvas.width = img.width * ratio;
-          canvas.height = img.height * ratio;
+          canvas.width = Math.max(1, Math.round(img.width * ratio));
+          canvas.height = Math.max(1, Math.round(img.height * ratio));
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           resolve(canvas.toDataURL('image/jpeg', IMG_QUALITY));
@@ -540,18 +516,12 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     });
   }
 
-  // Continue state
-  function updateContinueState(){ 
-    continueBtn.disabled = (editingId != null); 
-  }
-
-  // Event listeners (condensed)
+  // ---------- events ----------
   projectsList.addEventListener('input', (e) => {
     const el = e.target;
-    if (!el.dataset?.field) return;
+    if (!el.dataset || !el.dataset.field) return;
     updateProjectField(Number(el.dataset.id), el.dataset.field, el.value);
-    
-    // Update character counters
+
     if (el.dataset.field === 'title') {
       const ct = document.getElementById(`ct-title-${el.dataset.id}`);
       if (ct) ct.textContent = `${el.value.length}/${TITLE_MAX}`;
@@ -560,19 +530,18 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
       const ct = document.getElementById(`ct-desc-${el.dataset.id}`);
       if (ct) ct.textContent = `${el.value.length}/${DESC_MAX}`;
     }
-    saveAll();
   });
 
-  // Image upload events
   projectsList.addEventListener('click', (e) => {
     if (e.target.closest('.img-upload-btn')) {
       const id = Number(e.target.dataset.id);
-      document.querySelector(`.img-input[data-id="${id}"]`).click();
+      const input = document.querySelector(`.img-input[data-id="${id}"]`);
+      if (input) input.click();
     }
     if (e.target.closest('.img-remove-btn')) {
       const id = Number(e.target.dataset.id);
       const p = projects.find(x => x.id === id);
-      if (p) { p.image = ''; saveAll(); render(); }
+      if (p) { p.image = ''; packAndStore(); render(); }
     }
   });
 
@@ -584,38 +553,37 @@ skipUrl="{{ route('tenant.onboarding.education') }}" backUrl="{{ route('tenant.o
     }
   });
 
-  // AI helpers
-  generateBtn.addEventListener('click', () => {
-    if (projects.length === 0) addProject();
-    toast('URL generation feature coming soon!');
-  });
-
-  enhanceBtn.addEventListener('click', () => {
-    if (projects.length === 0) addProject();
-    toast('Description enhancement coming soon!');
-  });
-
-  // Main event listeners
   addBtn.addEventListener('click', addProject);
-  skipBtn.addEventListener('click', () => {
-    formEl.submit();
-  });
 
+  // ✅ Ensure Continue actually submits (even if it's type="button")
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      if (continueBtn.disabled) return;
+      if (formEl.requestSubmit) formEl.requestSubmit();
+      else formEl.submit();
+    });
+  }
+
+  // Keep submit handler; enforce minimum and pack JSON
   formEl.addEventListener('submit', (e) => {
-    e.preventDefault();
-    saveAll();
-    formEl.submit();
+    if (validProjectsCount() < MIN_PROJECTS) {
+      e.preventDefault();
+      alert(`Please add at least ${MIN_PROJECTS} project${MIN_PROJECTS>1?'s':''} (title + description).`);
+      return;
+    }
+    packAndStore();
   });
 
-  // Expose global functions
-  window.editProject = editProject;
-  window.removeProject = removeProject;
-  window.saveProject = saveProject;
-  window.cancelEdit = cancelEdit;
-
-  // Initialize
-  loadAll();
+  // ---------- boot ----------
+  loadFromStorage();
   render();
+
+  // expose for inline handlers
+  window.editProject   = editProject;
+  window.removeProject = removeProject;
+  window.saveProject   = saveProject;
+  window.cancelEdit    = cancelEdit;
 })();
 </script>
+@endverbatim
 @endpush

@@ -36,7 +36,7 @@ class OnboardingGate
             return redirect()->route('auth.account-type');
         }
 
-        $tenantSeq = ['welcome','personal','location','skills','education','experience','preferences','review','publish'];
+        $tenantSeq = ['welcome','personal','location','skills','education','experience','portfolio','preferences','review','publish'];
         $clientSeq = ['info','project','budget','preferences','review'];
 
         $seq = $lane === 'client' ? $clientSeq : $tenantSeq;

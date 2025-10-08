@@ -2,9 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use App\Models\Skill;
+use App\Models\Tenant;
+use App\Models\EmailOtp;
+use App\Models\Education;
+use App\Models\Experience;
+use App\Models\UserDevice;
+use App\Models\OAuthIdentity;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
@@ -62,6 +69,33 @@ public function skills()
         ->withTimestamps()
         ->orderBy('user_skills.position');
 }
+// app/Models/User.php
+public function educations()
+{
+    return $this->hasMany(\App\Models\Education::class)->orderBy('position');
+}
 
-    
+public function experiences()
+{
+    return $this->hasMany(\App\Models\Experience::class)->orderBy('position');
+}
+
+public function portfolioProjects()
+{
+    return $this->hasMany(\App\Models\PortfolioProject::class)->orderBy('position');
+}
+
+public function preference()
+{
+    return $this->hasOne(\App\Models\Preference::class);
+}
+
+
+
+
+
+
+
+
+
 }

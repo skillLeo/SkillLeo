@@ -3,15 +3,22 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Skill;
-use Illuminate\Support\Arr;
  
+use App\Models\Education;
+use App\Models\Experience;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\ExperienceSkill;
+use Illuminate\Validation\Rule;
+use App\Models\PortfolioProject;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 class OnboardingController extends Controller
 {
@@ -172,7 +179,54 @@ public function storeLocation(Request $request)
 
 
 
+// Add this method to your OnboardingController or relevant controller
 
+// public function storeLocation(Request $request)
+// {
+//     $user = $request->user();
+
+//     // Validate inputs
+//     $data = $request->validate([
+//         'country'        => ['required','string','max:120'],
+//         'state'          => ['required','string','max:120'],
+//         'city'           => ['required','string','max:120'],
+//         'timezone'       => ['nullable','string','max:64'],
+//         'coords.lat'     => ['nullable','numeric'],
+//         'coords.lng'     => ['nullable','numeric'],
+//         'source'         => ['nullable','in:manual,nominatim,gps'],
+//     ]);
+
+//     // Clean and trim inputs
+//     $country = trim($data['country']);
+//     $state   = trim($data['state']);
+//     $city    = trim($data['city']);
+
+//     // Update user location
+//     $meta = $user->meta ?? [];
+//     $meta['location'] = [
+//         'country' => $country,
+//         'state'   => $state,
+//         'city'    => $city,
+//         'coords'  => [
+//             'lat' => $request->input('coords.lat'),
+//             'lng' => $request->input('coords.lng'),
+//         ],
+//         'source'  => $request->input('source', 'manual'),
+//     ];
+
+//     $user->forceFill([
+//         'country'             => $country,
+//         'state'               => $state,
+//         'city'                => $city,
+//         'timezone'            => $data['timezone'] ?? $user->timezone ?? 'UTC',
+//         'is_profile_complete' => 'education', // or next step
+//         'meta'                => $meta,
+//     ])->save();
+
+//     return redirect()
+//         ->route('tenant.onboarding.education')
+//         ->with('status', 'Location saved successfully!');
+// }
 
 
     public function storeSkills(Request $request)
@@ -276,6 +330,612 @@ public function storeLocation(Request $request)
             ->route('tenant.onboarding.education')
             ->with('status', 'Skills saved. Let’s add your education.');
     }
+
+
+
+
+
+
+
+
+
+    public function storeEducation(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'education' => ['required','string'],
+        ]);
+
+        $payload = json_decode($request->input('education'), true);
+        if (!is_array($payload)) {
+            return back()->withErrors(['education' => 'Invalid education payload.'])->withInput();
+        }
+
+        $currentYear = (int) now()->year;
+        $minYear = 1950;
+        $maxYear = $currentYear + 6;
+
+        $rows = [];
+        foreach ($payload as $i => $e) {
+            $school = trim((string) ($e['school'] ?? ''));
+            $degree = trim((string) ($e['degree'] ?? ''));
+            $field  = trim((string) ($e['field']  ?? ''));
+            if ($school === '' || $degree === '') continue;
+
+            $start = ($e['startYear'] ?? '') !== '' ? (int) $e['startYear'] : null;
+            $end   = ($e['endYear']   ?? '') !== '' ? (int) $e['endYear']   : null;
+            $curr  = (bool) ($e['current'] ?? false);
+
+            if ($start !== null && ($start < $minYear || $start > $maxYear)) $start = null;
+            if ($end   !== null && ($end   < $minYear || $end   > $maxYear)) $end   = null;
+            if ($curr) $end = null;
+            if ($start !== null && $end !== null && $end < $start) { [$start, $end] = [$end, $start]; }
+
+            $rows[] = [
+                'user_id'        => $user->id,
+                'institution_id' => $e['institution_id'] ?? null,
+                'school'         => mb_substr($school, 0, 180),
+                'degree'         => mb_substr($degree, 0, 160),
+                'field'          => $field !== '' ? mb_substr($field, 0, 160) : null,
+                'start_year'     => $start,
+                'end_year'       => $end,
+                'is_current'     => $curr,
+                'position'       => (int) $i,
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
+        }
+
+        if (empty($rows)) {
+            return back()->withErrors(['education' => 'Please add at least one valid education entry.'])->withInput();
+        }
+
+        DB::transaction(function () use ($user, $rows) {
+            $user->educations()->delete();
+            Education::insert($rows);
+
+            $user->forceFill([
+                'is_profile_complete' => 'experience',
+            ])->save();
+        });
+
+        return redirect()
+            ->route('tenant.onboarding.experience')
+            ->with('status', 'Education saved. Let’s add your experience.');
+    }
+
+ 
+
+
+
+
+
+
+    public function storePreferences(Request $request)
+    {
+        $user = $request->user();
+    
+        // Validate request
+        $validated = $request->validate([
+            'currency'       => ['required', Rule::in(['PKR','USD','EUR','GBP','AED','INR'])],
+            'rate'           => ['nullable','numeric','min:0'],
+            'unit'           => ['required', Rule::in(['/hour','/day','/project'])],
+            'availability'   => ['required', Rule::in(['now','1week','2weeks','1month'])],
+            'hours_per_week' => ['required', Rule::in(['part-time','full-time','flexible'])],
+    
+            // toggles come as "on"/null; we normalize below
+            'remote_work'    => ['nullable'],
+            'open_to_work'   => ['nullable'],
+            'long_term'      => ['nullable'],
+        ]);
+    
+        // Normalize toggles to booleans
+        $data = [
+            'currency'       => $validated['currency'],
+            'rate'           => isset($validated['rate']) ? (float) $validated['rate'] : null,
+            'unit'           => $validated['unit'],
+            'availability'   => $validated['availability'],
+            'hours_per_week' => $validated['hours_per_week'],
+            'remote_work'    => (bool) $request->boolean('remote_work'),
+            'open_to_work'   => (bool) $request->boolean('open_to_work'),
+            'long_term'      => (bool) $request->boolean('long_term'),
+        ];
+    
+        // Upsert preferences for this user
+        $user->preference()->updateOrCreate(
+            ['user_id' => $user->id],
+            $data
+        );
+    
+        // Advance onboarding
+        $user->forceFill(['is_profile_complete' => 'review'])->save();
+    
+        return redirect()
+            ->route('tenant.onboarding.review')
+            ->with('status', 'Preferences saved. Review your profile before publishing.');
+    }
+
+
+
+
+
+
+    public function storeReview(Request $request)
+    {
+        $user = $request->user();
+    
+        $validated = $request->validate([
+            'is_public' => ['required', Rule::in(['0','1'])],
+        ]);
+    
+        $user->forceFill([
+            'is_public'           => $validated['is_public'] === '1',
+            'is_profile_complete' => 'publish',    // 👈 advance to publish step
+        ])->save();
+    
+        return redirect()
+            ->route('tenant.onboarding.publish')   // 👈 go to the publish page (GET)
+            ->with('status', 'Ready to publish your profile.');
+    }
+
+
+    public function storePublish(Request $request)
+    {
+        $user = $request->user();
+
+        // mark fully completed
+        $user->forceFill([
+            'is_profile_complete' => 'completed',
+        ])->save();
+
+        // you may also clear onboarding localStorage on the client if you wish
+
+        // redirect to public profile route
+        return redirect()->route('tenant.profile', ['username' => $user->username]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+    public function storePortfolio(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'experiences' => ['required', 'string'],
+        ]);
+
+        $payload = json_decode($request->input('experiences'), true);
+        if (!is_array($payload)) {
+            return back()->withErrors(['experiences' => 'Invalid experiences payload.'])->withInput();
+        }
+
+        // sanitize & normalize
+        $rows = [];
+        $skillsByIndex = [];
+        $currentYear = (int) now()->year;
+        $minYear = 1950;
+        $maxYear = $currentYear + 6;
+
+        foreach (array_values($payload) as $i => $e) {
+            $company = trim((string) ($e['company'] ?? ''));
+            $title   = trim((string) ($e['title']   ?? ''));
+            if ($company === '' || $title === '') {
+                continue; // skip incomplete row
+            }
+
+            $startMonth = $this->clampMonth($e['startMonth'] ?? null);
+            $endMonth   = $this->clampMonth($e['endMonth']   ?? null);
+            $startYear  = $this->clampYear($e['startYear']   ?? null, $minYear, $maxYear);
+            $endYear    = $this->clampYear($e['endYear']     ?? null, $minYear, $maxYear);
+            $current    = (bool) ($e['current'] ?? false);
+
+            if ($current) {
+                $endMonth = null;
+                $endYear  = null;
+            } else {
+                // if both present and end < start, nullify end
+                if ($startYear && $startMonth && $endYear && $endMonth) {
+                    $s = ($startYear * 12) + $startMonth;
+                    $n = ($endYear   * 12) + $endMonth;
+                    if ($n < $s) {
+                        $endMonth = null;
+                        $endYear  = null;
+                    }
+                }
+            }
+
+            $rows[] = [
+                'user_id'          => $user->id,
+                'company'          => mb_substr($company, 0, 180),
+                'company_id'       => $e['company_id'] ?? null,
+                'title'            => mb_substr($title, 0, 160),
+                'start_month'      => $startMonth,
+                'start_year'       => $startYear,
+                'end_month'        => $endMonth,
+                'end_year'         => $endYear,
+                'is_current'       => $current,
+                'location_city'    => $e['locationCity']    ? mb_substr((string)$e['locationCity'], 0, 120)    : null,
+                'location_country' => $e['locationCountry'] ? mb_substr((string)$e['locationCountry'], 0, 120) : null,
+                'description'      => $e['description']     ? mb_substr((string)$e['description'], 0, 65535)   : null,
+                'position'         => $i,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ];
+
+            // skills (allow duplicates)
+            $skills = [];
+            foreach (($e['skills'] ?? []) as $j => $s) {
+                $name  = trim((string) ($s['name'] ?? ''));
+                if ($name === '') continue;
+                $level = (int) ($s['level'] ?? 2);
+                if ($level < 1 || $level > 3) $level = 2;
+                $skills[] = [
+                    'name'      => mb_substr($name, 0, 120),
+                    'level'     => $level,
+                    'position'  => $j,
+                    'created_at'=> now(),
+                    'updated_at'=> now(),
+                ];
+            }
+            $skillsByIndex[$i] = $skills;
+        }
+
+        if (empty($rows)) {
+            return back()->withErrors(['experiences' => 'Add at least one experience with company & job title.'])->withInput();
+        }
+
+        DB::transaction(function () use ($user, $rows, $skillsByIndex) {
+            // reset user experiences for idempotent onboarding
+            $user->experiences()->delete();
+
+            foreach ($rows as $i => $row) {
+                /** @var \App\Models\Experience $exp */
+                $exp = Experience::create($row);
+
+                $skills = $skillsByIndex[$i] ?? [];
+                foreach ($skills as $s) {
+                    $exp->skills()->create($s);
+                }
+            }
+
+            // advance onboarding
+            $user->forceFill(['is_profile_complete' => 'portfolio'])->save();
+        });
+
+        return redirect()
+            ->route('tenant.onboarding.portfolio')
+            ->with('status', 'Experience saved. Let’s add your portfolio.');
+    }
+
+    private function clampMonth($m): ?int
+    {
+        $m = $m === '' || $m === null ? null : (int) $m;
+        return ($m !== null && $m >= 1 && $m <= 12) ? $m : null;
+    }
+
+    private function clampYear($y, int $min, int $max): ?int
+    {
+        $y = $y === '' || $y === null ? null : (int) $y;
+        return ($y !== null && $y >= $min && $y <= $max) ? $y : null;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function storeExperience(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'experiences' => ['required', 'string'],
+        ]);
+
+        $raw = json_decode($request->input('experiences'), true);
+        if (!is_array($raw)) {
+            return back()->withErrors(['experiences' => 'Invalid experiences payload.'])->withInput();
+        }
+
+        $now = now();
+        $expRows = [];
+        $skillsByIndex = [];
+
+        foreach ($raw as $i => $row) {
+            $company = trim((string)($row['company'] ?? ''));
+            $title   = trim((string)($row['title']   ?? ''));
+
+            if ($company === '' || $title === '') {
+                // Ignore incomplete lines (UI should prevent these)
+                continue;
+            }
+
+            // Normalize dates
+            $sm = ($row['startMonth'] ?? '') !== '' ? (int)$row['startMonth'] : null;
+            $sy = ($row['startYear']  ?? '') !== '' ? (int)$row['startYear']  : null;
+            $em = ($row['endMonth']   ?? '') !== '' ? (int)$row['endMonth']   : null;
+            $ey = ($row['endYear']    ?? '') !== '' ? (int)$row['endYear']    : null;
+            $current = (bool)($row['current'] ?? false);
+
+            if ($current) { $em = null; $ey = null; }
+
+            // Guard: end cannot be before start
+            if (!$current && $sm && $sy && $em && $ey) {
+                $start = Carbon::createFromDate($sy, $sm, 1);
+                $end   = Carbon::createFromDate($ey, $em, 1);
+                if ($end->lt($start)) { $em = null; $ey = null; }
+            }
+
+            // ✅ FIX: the 2nd arg of mb_substr is START; we want a MAX LENGTH => use (0, N)
+            $description      = trim((string)($row['description'] ?? ''));
+            $locationCity     = trim((string)($row['locationCity'] ?? ''));
+            $locationCountry  = trim((string)($row['locationCountry'] ?? ''));
+
+            $expRows[] = [
+                'user_id'          => $user->id,
+                'company'          => mb_substr($company, 0, 160),
+                'company_id'       => $row['company_id'] ?? null,
+                'title'            => mb_substr($title, 0, 160),
+                'description'      => $description !== '' ? mb_substr($description, 0, 3000) : null,
+                'location_city'    => $locationCity !== '' ? mb_substr($locationCity, 0, 120) : null,
+                'location_country' => $locationCountry !== '' ? mb_substr($locationCountry, 0, 120) : null,
+                'start_month'      => $sm,
+                'start_year'       => $sy,
+                'end_month'        => $em,
+                'end_year'         => $ey,
+                'is_current'       => $current,
+                'position'         => (int)$i,
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ];
+
+            // Collect skills for this experience index
+            $skills = array_values(array_filter(($row['skills'] ?? []), function ($s) {
+                return isset($s['name']) && trim((string)$s['name']) !== '';
+            }));
+
+            $skillsByIndex[$i] = array_map(function ($s, $k) use ($now) {
+                $lvl = (int)($s['level'] ?? 2);
+                $lvl = max(1, min(3, $lvl));
+                return [
+                    'name'        => mb_substr(trim((string)$s['name']), 0, 120),
+                    'level'       => $lvl,
+                    'position'    => (int)$k,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ];
+            }, $skills, array_keys($skills));
+        }
+
+        if (empty($expRows)) {
+            return back()->withErrors([
+                'experiences' => 'Please add at least one experience with Company & Job title.',
+            ])->withInput();
+        }
+
+        DB::transaction(function () use ($user, $expRows, $skillsByIndex) {
+            // Replace user’s experiences atomically
+            $user->experiences()->each(function ($exp) { $exp->skills()->delete(); });
+            $user->experiences()->delete();
+
+            foreach ($expRows as $idx => $row) {
+                /** @var \App\Models\Experience $exp */
+                $exp = Experience::create($row);
+
+                $skillRows = $skillsByIndex[$idx] ?? [];
+                foreach ($skillRows as &$s) { $s['experience_id'] = $exp->id; }
+                if (!empty($skillRows)) {
+                    ExperienceSkill::insert($skillRows);
+                }
+            }
+
+            // ✅ Advance to PREFERENCES (not portfolio)
+            $user->forceFill(['is_profile_complete' => 'preferences'])->save();
+        });
+
+        // ✅ Redirect to the Preferences page
+        return redirect()
+            ->route('tenant.onboarding.preferences')
+            ->with('status', 'Experience saved. Set your preferences next.');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Store a base64 data URL image to public disk.
+     * Returns the storage path or null.
+     */
+    protected function storeDataUrlImage(int $userId, string $dataUrl, int $projectId): ?string
+    {
+        // data:image/{type};base64,{payload}
+        if (!preg_match('#^data:image/([a-zA-Z0-9.+-]+);base64,(.+)$#', $dataUrl, $m)) {
+            return null;
+        }
+        $ext = strtolower($m[1]); // e.g. png, jpeg, webp
+        $ext = $ext === 'jpg' ? 'jpeg' : $ext;
+
+        // guard: only allow common formats
+        $allowed = ['png','jpeg','webp'];
+        if (!in_array($ext, $allowed, true)) {
+            $ext = 'jpeg';
+        }
+
+        $bin = base64_decode($m[2], true);
+        if ($bin === false || strlen($bin) < 16) {
+            return null;
+        }
+
+        $dir = "portfolio/{$userId}";
+        $name = 'p_'.$projectId.'_'.Str::random(8).'.'.$ext;
+        $path = $dir.'/'.$name;
+
+        Storage::disk('public')->put($path, $bin);
+        return $path;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    public function review(Request $request)
+    {
+        $user = $request->user()->loadMissing([
+            'educations'        => fn ($q) => $q->orderBy('position'),
+            'experiences'       => fn ($q) => $q->orderBy('position')->with('skills'),
+            'portfolioProjects' => fn ($q) => $q->orderBy('position'),
+            'preference',
+        ]);
+    
+        // Build a light snapshot for the view (used if localStorage is empty or incomplete)
+        $profile = [
+            'name'        => trim($user->first_name.' '.$user->last_name) ?: $user->name,
+            'initial'     => strtoupper(mb_substr($user->first_name ?: $user->name, 0, 1)),
+            'username'    => $user->username ?? ('user-'.$user->id),
+            'location'    => trim(implode(', ', array_filter([$user->city, $user->country]))),
+            'skills'      => collect($user->skills ?? [])->values(), // if you store global skills on user
+            'experiences' => $user->experiences->map(function ($e) {
+                return [
+                    'company'       => $e->company,
+                    'title'         => $e->title,
+                    'start_month'   => $e->start_month,
+                    'start_year'    => $e->start_year,
+                    'end_month'     => $e->end_month,
+                    'end_year'      => $e->end_year,
+                    'is_current'    => (bool)$e->is_current,
+                    'skills'        => $e->skills->map(fn($s) => ['name' => $s->name, 'level' => (int)$s->level])->values(),
+                ];
+            })->values(),
+            'projects'    => $user->portfolioProjects->map(function ($p) {
+                return [
+                    'title'       => $p->title,
+                    'description' => $p->description,
+                    'link'        => $p->url,
+                    'image'       => $p->cover_url, // if you store one
+                ];
+            })->values(),
+            'is_public'   => (bool) ($user->is_public ?? true),
+        ];
+    
+        return view('tenant.onboarding.review', compact('profile'));
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -480,66 +1140,30 @@ public function storeLocation(Request $request)
         return view('tenant.onboarding.experience');
     }
 
-    public function storeExperience(Request $request)
-    {
-        $experiences = json_decode($request->input('experiences'), true);
-        Session::put('tenant.onboarding.experience', $experiences);
-        return redirect()->route('tenant.onboarding.portfolio');
-    }
+
 
     public function portfolio()
     {
         return view('tenant.onboarding.portfolio');
     }
 
-    public function storePortfolio(Request $request)
-    {
-        $projects = json_decode($request->input('projects'), true);
-        Session::put('tenant.onboarding.portfolio', $projects);
-        return redirect()->route('tenant.onboarding.education');
-    }
+
 
     public function education()
     {
         return view('tenant.onboarding.education');
     }
 
-    public function storeEducation(Request $request)
-    {
-        $education = json_decode($request->input('education'), true);
-        Session::put('tenant.onboarding.education', $education);
-        return redirect()->route('tenant.onboarding.preferences');
-    }
+
 
     public function preferences()
     {
         return view('tenant.onboarding.preferences');
     }
 
-    public function storePreferences(Request $request)
-    {
-        // $validated = $request->validate([...]);
-        // Session::put('tenant.onboarding.preferences', $validated);
-        return redirect()->route('tenant.onboarding.review');
-    }
+  
 
-    public function review()
-    {
-        $data = [
-            'personal'    => Session::get('tenant.onboarding.personal'),
-            'location'    => Session::get('tenant.onboarding.location'),
-            'skills'      => Session::get('tenant.onboarding.skills'),
-            'experience'  => Session::get('tenant.onboarding.experience'),
-            'portfolio'   => Session::get('tenant.onboarding.portfolio'),
-            'education'   => Session::get('tenant.onboarding.education'),
-            'preferences' => Session::get('tenant.onboarding.preferences'),
-        ];
+   
 
-        return view('tenant.onboarding.review', compact('data'));
-    }
-
-    public function storepublish()
-    {
-        return view('tenant.onboarding.publish');
-    }
+ 
 }

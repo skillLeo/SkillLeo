@@ -13,7 +13,8 @@ use App\Http\Controllers\Auth\{
 };
 use App\Http\Controllers\Tenant\{
     OnboardingController as TenantOnboardingController,
-    ProfileController as TenantProfileController
+    ProfileController as TenantProfileController,
+    ProfilePageController
 };
 use App\Http\Controllers\Client\{
     OnboardingController as ClientOnboardingController
@@ -23,17 +24,6 @@ use App\Http\Controllers\Settings\ConnectedAccountsController;
 use App\Http\Controllers\Api\GeoController;
 
 
-Route::prefix('location')->group(function () {
-    Route::get('countries', [LocationApiController::class, 'countries']);       
-    Route::get('states',    [LocationApiController::class, 'states']);           
-    Route::get('cities',    [LocationApiController::class, 'cities']);   
-    Route::get('reverse',   [LocationApiController::class, 'reverse']);
-    Route::get('bootstrap', [LocationApiController::class, 'bootstrap']);
-    Route::get('cities-bundle', [LocationApiController::class, 'citiesBundle']);
-    
-    Route::get('country-pack', [LocationApiController::class, 'countryPack']);
-
-});
 
 Route::middleware(['auth','throttle:60,1'])
     ->get('/api/username/check', [TenantOnboardingController::class, 'checkUsername'])
@@ -59,7 +49,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
 
 
-
+Route::get('/admin/institutions', function () {
+    $items = \App\Models\Institution::orderBy('country')->orderBy('name')->paginate(50);
+    return view('admin.institutions.index', compact('items'));
+})->middleware(['auth']);
 
 
 
@@ -171,7 +164,8 @@ Route::middleware('auth')->group(function () {
             Route::post('portfolio',   [TenantOnboardingController::class, 'storePortfolio'])->name('portfolio.store');
             Route::post('education',   [TenantOnboardingController::class, 'storeEducation'])->name('education.store');
             Route::post('preferences', [TenantOnboardingController::class, 'storePreferences'])->name('preferences.store');
-            Route::post('publish',     [TenantOnboardingController::class, 'storepublish'])->name('publish.store');
+            Route::post('review',     [TenantOnboardingController::class, 'storeReview'])->name('review.store');
+            Route::post('publish',     [TenantOnboardingController::class, 'storePublish'])->name('publish.store');
         });
     });
 
@@ -202,6 +196,6 @@ Route::middleware('auth')->group(function () {
 
 
 // Public profile (keep last so it doesn't shadow other routes)
-Route::get('{username}', [TenantProfileController::class, 'show'])
+Route::get('{username}', [ProfilePageController::class, 'index'])
     ->where('username', '[a-zA-Z0-9_-]+')
     ->name('tenant.profile');

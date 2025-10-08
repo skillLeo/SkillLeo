@@ -125,8 +125,6 @@ skipUrl="{{ route('tenant.onboarding.education') }}"
 }
 
 .toggle-container {
-    background: var(--card);
-    border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
 }

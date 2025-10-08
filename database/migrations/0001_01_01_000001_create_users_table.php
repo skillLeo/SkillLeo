@@ -33,6 +33,7 @@ return new class extends Migration
             ->default('pending_onboarding')
             ->comment('pending_onboarding, onboarding_incomplete, onboarded, suspended');
             $table->string('is_profile_complete')->default('start');
+            $table->string('is_public')->default('onboarding');
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
             $table->unsignedInteger('login_count')->default(0);

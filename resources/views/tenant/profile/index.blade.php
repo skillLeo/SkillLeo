@@ -176,32 +176,6 @@
         </div>
 
 
-
-        {{-- <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                function setMainContainerPadding() {
-                    const nav = document.querySelector('.top-nav');
-                    const mainContainer = document.querySelector('.main-container');
-                    
-                    if (nav && mainContainer) {
-                        const navHeight = nav.offsetHeight;
-                        mainContainer.style.paddingTop = navHeight + 'px';
-                    }
-                }
-                
-                // Set on load
-                setMainContainerPadding();
-                
-                // Update on window resize (handles mobile/desktop switch)
-                let resizeTimer;
-                window.addEventListener('resize', function() {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(setMainContainerPadding, 100);
-                });
-            });
-            </script> --}}
-
-
         
 @endsection
 

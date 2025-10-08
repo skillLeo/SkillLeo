@@ -10,108 +10,77 @@ use App\Http\Controllers\Controller;
 
 class LocationApiController extends Controller
 {
+    private const CN_BASE = 'https://countriesnow.space/api/v0.1/countries';
 
+    /**
+     * Unified search endpoint - searches across countries, states, and cities
+     * GET /api/location/search?q=karachi
+     */
+    public function search(Request $req)
+    {
+        $q = Str::lower(trim($req->query('q', '')));
+        
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
 
-    public function countryPack(Request $req)
-    {
-        $country = trim((string)$req->query('country'));
-        abort_if($country === '', 422, 'country required');
-    
-        $cacheKey = 'loc:pack:' . \Illuminate\Support\Str::slug($country);
-    
-        $pack = \Illuminate\Support\Facades\Cache::remember($cacheKey, now()->addDays(3), function () use ($country) {
-            $local = $this->buildPackFromLocal($country);
-            if (!empty($local)) return $local;
-            return $this->buildPackFromCountriesNow($country);
-        });
-    
-        return response()->json($pack);
-    }
-    
-    private function buildPackFromLocal(string $country): array
-    {
-        $base = storage_path('app/location');
-        $fStates = $base . '/states.json';
-        $fCities = $base . '/cities.json';
-        if (!is_file($fStates) || !is_file($fCities)) return [];
-    
-        $statesJson = json_decode(file_get_contents($fStates), true);
-        $citiesJson = json_decode(file_get_contents($fCities), true);
-        if (!$statesJson || !$citiesJson) return [];
-    
-        $states = collect($statesJson['states'] ?? [])
-            ->whereStrict('country_name', $country)
-            ->values(['id','name'])
+        $results = [];
+
+        // Search countries
+        $countries = $this->searchCountries($q);
+        foreach ($countries as $country) {
+            $results[] = [
+                'type' => 'country',
+                'name' => $country['name'],
+                'display' => $country['name'],
+                'country' => $country['name'],
+                'state' => null,
+                'city' => null,
+                'iso2' => $country['iso2'] ?? null,
+            ];
+        }
+
+        // Search states (from popular countries)
+        $states = $this->searchStates($q);
+        foreach ($states as $state) {
+            $results[] = [
+                'type' => 'state',
+                'name' => $state['name'],
+                'display' => "{$state['name']}, {$state['country']}",
+                'country' => $state['country'],
+                'state' => $state['name'],
+                'city' => null,
+            ];
+        }
+
+        // Search cities (from popular countries/states)
+        $cities = $this->searchCities($q);
+        foreach ($cities as $city) {
+            $results[] = [
+                'type' => 'city',
+                'name' => $city['name'],
+                'display' => "{$city['name']}, {$city['state']}, {$city['country']}",
+                'country' => $city['country'],
+                'state' => $city['state'],
+                'city' => $city['name'],
+            ];
+        }
+
+        // Limit results and sort by relevance
+        $results = collect($results)
+            ->sortBy(function($item) use ($q) {
+                // Prioritize exact matches and cities
+                $name = Str::lower($item['name']);
+                if ($name === $q) return 0;
+                if (Str::startsWith($name, $q)) return 1;
+                return 2;
+            })
+            ->take(15)
+            ->values()
             ->all();
-    
-        $cityByState = collect($citiesJson['cities'] ?? [])->groupBy('state_id');
-    
-        $resultStates = [];
-        foreach ($states as $s) {
-            $cities = ($cityByState->get($s['id']) ?? collect())
-                ->pluck('name')->filter()->unique()->sort()->values()->all();
-            $resultStates[] = ['name' => $s['name'], 'cities' => $cities];
-        }
-    
-        // flat cities across the country (for no-state countries or quick city list)
-        $flatCities = collect($resultStates)->flatMap(fn($s) => $s['cities'])
-            ->filter()->unique()->sort()->values()->all();
-    
-        // If no states exist but we have cities linked indirectly (rare), expose them
-        if (empty($resultStates) && !empty($flatCities)) {
-            // Keep states empty; frontend will show N/A and use flat_cities
-        }
-    
-        return [
-            'country'     => $country,
-            'states'      => collect($resultStates)->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
-            'flat_cities' => $flatCities,
-        ];
+
+        return response()->json($results);
     }
-    
-    private function buildPackFromCountriesNow(string $country): array
-    {
-        $statesResp = \Illuminate\Support\Facades\Http::timeout(25)
-            ->post(self::CN_BASE . '/states', ['country' => $country]);
-    
-        $statesArr = $statesResp->ok() ? (data_get($statesResp->json(), 'data.states', []) ?? []) : [];
-        $list = [];
-        $flat = [];
-    
-        foreach ($statesArr as $s) {
-            $sname = $s['name'] ?? null;
-            if (!$sname) continue;
-    
-            $citiesResp = \Illuminate\Support\Facades\Http::timeout(25)
-                ->post(self::CN_BASE . '/state/cities', ['country' => $country, 'state' => $sname]);
-            $cities = $citiesResp->ok() ? (data_get($citiesResp->json(), 'data', []) ?? []) : [];
-            sort($cities, SORT_NATURAL | SORT_FLAG_CASE);
-    
-            $list[] = ['name' => $sname, 'cities' => array_values($cities)];
-            $flat = array_values(array_unique(array_merge($flat, $cities)));
-        }
-    
-        usort($list, fn($a,$b) => strnatcasecmp($a['name'], $b['name']));
-        sort($flat, SORT_NATURAL | SORT_FLAG_CASE);
-    
-        return ['country' => $country, 'states' => $list, 'flat_cities' => $flat];
-    }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    private const CN_BASE = 'https://countriesnow.space/api/v0.1/countries'; // CountriesNow
 
     /** Get countries (ISO2 + name). */
     public function countries(Request $req)
@@ -119,17 +88,15 @@ class LocationApiController extends Controller
         $q = Str::lower(trim($req->query('q', '')));
 
         $data = Cache::remember('loc:countries', now()->addHours(12), function () {
-            // Prefer ISO codes endpoint; fallback to base list.
             $resp = Http::timeout(15)->get(self::CN_BASE.'/iso');
             if ($resp->ok() && isset($resp['data'])) {
                 return collect($resp['data'])->map(fn ($c) => [
-                    'name' => $c['name']        ?? $c['country'] ?? null,
+                    'name' => $c['name'] ?? $c['country'] ?? null,
                     'iso2' => strtoupper($c['Iso2'] ?? $c['iso2'] ?? $c['iso'] ?? ''),
                     'iso3' => strtoupper($c['Iso3'] ?? $c['iso3'] ?? ''),
                 ])->filter(fn($c) => $c['name'] && $c['iso2'])->values()->all();
             }
 
-            // Fallback: countries with cities (no codes)
             $fallback = Http::timeout(15)->get(self::CN_BASE);
             $list = ($fallback->ok() && isset($fallback['data'])) ? $fallback['data'] : [];
             return collect($list)->map(fn($c) => [
@@ -149,7 +116,7 @@ class LocationApiController extends Controller
         return response()->json($data);
     }
 
-    /** Get states of a country. Accepts ?country=Pakistan or ?iso2=PK */
+    /** Get states of a country. */
     public function states(Request $req)
     {
         $country = $this->resolveCountryName($req);
@@ -169,13 +136,12 @@ class LocationApiController extends Controller
             return [];
         });
 
-        // Fallback from cache file (if you choose to warm it; see command below)
         if (empty($states)) $states = $this->fallbackStates($country);
 
         return response()->json($states);
     }
 
-    /** Get cities inside a state of a country. Requires ?country=Pakistan&state=Sindh */
+    /** Get cities inside a state of a country. */
     public function cities(Request $req)
     {
         $country = $this->resolveCountryName($req);
@@ -200,7 +166,7 @@ class LocationApiController extends Controller
         return response()->json($cities);
     }
 
-    /** Reverse geocode lat/lng to {country,state,city} using Nominatim, then normalize to our lists. */
+    /** Reverse geocode */
     public function reverse(Request $req)
     {
         $lat = (float) $req->query('lat');
@@ -208,7 +174,6 @@ class LocationApiController extends Controller
         abort_if(!$lat || !$lng, 422, 'lat & lng required');
 
         $headers = [
-            // Identify your app + contact per Nominatim policy
             'User-Agent' => 'ProMatch/1.0 ('.config('services.nominatim.email','your@email').')',
             'Accept'     => 'application/json',
         ];
@@ -219,18 +184,16 @@ class LocationApiController extends Controller
                 'lat' => $lat,
                 'lon' => $lng,
                 'format' => 'jsonv2',
-                'zoom' => 10,            // favor city-level
+                'zoom' => 10,
                 'addressdetails' => 1,
                 'extratags' => 0,
             ])->json();
 
         $addr = data_get($geo, 'address', []);
-        // Candidate strings from OSM
         $countryName = data_get($addr, 'country');
         $stateName   = data_get($addr, 'state') ?? data_get($addr, 'region') ?? data_get($addr, 'province');
         $cityName    = data_get($addr, 'city') ?? data_get($addr, 'town') ?? data_get($addr, 'village') ?? data_get($addr, 'county');
 
-        // Normalize (case/diacritics) & snap to CountriesNow lists
         $country = $this->closestCountry($countryName);
         $state   = $country ? $this->closestState($country, $stateName) : null;
         $city    = ($country && $state) ? $this->closestCity($country, $state, $cityName) : null;
@@ -241,7 +204,104 @@ class LocationApiController extends Controller
         ]);
     }
 
-    // ---------- Helpers ----------
+    // ---------- Private Helper Methods ----------
+
+    private function searchCountries(string $query): array
+    {
+        $countries = Cache::get('loc:countries', []);
+        return collect($countries)
+            ->filter(fn($c) => Str::contains(Str::lower($c['name']), $query))
+            ->take(5)
+            ->values()
+            ->all();
+    }
+
+    private function searchStates(string $query): array
+    {
+        $results = [];
+        $popularCountries = ['Pakistan', 'United States', 'United Kingdom', 'Canada', 'India', 'Australia'];
+        
+        foreach ($popularCountries as $country) {
+            $cacheKey = 'loc:states:'.Str::slug($country);
+            $states = Cache::get($cacheKey);
+            
+            if (!$states) {
+                try {
+                    $resp = Http::timeout(10)->post(self::CN_BASE.'/states', ['country' => $country]);
+                    if ($resp->ok()) {
+                        $payload = $resp->json();
+                        $states = data_get($payload, 'data.states', []);
+                        Cache::put($cacheKey, $states, now()->addHours(12));
+                    }
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
+
+            if ($states) {
+                foreach ($states as $state) {
+                    if (Str::contains(Str::lower($state['name']), $query)) {
+                        $results[] = [
+                            'name' => $state['name'],
+                            'country' => $country,
+                        ];
+                        if (count($results) >= 10) break 2;
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    private function searchCities(string $query): array
+    {
+        $results = [];
+        $popularLocations = [
+            'Pakistan' => ['Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan'],
+            'United States' => ['California', 'Texas', 'New York', 'Florida'],
+            'United Kingdom' => ['England', 'Scotland', 'Wales'],
+            'India' => ['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu'],
+        ];
+
+        foreach ($popularLocations as $country => $states) {
+            foreach ($states as $state) {
+                $cacheKey = 'loc:cities:'.md5($country.'|'.$state);
+                $cities = Cache::get($cacheKey);
+
+                if (!$cities) {
+                    try {
+                        $resp = Http::timeout(10)->post(self::CN_BASE.'/state/cities', [
+                            'country' => $country,
+                            'state' => $state
+                        ]);
+                        if ($resp->ok()) {
+                            $payload = $resp->json();
+                            $cities = data_get($payload, 'data', []);
+                            Cache::put($cacheKey, $cities, now()->addHours(12));
+                        }
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+
+                if ($cities) {
+                    foreach ($cities as $city) {
+                        if (Str::contains(Str::lower($city), $query)) {
+                            $results[] = [
+                                'name' => $city,
+                                'state' => $state,
+                                'country' => $country,
+                            ];
+                            if (count($results) >= 15) break 3;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $results;
+    }
 
     private function resolveCountryName(Request $req): ?string
     {
@@ -259,20 +319,19 @@ class LocationApiController extends Controller
 
     private function fallbackStates(string $country): array
     {
-        $path = storage_path('app/location/states.json'); // optional warmed cache
+        $path = storage_path('app/location/states.json');
         if (!is_file($path)) return [];
         $json = json_decode(file_get_contents($path), true);
         $id = collect($json['countries'] ?? [])->firstWhere('name', $country)['id'] ?? null;
         if (!$id) return [];
-        $states = collect($json['states'] ?? [])->where('country_id', $id)
+        return collect($json['states'] ?? [])->where('country_id', $id)
             ->map(fn($s) => ['name'=>$s['name'], 'state_code'=>strtoupper($s['state_code'] ?? Str::slug($s['name'],'_'))])
             ->values()->all();
-        return $states;
     }
 
     private function fallbackCities(string $country, string $state): array
     {
-        $path = storage_path('app/location/cities.json'); // optional warmed cache
+        $path = storage_path('app/location/cities.json');
         if (!is_file($path)) return [];
         $json = json_decode(file_get_contents($path), true);
         $stateId = collect($json['states'] ?? [])
@@ -287,10 +346,8 @@ class LocationApiController extends Controller
         if (!$name) return null;
         $needle = Str::lower($name);
         $list = Cache::get('loc:countries', []);
-        // exact
         $hit = collect($list)->first(fn($c) => Str::lower($c['name']) === $needle);
         if ($hit) return $hit['name'];
-        // loose contains
         $hit = collect($list)->first(fn($c) => Str::contains(Str::lower($c['name']), $needle));
         return $hit['name'] ?? $name;
     }

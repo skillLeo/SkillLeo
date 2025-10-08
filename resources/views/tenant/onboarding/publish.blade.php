@@ -19,8 +19,10 @@
     <p class="form-subtitle">Everything is set. Celebrate the launch and share your professional profile.</p>
 
     <div class="profile-card">
-        <div class="profile-url" id="profileUrl">promatch.com/username</div>
-        <button class="btn btn-secondary" id="copyBtn">
+        <div class="profile-url" id="profileUrl">
+            {{ config('app.url') }}/{{  Illuminate\Support\Facades\Auth::user()->username }}
+        </div>
+                <button class="btn btn-secondary" id="copyBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
                 <path d="m5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
@@ -30,8 +32,11 @@
     </div>
 
     <div class="actions">
-        <a href="{{route('tenant.profile')}}" class="btn btn-primary">Go to profile</a>
-        <a href="#" class="btn btn-success">Go to dashboard</a>
+        <form id="publishCompleteForm" action="{{ route('tenant.onboarding.publish.store') }}" method="POST" style="display:inline;">
+            @csrf
+            <button type="submit" class="btn btn-primary">Go to profile</button>
+        </form>
+                <a href="#" class="btn btn-success">Go to dashboard</a>
         <button class="btn btn-secondary" id="shareBtn">Share</button>
     </div>
 
@@ -188,176 +193,179 @@
 
     @push('scripts')
     <script>
+    /** Server values (safe, escaped) */
+    const APP_URL  = @json(rtrim(config('app.url'), '/'));
+    const USERNAME = @json(optional( Illuminate\Support\Facades\Auth::user())->username ?? 'username');
+    
+    /** Small toast */
     function toast(msg) {
-        const t = document.createElement('div');
-        t.className = 'toast';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(() => {
-            t.style.opacity = '0';
-            t.style.transform = 'translateY(-6px)';
-            setTimeout(() => t.remove(), 200);
-        }, 2200);
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(-6px)';
+        setTimeout(() => t.remove(), 200);
+      }, 2200);
     }
-
+    
     function loadProfileBits() {
-        const personal = JSON.parse(localStorage.getItem('onboarding_personal') || '{}');
-        const skills = JSON.parse(localStorage.getItem('onboarding_skills') || '[]');
-        const exp = JSON.parse(localStorage.getItem('onboarding_experience') || '[]');
-        const port = JSON.parse(localStorage.getItem('onboarding_portfolio') || '[]');
-        const edu = JSON.parse(localStorage.getItem('onboarding_education') || '[]');
-
-        const username = personal.username || 'username';
-        const url = `promatch.com/${username}`;
-        document.getElementById('profileUrl').textContent = url;
-
-        // Update profile link
-        const profileBtn = document.getElementById('profileBtn');
-        if (profileBtn) {
-            profileBtn.href = profileBtn.href.replace('placeholder', username);
-        }
-
-        const skillsN = skills.length;
-        const completePct = (() => {
-            let p = 0;
-            if (personal.firstName && personal.lastName) p += 25;
-            if (personal.username) p += 15;
-            if (skillsN >= 3) p += 30;
-            if (exp.length) p += 20;
-            if (port.length || edu.length) p += 10;
-            return Math.min(100, p);
-        })();
-
-        animateCount('skillsCount', skillsN, 800);
-        animateCountPercent('profileComplete', completePct, 1000);
+      const personal = JSON.parse(localStorage.getItem('onboarding_personal')    || '{}');
+      const skills   = JSON.parse(localStorage.getItem('onboarding_skills')      || '[]');
+      const exp      = JSON.parse(localStorage.getItem('onboarding_experience')  || '[]');
+      const port     = JSON.parse(localStorage.getItem('onboarding_portfolio')   || '[]');
+      const edu      = JSON.parse(localStorage.getItem('onboarding_education')   || '[]');
+    
+      // Prefer server username; fall back to localStorage if not present
+      const username = (USERNAME && USERNAME.trim()) ? USERNAME : (personal.username || 'username');
+      const fullUrl  = `${APP_URL}/${username}`;
+    
+      // Show URL text (no hardcoded domain)
+      const urlEl = document.getElementById('profileUrl');
+      if (urlEl) urlEl.textContent = fullUrl.replace(/^https?:\/\//i, '');
+    
+      // If you had a "Go to profile" button with id="profileBtn", set it:
+      const profileBtn = document.getElementById('profileBtn');
+      if (profileBtn) profileBtn.href = fullUrl;
+    
+      // Stats + completion
+      const skillsN = skills.length;
+      const completePct = (() => {
+        let p = 0;
+        if (personal.firstName && personal.lastName) p += 25;
+        if (personal.username || USERNAME)          p += 15;
+        if (skillsN >= 3)                            p += 30;
+        if (exp.length)                              p += 20;
+        if (port.length || edu.length)               p += 10;
+        return Math.min(100, p);
+      })();
+    
+      animateCount('skillsCount', skillsN, 800);
+      animateCountPercent('profileComplete', completePct, 1000);
     }
-
+    
     function animateCount(id, target, dur) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const start = performance.now();
-        
-        function tick(now) {
-            const t = Math.min(1, (now - start) / dur);
-            el.textContent = Math.round(t * target);
-            if (t < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / dur);
+        el.textContent = Math.round(t * target);
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     }
-
+    
     function animateCountPercent(id, target, dur) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const start = performance.now();
-        
-        function tick(now) {
-            const t = Math.min(1, (now - start) / dur);
-            el.textContent = Math.round(t * target) + '%';
-            if (t < 1) requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / dur);
+        el.textContent = Math.round(t * target) + '%';
+        if (t < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     }
-
-    document.getElementById('copyBtn').addEventListener('click', async (e) => {
-        const full = 'https://' + document.getElementById('profileUrl').textContent;
+    
+    // Copy & Share
+    document.getElementById('copyBtn')?.addEventListener('click', async () => {
+      const username = (USERNAME && USERNAME.trim()) ? USERNAME : 'username';
+      const full = `${APP_URL}/${username}`;
+      try {
+        await navigator.clipboard.writeText(full);
+        toast('Link copied');
+      } catch {
+        toast('Could not copy link');
+      }
+    });
+    
+    document.getElementById('shareBtn')?.addEventListener('click', async () => {
+      const username = (USERNAME && USERNAME.trim()) ? USERNAME : 'username';
+      const full = `${APP_URL}/${username}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'My ProMatch Profile', url: full }); } catch {}
+      } else {
         try {
-            await navigator.clipboard.writeText(full);
-            toast('Link copied');
-        } catch {
-            toast('Could not copy link');
-        }
+          await navigator.clipboard.writeText(full);
+          toast('Link copied to share');
+        } catch {}
+      }
     });
-
-    document.getElementById('shareBtn').addEventListener('click', async () => {
-        const full = 'https://' + document.getElementById('profileUrl').textContent;
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'My ProMatch Profile', url: full });
-            } catch {}
-        } else {
-            try {
-                await navigator.clipboard.writeText(full);
-                toast('Link copied to share');
-            } catch {}
-        }
-    });
-
-    // Minimal celebration animation
+    
+    // Minimal celebration animation (respects reduced motion)
     (() => {
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReduced) {
-            loadProfileBits();
-            return;
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReduced) { loadProfileBits(); return; }
+    
+      const cvs = document.createElement('canvas');
+      cvs.className = 'celebration';
+      cvs.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(cvs);
+    
+      const ctx = cvs.getContext('2d');
+      let w, h;
+      const DPR = Math.min(2, window.devicePixelRatio || 1);
+      const colors = ['#1351d8', '#10B981', '#111111'];
+      const particles = [];
+    
+      function resize() {
+        w = cvs.width  = Math.floor(window.innerWidth  * DPR);
+        h = cvs.height = Math.floor(window.innerHeight * DPR);
+        cvs.style.width  = window.innerWidth  + 'px';
+        cvs.style.height = window.innerHeight + 'px';
+        ctx.setTransform(1,0,0,1,0,0); // reset
+        ctx.scale(DPR, DPR);
+      }
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
+    
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: -10,
+          vx: -0.3 + Math.random() * 0.6,
+          vy: 0.8  + Math.random() * 1,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          size: 2 + Math.random() * 3,
+          alpha: 1,
+          life: 200
+        });
+      }
+    
+      let frame = 0;
+      function loop() {
+        frame++;
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.vy += 0.02;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life--;
+          p.alpha = Math.max(0, p.life / 200);
+    
+          ctx.globalAlpha = p.alpha * 0.7;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    
+          if (p.life <= 0 || p.y > window.innerHeight) particles.splice(i, 1);
         }
-
-        const cvs = document.createElement('canvas');
-        cvs.className = 'celebration';
-        cvs.setAttribute('aria-hidden', 'true');
-        document.body.appendChild(cvs);
-
-        const ctx = cvs.getContext('2d');
-        let w, h;
-        const DPR = Math.min(2, window.devicePixelRatio || 1);
-        const colors = ['#1351d8', '#10B981', '#111111'];
-        const particles = [];
-
-        function resize() {
-            w = cvs.width = Math.floor(window.innerWidth * DPR);
-            h = cvs.height = Math.floor(window.innerHeight * DPR);
-            cvs.style.width = window.innerWidth + 'px';
-            cvs.style.height = window.innerHeight + 'px';
-            ctx.scale(DPR, DPR);
+    
+        if (particles.length > 0 && frame < 300) {
+          requestAnimationFrame(loop);
+        } else {
+          cvs.style.opacity = '0';
+          setTimeout(() => cvs.remove(), 300);
         }
-        resize();
-
-        // Create particles
-        for (let i = 0; i < 50; i++) {
-            particles.push({
-                x: Math.random() * window.innerWidth,
-                y: -10,
-                vx: -0.3 + Math.random() * 0.6,
-                vy: 0.8 + Math.random() * 1,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                size: 2 + Math.random() * 3,
-                alpha: 1,
-                life: 200
-            });
-        }
-
-        let frame = 0;
-        function loop() {
-            frame++;
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.vy += 0.02;
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                p.alpha = Math.max(0, p.life / 200);
-
-                ctx.globalAlpha = p.alpha * 0.7;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
-
-                if (p.life <= 0 || p.y > window.innerHeight) {
-                    particles.splice(i, 1);
-                }
-            }
-
-            if (particles.length > 0 && frame < 300) {
-                requestAnimationFrame(loop);
-            } else {
-                cvs.style.opacity = '0';
-                setTimeout(() => cvs.remove(), 300);
-            }
-        }
-
-        setTimeout(() => requestAnimationFrame(loop), 100);
-        loadProfileBits();
+      }
+    
+      setTimeout(() => requestAnimationFrame(loop), 100);
+      loadProfileBits();
     })();
-
+    
     document.addEventListener('DOMContentLoaded', loadProfileBits);
     </script>
     @endpush
+    
