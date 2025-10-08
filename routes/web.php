@@ -143,8 +143,11 @@ Route::middleware('auth')->group(function () {
     ->middleware(['tenant','onboarding:tenant']) // GET guard for pages
     ->name('tenant.onboarding.')
     ->group(function () {
-        // GET pages (view)
-        Route::get('welcome',    [TenantOnboardingController::class, 'welcome'])->name('welcome');
+
+        Route::post('start-from-scratch', [TenantOnboardingController::class, 'scratch'])
+            ->name('scratch');
+            
+        Route::get('welcome',    action: [TenantOnboardingController::class, 'welcome'])->name('welcome');
         Route::get('personal',   [TenantOnboardingController::class, 'personal'])->name('personal');
         Route::get('location',   [TenantOnboardingController::class, 'location'])->name('location');
         Route::get('skills',     [TenantOnboardingController::class, 'skills'])->name('skills');
@@ -153,14 +156,13 @@ Route::middleware('auth')->group(function () {
         Route::get('education',  [TenantOnboardingController::class, 'education'])->name('education');
         Route::get('preferences',[TenantOnboardingController::class, 'preferences'])->name('preferences');
         Route::get('review',     [TenantOnboardingController::class, 'review'])->name('review');
-        Route::get('publish',    [TenantOnboardingController::class, 'publish'])->name('publish'); // optional GET
+        Route::get('publish',    [TenantOnboardingController::class, 'publish'])->name('publish'); 
 
-        // helper action: start-from-scratch (bypass gates or allowlisted in post gate)
-        Route::post('start-from-scratch', [TenantOnboardingController::class, 'scratch'])
-            ->name('scratch');
 
-        // POST actions (write) — apply the POST guard here
-        Route::middleware('onboarding.post:tenant')->group(function () {
+
+
+
+            Route::middleware('onboarding.post:tenant')->group(function () {
             Route::post('personal', [TenantOnboardingController::class, 'storePersonal'])->name('personal.store');
 
             Route::post('location',    [TenantOnboardingController::class, 'storeLocation'])->name('location.store');
@@ -189,7 +191,7 @@ Route::middleware('auth')->group(function () {
             Route::post('project',     [ClientOnboardingController::class, 'storeProject'])->name('project.store');
             Route::post('budget',      [ClientOnboardingController::class, 'storeBudget'])->name('budget.store');
             Route::post('preferences', [ClientOnboardingController::class, 'storePreferences'])->name('preferences.store');
-            Route::post('publish',     [ClientOnboardingController::class, 'publish'])->name('publish'); // your POST-only
+            Route::post('publish',     [ClientOnboardingController::class, 'publish'])->name('publish'); 
         });
     });
 

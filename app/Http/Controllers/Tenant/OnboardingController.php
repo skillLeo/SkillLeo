@@ -4,10 +4,12 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Models\User;
+use App\Models\Skill;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
  
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
 
@@ -173,7 +175,107 @@ public function storeLocation(Request $request)
 
 
 
+    public function storeSkills(Request $request)
+    {
+        $user = $request->user();
 
+        // Expecting: skills = JSON string: [{ name: string, level: 1|2|3 }, ...]
+        $request->validate([
+            'skills' => ['required', 'string'],
+        ]);
+
+        // Decode and sanitize
+        $raw = json_decode($request->input('skills'), true);
+        if (!is_array($raw)) {
+            return back()->withErrors(['skills' => 'Invalid skills payload.'])->withInput();
+        }
+
+        // Filter, normalize, validate items
+        $clean = [];
+        foreach ($raw as $i => $row) {
+            $name  = isset($row['name']) ? trim((string) $row['name']) : '';
+            $level = (int) ($row['level'] ?? 2);
+
+            if ($name === '' || strlen($name) > 100) {
+                continue;
+            }
+            if (!in_array($level, [1,2,3], true)) {
+                $level = 2;
+            }
+
+            // Keep original display name; ensure unique by slug for dedupe
+            $slug = Str::of($name)
+                ->lower()
+                ->ascii() // keep things URL friendly; "C#/.NET" -> "c-net"
+                ->replaceMatches('/[^a-z0-9]+/i', '-')
+                ->trim('-')
+                ->substr(0, 120)
+                ->value();
+
+            if ($slug === '') continue;
+
+            $clean[$slug] = [
+                'name'  => $name,
+                'slug'  => $slug,
+                'level' => $level,
+                'pos'   => $i, // preserve order user added
+            ];
+        }
+
+        // Business rules
+        if (count($clean) < 3) {
+            return back()->withErrors(['skills' => 'Please add at least 3 skills.'])->withInput();
+        }
+        if (count($clean) > 10) {
+            return back()->withErrors(['skills' => 'Maximum 10 skills allowed.'])->withInput();
+        }
+
+        DB::transaction(function () use ($user, $clean) {
+            // Ensure skills exist (upsert by slug), collect IDs
+            $idsBySlug = [];
+
+            // Bulk-read existing
+            $existing = Skill::query()
+                ->whereIn('slug', array_keys($clean))
+                ->pluck('id', 'slug')
+                ->all();
+
+            // Create missing
+            foreach ($clean as $slug => $row) {
+                if (isset($existing[$slug])) {
+                    $idsBySlug[$slug] = $existing[$slug];
+                    continue;
+                }
+                $skill = Skill::create([
+                    'name' => $row['name'],
+                    'slug' => $slug,
+                ]);
+                $idsBySlug[$slug] = $skill->id;
+            }
+
+            // Build sync payload: [skill_id => ['level'=>..,'position'=>..]]
+            $sync = [];
+            foreach ($clean as $slug => $row) {
+                $skillId = $idsBySlug[$slug];
+                $sync[$skillId] = [
+                    'level'    => $row['level'],
+                    'position' => (int) $row['pos'],
+                ];
+            }
+
+            // Replace user's skills with new set (idempotent)
+            $user->skills()->sync($sync);
+
+            // Advance onboarding stage
+            $user->forceFill([
+                'is_profile_complete' => 'education',
+            ])->save();
+        });
+
+        return redirect()
+            ->route('tenant.onboarding.education')
+            ->with('status', 'Skills saved. Let’s add your education.');
+    }
 
 
 
@@ -371,12 +473,7 @@ public function storeLocation(Request $request)
         return view('tenant.onboarding.skills');
     }
 
-    public function storeSkills(Request $request)
-    {
-        $skills = json_decode($request->input('skills'), true);
-        Session::put('tenant.onboarding.skills', $skills);
-        return redirect()->route('tenant.onboarding.experience');
-    }
+    
 
     public function experience()
     {

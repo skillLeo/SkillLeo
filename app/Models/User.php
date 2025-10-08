@@ -53,6 +53,15 @@ protected $fillable = [
         return $this->hasMany(\App\Models\OAuthIdentity::class);
     }
     
- 
+ // app/Models/User.php
+
+public function skills()
+{
+    return $this->belongsToMany(\App\Models\Skill::class, 'user_skills')
+        ->withPivot(['level', 'position'])
+        ->withTimestamps()
+        ->orderBy('user_skills.position');
+}
+
     
 }
