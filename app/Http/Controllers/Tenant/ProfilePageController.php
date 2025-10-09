@@ -1,80 +1,64 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Profile\ProfileService;
+use App\Support\ProfileVisibility;
+use App\ViewModels\ProfileViewModel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Support\Facades\Auth;
 
-class ProfilePageController extends Controller
+final class ProfilePageController extends Controller
 {
+    /**
+     * Inject the profile service that loads relations
+     */
+    public function __construct(
+        private readonly ProfileService $service
+    ) {}
+
+    /**
+     * Show the public tenant profile by username.
+     */
     public function index(Request $request, string $username)
     {
-        // Find the user by username and eager-load all profile relations
-        $user = User::query()
+        /** @var User $owner */
+        $owner = User::query()
             ->where('username', $username)
-            ->with([
-                // Use your real relation names here
-                'skills:id,user_id,name,level,position',
-                'experiences' => function ($q) {
-                    $q->orderBy('position')->orderByDesc('start_year')->orderByDesc('start_month');
-                },
-                'experiences.skills:id,experience_id,name,level,position',
-                'educations' => function ($q) {
-                    $q->orderBy('position')->orderByDesc('start_year');
-                },
-                'portfolioProjects' => function ($q) {
-                    $q->orderBy('position')->latest('id');
-                },
-                'preference',
-            ])
-            ->first();
+            ->firstOrFail();
 
-        if (! $user) {
-            throw new NotFoundHttpException();
-        }
+        // Check profile visibility (public or owner)
+        ProfileVisibility::ensureVisible($owner);
 
-        // If you want to gate profiles by visibility, uncomment:
-        // if (! $user->is_public) { abort(404); }
+        // Eager-load all relations for this profile
+        $owner = $this->service->load($owner);
 
-        // Derive lightweight arrays for the view (keeps blade simple)
-        $skills      = $user->skills?->sortBy('position')->values() ?? collect();
-        $experiences = $user->experiences ?? collect();
-        $educations  = $user->educations ?? collect();
-        $projects    = $user->portfolioProjects ?? collect();
-        $pref        = $user->preference;
+        // Wrap with ViewModel for Blade consumption
+        $vm = new ProfileViewModel($owner);
 
-        // Useful computed strings
-        $fullName   = trim($user->first_name.' '.$user->last_name) ?: $user->username;
-        $location   = trim(collect([$user->city_name, $user->country_name])->filter()->join(', '));
-        $profileUrl = rtrim(config('app.url'), '/').'/'.$user->username;
-
-        // Simple SEO meta
-        $meta = [
-            'title'       => $fullName.' • '.$skills->take(3)->pluck('name')->join(' · '),
-            'description' => Str::limit(
-                $experiences->first()?->description
-                ?? $projects->first()?->description
-                ?? 'Professional profile on ProMatch.',
-                160
-            ),
-            'url'         => $profileUrl,
-            'image'       => $projects->first()?->cover_url ?? null, // if you store cover images; adjust field name
-        ];
-
+        // Pass fully prepared data to the Blade view
         return view('tenant.profile.index', [
-            'user'        => $user,
-            'fullName'    => $fullName,
-            'location'    => $location,
-            'profileUrl'  => $profileUrl,
-            'skills'      => $skills,
-            'experiences' => $experiences,
-            'educations'  => $educations,
-            'projects'    => $projects,
-            'preference'  => $pref,
-            'meta'        => $meta,
+            // basic profile card
+            'user'         => $vm->userCard(),
+
+            // main portfolio content
+            'portfolios'   => $vm->portfolios(),
+            'categories'   => $vm->portfolioCategories(), // renamed for Blade
+
+            // other profile modules
+            'skillsData'   => $vm->skillsData(),
+            'experiences'  => $vm->experiences(),
+            'reviews'      => $vm->reviews(),
+
+            // extra meta
+            'brandName'    => config('app.name', 'ProMatch'),
+            'messageCount' => method_exists($owner, 'unreadMessagesCount')
+                ? (int) $owner->unreadMessagesCount(Auth::id())
+                : 0,
         ]);
     }
 }

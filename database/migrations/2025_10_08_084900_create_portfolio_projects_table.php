@@ -7,21 +7,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('portfolio_projects', function (Blueprint $table) {
+        Schema::create('portfolios', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
-
-            $table->string('title', 120);
-            $table->string('link_url', 512)->nullable();
-            $table->string('image_path', 255)->nullable(); // storage path (public disk)
-            $table->string('image_disk', 50)->default('public');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('title', 160);
             $table->text('description')->nullable();
-
-            $table->unsignedSmallInteger('position')->default(0);
+            $table->string('link_url')->nullable();
+            $table->string('image_path')->nullable();
+            $table->string('image_disk', 50)->default('public');
+            $table->unsignedInteger('position')->default(0);
             $table->json('meta')->nullable();
-
             $table->timestamps();
 
             $table->index(['user_id', 'position']);
@@ -30,6 +25,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('portfolio_projects');
+        Schema::dropIfExists('portfolios');
     }
 };

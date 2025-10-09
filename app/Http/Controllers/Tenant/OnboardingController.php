@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Skill;
  
 use App\Models\Education;
+use App\Models\Portfolio;
 use App\Models\Experience;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -513,120 +514,119 @@ public function storeLocation(Request $request)
 
     
 
-
-
-
-
-    public function storePortfolio(Request $request)
+    protected function storeDataUrlImage(string $dataUrl, string $dir): ?array
     {
-        $user = $request->user();
-
-        $request->validate([
-            'experiences' => ['required', 'string'],
-        ]);
-
-        $payload = json_decode($request->input('experiences'), true);
-        if (!is_array($payload)) {
-            return back()->withErrors(['experiences' => 'Invalid experiences payload.'])->withInput();
+        // returns ['disk' => 'public', 'path' => 'portfolio/{user}/file.jpg']
+        if (!preg_match('/^data:image\/(\w+);base64,/', $dataUrl, $m)) {
+            return null;
         }
-
-        // sanitize & normalize
-        $rows = [];
-        $skillsByIndex = [];
-        $currentYear = (int) now()->year;
-        $minYear = 1950;
-        $maxYear = $currentYear + 6;
-
-        foreach (array_values($payload) as $i => $e) {
-            $company = trim((string) ($e['company'] ?? ''));
-            $title   = trim((string) ($e['title']   ?? ''));
-            if ($company === '' || $title === '') {
-                continue; // skip incomplete row
-            }
-
-            $startMonth = $this->clampMonth($e['startMonth'] ?? null);
-            $endMonth   = $this->clampMonth($e['endMonth']   ?? null);
-            $startYear  = $this->clampYear($e['startYear']   ?? null, $minYear, $maxYear);
-            $endYear    = $this->clampYear($e['endYear']     ?? null, $minYear, $maxYear);
-            $current    = (bool) ($e['current'] ?? false);
-
-            if ($current) {
-                $endMonth = null;
-                $endYear  = null;
-            } else {
-                // if both present and end < start, nullify end
-                if ($startYear && $startMonth && $endYear && $endMonth) {
-                    $s = ($startYear * 12) + $startMonth;
-                    $n = ($endYear   * 12) + $endMonth;
-                    if ($n < $s) {
-                        $endMonth = null;
-                        $endYear  = null;
-                    }
-                }
-            }
-
-            $rows[] = [
-                'user_id'          => $user->id,
-                'company'          => mb_substr($company, 0, 180),
-                'company_id'       => $e['company_id'] ?? null,
-                'title'            => mb_substr($title, 0, 160),
-                'start_month'      => $startMonth,
-                'start_year'       => $startYear,
-                'end_month'        => $endMonth,
-                'end_year'         => $endYear,
-                'is_current'       => $current,
-                'location_city'    => $e['locationCity']    ? mb_substr((string)$e['locationCity'], 0, 120)    : null,
-                'location_country' => $e['locationCountry'] ? mb_substr((string)$e['locationCountry'], 0, 120) : null,
-                'description'      => $e['description']     ? mb_substr((string)$e['description'], 0, 65535)   : null,
-                'position'         => $i,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ];
-
-            // skills (allow duplicates)
-            $skills = [];
-            foreach (($e['skills'] ?? []) as $j => $s) {
-                $name  = trim((string) ($s['name'] ?? ''));
-                if ($name === '') continue;
-                $level = (int) ($s['level'] ?? 2);
-                if ($level < 1 || $level > 3) $level = 2;
-                $skills[] = [
-                    'name'      => mb_substr($name, 0, 120),
-                    'level'     => $level,
-                    'position'  => $j,
-                    'created_at'=> now(),
-                    'updated_at'=> now(),
-                ];
-            }
-            $skillsByIndex[$i] = $skills;
-        }
-
-        if (empty($rows)) {
-            return back()->withErrors(['experiences' => 'Add at least one experience with company & job title.'])->withInput();
-        }
-
-        DB::transaction(function () use ($user, $rows, $skillsByIndex) {
-            // reset user experiences for idempotent onboarding
-            $user->experiences()->delete();
-
-            foreach ($rows as $i => $row) {
-                /** @var \App\Models\Experience $exp */
-                $exp = Experience::create($row);
-
-                $skills = $skillsByIndex[$i] ?? [];
-                foreach ($skills as $s) {
-                    $exp->skills()->create($s);
-                }
-            }
-
-            // advance onboarding
-            $user->forceFill(['is_profile_complete' => 'portfolio'])->save();
-        });
-
-        return redirect()
-            ->route('tenant.onboarding.portfolio')
-            ->with('status', 'Experience saved. Let’s add your portfolio.');
+        $ext = strtolower($m[1]);
+        $ext = in_array($ext, ['jpg','jpeg','png','webp']) ? $ext : 'jpg';
+    
+        $binary = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1));
+        if ($binary === false) return null;
+    
+        $name = Str::random(20) . '.' . $ext;
+        $path = trim($dir, '/') . '/' . $name;
+    
+        Storage::disk('public')->put($path, $binary);
+    
+        return ['disk' => 'public', 'path' => $path];
     }
+    
+  
+public function storePortfolio(Request $request)
+{
+    $user = $request->user();
+
+    $request->validate([
+        'projects' => ['required','string'],
+    ]);
+
+    $items = json_decode($request->input('projects'), true);
+    if (!is_array($items)) {
+        return back()->withErrors(['projects' => 'Invalid projects payload.'])->withInput();
+    }
+
+    $rows = [];
+    foreach (array_values($items) as $i => $p) {
+        $title = trim((string) ($p['title'] ?? ''));
+        $desc  = trim((string) ($p['description'] ?? ''));
+        $link  = trim((string) ($p['link'] ?? ''));
+        $img64 = $p['image'] ?? null;
+
+        if ($title === '' || $desc === '') {
+            continue;
+        }
+
+        // normalize link
+        if ($link !== '' && !Str::startsWith($link, ['http://','https://'])) {
+            $link = 'https://' . ltrim($link, '/');
+        }
+        if ($link === '') $link = null;
+
+        // store optional dataURL
+        $imagePath = null;
+        $imageDisk = null;
+        if ($img64 && preg_match('/^data:image\/(\w+);base64,/', $img64, $m)) {
+            $ext  = strtolower($m[1]);
+            $ext  = in_array($ext, ['jpg','jpeg','png','webp']) ? $ext : 'jpg';
+            $data = base64_decode(substr($img64, strpos($img64, ',') + 1));
+            if ($data !== false) {
+                $name = Str::random(20) . '.' . $ext;
+                $dir  = 'portfolio/' . $user->id;
+                $imagePath = $dir . '/' . $name;
+                $imageDisk = 'public';
+                Storage::disk($imageDisk)->put($imagePath, $data);
+            }
+        }
+
+        $rows[] = [
+            'user_id'     => $user->id,
+            'title'       => mb_substr($title, 0, 160),
+            'description' => mb_substr($desc, 0, 3000),
+            'link_url'    => $link,
+            'image_path'  => $imagePath,
+            'image_disk'  => $imageDisk,
+            'position'    => (int) $i,
+            'meta'        => null, // or encode tags/category here
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ];
+    }
+
+    if (empty($rows)) {
+        return back()->withErrors(['projects' => 'Please add at least one project with a title and description.'])->withInput();
+    }
+
+    DB::transaction(function () use ($user, $rows) {
+        $user->portfolios()->delete();
+        Portfolio::insert($rows);
+
+        $user->forceFill(['is_profile_complete' => 'preferences'])->save();
+    });
+
+    return redirect()->route('tenant.onboarding.preferences')
+        ->with('status', 'Portfolio saved. Set your work preferences.');
+}
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private function clampMonth($m): ?int
     {
@@ -772,12 +772,12 @@ public function storeLocation(Request $request)
             }
 
             // ✅ Advance to PREFERENCES (not portfolio)
-            $user->forceFill(['is_profile_complete' => 'preferences'])->save();
+            $user->forceFill(['is_profile_complete' => 'portfolio'])->save();
         });
 
         // ✅ Redirect to the Preferences page
         return redirect()
-            ->route('tenant.onboarding.preferences')
+            ->route('tenant.onboarding.portfolio')
             ->with('status', 'Experience saved. Set your preferences next.');
     }
 
@@ -798,36 +798,7 @@ public function storeLocation(Request $request)
      * Store a base64 data URL image to public disk.
      * Returns the storage path or null.
      */
-    protected function storeDataUrlImage(int $userId, string $dataUrl, int $projectId): ?string
-    {
-        // data:image/{type};base64,{payload}
-        if (!preg_match('#^data:image/([a-zA-Z0-9.+-]+);base64,(.+)$#', $dataUrl, $m)) {
-            return null;
-        }
-        $ext = strtolower($m[1]); // e.g. png, jpeg, webp
-        $ext = $ext === 'jpg' ? 'jpeg' : $ext;
-
-        // guard: only allow common formats
-        $allowed = ['png','jpeg','webp'];
-        if (!in_array($ext, $allowed, true)) {
-            $ext = 'jpeg';
-        }
-
-        $bin = base64_decode($m[2], true);
-        if ($bin === false || strlen($bin) < 16) {
-            return null;
-        }
-
-        $dir = "portfolio/{$userId}";
-        $name = 'p_'.$projectId.'_'.Str::random(8).'.'.$ext;
-        $path = $dir.'/'.$name;
-
-        Storage::disk('public')->put($path, $bin);
-        return $path;
-    }
-
-
-
+   
 
 
 
@@ -1034,67 +1005,6 @@ public function storeLocation(Request $request)
 
 
 
-
-    public function profile()
-    {
-        $user = (object) [
-            'name'        => 'Hassam Mehmood',
-            'facebook'    => 'Hassam Mehmood',
-            'instagram'   => 'Hassam Mehmood',
-            'twitter'     => 'Hassam Mehmood',
-            'linkedin'    => 'Hassam Mehmood',
-            'bio'         => 'Full-Stack Laravel & React Developer | AI & Chatbot Integration Expert',
-            'location'    => 'Sargodha, Pakistan',
-            'avatar'      => null,
-            'banner'      => null,
-            'open_to_work'=> true,
-            'about'       => 'I am a problem solver who writes and maintains the code that powers websites, applications I am a problem solver who writes and maintains the code that powers websites, applications',
-            'skills'      => ['Web Development', 'Laravel', 'React'],
-            'topSkills'   => ['Web Development', 'PHP', 'Laravel'],
-            'softSkills'  => [
-                ['name' => 'Problem-solving', 'icon' => 'lightbulb'],
-                ['name' => 'Communication skills', 'icon' => 'mobile-screen'],
-                ['name' => 'Time management', 'icon' => 'clock'],
-            ],
-            'languages'   => [
-                ['name' => 'English', 'level' => 'Professional'],
-                ['name' => 'Urdu', 'level' => 'Native'],
-                ['name' => 'Arabic', 'level' => 'Basic'],
-            ],
-            'education'   => [
-                [
-                    'title'      => 'Computer Science',
-                    'institution'=> 'University of Sargodha',
-                    'period'     => 'Jul 2024 - Jul 2025',
-                    'location'   => 'Sargodha, Pakistan',
-                    'recent'     => true,
-                ],
-            ],
-            'whyChooseMe' => [
-                'Expert in modern technologies',
-                'Fast delivery and quality work',
-                'Available 24/7 for support',
-            ],
-            'services'    => ['Web Development', 'App Development', 'API Integration'],
-        ];
-
-        $portfolios          = [];
-        $portfolioCategories = ['All', 'Laravel', 'React Js', 'Node Js', 'AI'];
-        $skillsData          = [
-            ['name' => 'Laravel', 'percentage' => 90],
-            ['name' => 'React Js', 'percentage' => 95],
-            ['name' => 'Machine Learning', 'percentage' => 100],
-        ];
-        $experiences         = [];
-        $reviews             = [];
-
-        return view('tenant.profile.index', compact(
-            'user', 'portfolios', 'portfolioCategories', 'skillsData', 'experiences', 'reviews'
-        ))->with([
-            'brandName'    => 'Codefixxaaaer',
-            'messageCount' => 2,
-        ]);
-    }
 
     public function marketing()
     {

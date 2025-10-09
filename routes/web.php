@@ -195,7 +195,9 @@ Route::middleware('auth')->group(function () {
 
 
 
-// Public profile (keep last so it doesn't shadow other routes)
+// routes/tenant.php
 Route::get('{username}', [ProfilePageController::class, 'index'])
     ->where('username', '[a-zA-Z0-9_-]+')
     ->name('tenant.profile');
+
+

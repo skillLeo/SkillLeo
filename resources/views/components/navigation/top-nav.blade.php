@@ -1322,10 +1322,39 @@
           </div>
         
           <!-- Sign Out -->
-          <div class="profile-signout">
+          <form id="logout-form" action="{{ route('auth.logout') }}" method="POST" style="display: none;">
+            @csrf
+          </form>
+          
+          <div class="profile-signout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Sign Out</span>
           </div>
+
+          <style>
+            .profile-signout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #ffecec;  
+  padding: 12px 16px;
+  border-radius: 0px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.profile-signout:hover {
+  background-color: #ffd9d9;
+}
+
+.profile-signout i,
+.profile-signout span {
+  pointer-events: none; /* ensures click anywhere triggers parent */
+}
+
+          </style>
+          
         </div>
         
         <script>

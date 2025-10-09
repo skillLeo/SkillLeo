@@ -3,18 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
-class PortfolioProject extends Model
+class Portfolio extends Model
 {
+    protected $table = 'portfolios';
+
     protected $fillable = [
         'user_id',
         'title',
+        'description',
         'link_url',
         'image_path',
         'image_disk',
-        'description',
         'position',
         'meta',
     ];
@@ -28,15 +31,15 @@ class PortfolioProject extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Optional (if you use the media table later)
     public function media(): HasMany
     {
-        return $this->hasMany(PortfolioProjectMedia::class)->orderBy('position');
+        return $this->hasMany(PortfolioMedia::class, 'portfolio_id')->orderBy('position');
     }
 
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image_path) return null;
-        return \Storage::disk($this->image_disk)->url($this->image_path);
+        if (! $this->image_path) return null;
+        $disk = $this->image_disk ?: 'public';
+        return Storage::disk($disk)->url($this->image_path);
     }
 }

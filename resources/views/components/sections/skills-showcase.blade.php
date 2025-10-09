@@ -1,74 +1,90 @@
 <section class="skills-showcase">
-    <div class="cards-header">
-        <h2 class="portfolios-title">Skills</h2>
-        <button class="edit-card icon-btn" aria-label="Edit card">
-            <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
-          </button>
-          
+  <div class="cards-header">
+    <h2 class="portfolios-title">Skills</h2>
+    <button class="edit-card icon-btn" aria-label="Edit card">
+      <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
+    </button>
+  </div>
+
+  <div class="skills-main-content">
+    {{-- LEFT: Progress bars for hard skills --}}
+    <div class="skills-progress-section">
+      @forelse($skills ?? [] as $skill)
+        <div class="skill-progress">
+          <div class="skill-header">
+            <span class="skill-name">{{ $skill['name'] }}</span>
+            <span class="skill-percentage">{{ $skill['percentage'] }}%</span>
+          </div>
+          <div class="progress-bar-container" aria-label="{{ $skill['name'] }} proficiency {{ $skill['percentage'] }}%">
+            <div class="progress-bar-fill" style="width: {{ $skill['percentage'] }}%">
+              <div class="skill-progress-icon"><i class="fas fa-graduation-cap"></i></div>
+            </div>
+          </div>
+        </div>
+      @empty
+        {{-- no skills -> render nothing --}}
+      @endforelse
     </div>
 
-    <div class="skills-main-content">
-        <!-- Progress Bars -->
-        <div class="skills-progress-section">
-            @foreach($skills ?? [] as $skill)
-                <div class="skill-progress">
-                    <div class="skill-header">
-                        <span class="skill-name">{{ $skill['name'] }}</span>
-                        <span class="skill-percentage">{{ $skill['percentage'] }}%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" data-width="{{ $skill['percentage'] }}%" style="width: {{ $skill['percentage'] }}%">
-                            <div class="skill-progress-icon">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
+    {{-- RIGHT: Soft skills --}}
+    <div class="soft-skills-section">
+      <h4>Soft Skills</h4>
 
-            @if(empty($skills))
-                <div class="skill-progress">
-                    <div class="skill-header">
-                        <span class="skill-name">Laravel</span>
-                        <span class="skill-percentage">90%</span>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" data-width="90%" style="width: 90%">
-                            <div class="skill-progress-icon">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Tech Stack -->
-        <div class="tech-stack-section">
-            <div class="tech-category">
-                <h4>Backend</h4>
-                <div class="tech-items">
-                    PHP Core | Laravel | Node Js. |<br>
-                    My SQL | Sql Queries | Mongo DB
-                </div>
-            </div>
-
-            <div class="tech-separator-line"></div>
-
-            <div class="tech-category">
-                <h4>Frontend</h4>
-                <div class="tech-items">
-                    HTML 5 | CSS 3 | Vanilla Js. |<br>
-                    React Js. | Ajax | Tailwind CSS
-                </div>
-            </div>
-        </div>
+      @if(!empty($softSkills))
+        <ul class="soft-skills-list">
+          @foreach($softSkills as $s)
+            <li class="soft-skill">
+              <span class="soft-skill-icon">
+                <i class="fa-solid fa-{{ $s['icon'] ?? 'sparkles' }}"></i>
+              </span>
+              <span class="soft-skill-name">{{ $s['name'] }}</span>
+            </li>
+          @endforeach
+        </ul>
+      @endif
+      {{-- If empty, we simply don’t render anything on the right column --}}
     </div>
+  </div>
 
-    <x-ui.see-all text="See all Skills" onclick="showAllSkills()" />
+  <x-ui.see-all text="See all Skills" onclick="showAllSkills()" />
 </section>
 
 
+
+
+<style>
+  /* layout */
+  .skills-showcase .skills-main-content{
+    display:grid; align-items:start; align-content:start;
+  }
+  @media (min-width: 1200px){ .skills-showcase .skills-main-content{ grid-template-columns:57% 40%; gap:28px; } }
+  @media (min-width: 992px) and (max-width: 1199px){ .skills-showcase .skills-main-content{ grid-template-columns:55% 42%; gap:22px; } }
+  @media (max-width: 991px){ .skills-showcase .skills-main-content{ grid-template-columns:1fr; gap:18px; } }
+  
+  /* progress bars (left) – keep your existing look & feel */
+    .skill-header{ display:flex; justify-content:space-between; margin:0 0 6px; font-weight:600; }
+  .skill-progress{ margin:0 0 14px; }
+  
+  /* soft skills (right) */
+  .soft-skills-section{ padding-left:24px; }
+  @media (max-width: 1199px){ .soft-skills-section{ padding-left:16px; } }
+  @media (max-width: 991px){ .soft-skills-section{ padding-left:0; } }
+  
+  .soft-skills-section h4{ margin:0 0 10px; font-weight:700; color:var(--text-heading); }
+  .soft-skills-list{
+    list-style:none; padding:0; margin:0;
+    display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
+  }
+  @media (max-width: 480px){ .soft-skills-list{ grid-template-columns:1fr; } }
+  
+  .soft-skill{
+    display:flex; align-items:center; gap:8px;
+    background:var(--apc-bg); border:1px solid var(--border);
+    padding:8px 10px; border-radius:12px;
+  }
+  .soft-skill-icon{ width:22px; height:22px; display:grid; place-items:center; color:var(--accent, #3b5bff); }
+  .soft-skill-name{ font-size:14px; color:var(--text-body); }
+  </style>
  
 
 <style>

@@ -1,72 +1,79 @@
+@php use Illuminate\Support\Str; @endphp
 @extends('layouts.app')
 
 @section('title', $user->name . ' - Professional Portfolio')
 
 @section('content')
-
-
+    {{-- Top navigation --}}
     <x-navigation.top-nav :user="$user" :brand-name="$brandName" :message-count="$messageCount" />
 
     <div class="main-container">
         <div class="content-wrapper">
-            <!-- Left Sidebar -->
+            {{-- Left Sidebar --}}
             <aside class="left-sidebar">
-                <x-hero.mobile :user="$user" />
+                <x-hero.mobile  :user="$user" />
                 <x-hero.desktop :user="$user" />
 
-                <!-- Top Skills -->
-                <x-cards.sidebar-card title="Top Skills" :show-see-all="true">
-                    <div class="tags" style="margin-bottom: 8px">
-                        @foreach ($user->topSkills ?? [] as $skill)
-                            <span class="tag">{{ $skill }}</span>
-                        @endforeach
-                    </div>
-                </x-cards.sidebar-card>
-
-                <!-- Soft Skills -->
-                <x-cards.sidebar-card title="Soft Skills" :show-see-all="true" see-all-icon="arrow-right">
-                    @foreach ($user->softSkills ?? [] as $index => $skill)
-                        <div class="skill-item">
-                            <span
-                                style="color: {{ $index === 0 ? 'var(--accent)' : '#666' }}; width: 20px; display: flex; justify-content: center;">
-                                <i class="fa-solid fa-{{ $skill['icon'] ?? 'lightbulb' }}"></i>
-                            </span>
-                            <span>{{ $skill['name'] }}</span>
+                {{-- Top Skills --}}
+                @if(!empty($user->topSkills))
+                    <x-cards.sidebar-card title="Top Skills" :show-see-all="true">
+                        <div class="tags" style="margin-bottom:8px">
+                            @foreach ($user->topSkills as $skill)
+                                <span class="tag">{{ $skill }}</span>
+                            @endforeach
                         </div>
-                    @endforeach
-                </x-cards.sidebar-card>
+                    </x-cards.sidebar-card>
+                @endif
 
-                <!-- Languages -->
-                <x-cards.sidebar-card title="Language">
-                    @foreach ($user->languages ?? [] as $language)
-                        <div class="lang-row">
-                            <span class="lang-name">{{ $language['name'] }}</span>
-                            <span class="lang-level">— {{ $language['level'] }}</span>
-                        </div>
-                    @endforeach
-                </x-cards.sidebar-card>
-
-                <!-- Education -->
-                <x-cards.sidebar-card title="Education" :show-see-all="true" see-all-icon="arrow-right">
-                    @foreach ($user->education ?? [] as $edu)
-                        <div class="edu-item">
-                            <div class="edu-head">
-                                <div class="edu-title">{{ $edu['title'] }}</div>
-                                @if ($edu['recent'] ?? false)
-                                    <span class="pill">Recent</span>
-                                @endif
+                {{-- Soft Skills --}}
+                @if(!empty($user->softSkills))
+                    <x-cards.sidebar-card title="Soft Skills" :show-see-all="true" see-all-icon="arrow-right">
+                        @foreach ($user->softSkills as $index => $skill)
+                            <div class="skill-item">
+                                <span style="color: {{ $index === 0 ? 'var(--accent)' : '#666' }}; width:20px; display:flex; justify-content:center;">
+                                    <i class="fa-solid fa-{{ $skill['icon'] ?? 'lightbulb' }}"></i>
+                                </span>
+                                <span>{{ $skill['name'] }}</span>
                             </div>
-                            <div class="edu-sub">{{ $edu['institution'] }}</div>
-                            <div class="edu-date">{{ $edu['period'] }}</div>
-                            <div class="edu-loc">{{ $edu['location'] }}</div>
-                        </div>
-                    @endforeach
-                </x-cards.sidebar-card>
+                        @endforeach
+                    </x-cards.sidebar-card>
+                @endif
+
+                {{-- Languages --}}
+                @if(!empty($user->languages))
+                    <x-cards.sidebar-card title="Language">
+                        @foreach ($user->languages as $language)
+                            <div class="lang-row">
+                                <span class="lang-name">{{ $language['name'] }}</span>
+                                <span class="lang-level">— {{ $language['level'] }}</span>
+                            </div>
+                        @endforeach
+                    </x-cards.sidebar-card>
+                @endif
+
+                {{-- Education --}}
+                @if(!empty($user->education))
+                    <x-cards.sidebar-card title="Education" :show-see-all="true" see-all-icon="arrow-right">
+                        @foreach ($user->education as $edu)
+                            <div class="edu-item">
+                                <div class="edu-head">
+                                    <div class="edu-title">{{ $edu['title'] }}</div>
+                                    @if ($edu['recent'] ?? false)
+                                        <span class="pill">Recent</span>
+                                    @endif
+                                </div>
+                                <div class="edu-sub">{{ $edu['institution'] }}</div>
+                                <div class="edu-date">{{ $edu['period'] }}</div>
+                                <div class="edu-loc">{{ $edu['location'] }}</div>
+                            </div>
+                        @endforeach
+                    </x-cards.sidebar-card>
+                @endif
             </aside>
 
-            <!-- Main Content -->
+            {{-- Main Content --}}
             <main class="main-content">
-                <!-- Hero Banner -->
+                {{-- Hero Banner --}}
                 <div class="hero-banner">
                     <div class="hero-logo">
                         <span>&lt;&lt;&lt;</span>
@@ -78,22 +85,112 @@
                     </button>
                 </div>
 
-                <!-- Portfolios Section -->
-                <x-sections.portfolios :portfolios="$portfolios" :categories="$portfolioCategories" />
+                {{-- Portfolios (only if user has projects) --}}
+                @if(!empty($portfolios) && count($portfolios) > 0)
 
-                <!-- Skills Showcase -->
-                <x-sections.skills-showcase :skills="$skillsData" />
+                    <section class="portfolios-section">
+                        <style>
+                            .cards-header button .ui-icon { display:flex; align-items:center; justify-content:center; }
+                            .projects-btn { display:flex; align-items:center; justify-content:space-between; gap:2vw; }
+                        </style>
 
-                <!-- Experience -->
-                <x-sections.experience :experiences="$experiences" />
+                        <div class="cards-header">
+                            <h2 class="portfolios-title">Portfolios</h2>
+                            <div class="projects-btn">
+                                <x-ui.button variant="special-outlined" shape="rounded" color="primary" size="sm">
+                                    Add Projects
+                                </x-ui.button>
+                                <button class="edit-card icon-btn" aria-label="Edit card">
+                                    <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
+                                </button>
+                            </div>
+                        </div>
 
-                <!-- Reviews -->
-                <x-sections.reviews :reviews="$reviews" />
+                        {{-- Filter tabs (hide if there’s only “All”) --}}
+                        @php
+                            $cats = array_values(array_filter($categories ?? []));
+                            $showTabs = collect($cats)->reject(fn($c) => strtolower($c) === 'all')->isNotEmpty();
+                        @endphp
+
+                        @if($showTabs)
+                            <div class="filter-tabs">
+                                @foreach($cats as $label)
+                                    @php $slug = Str::slug($label ?: 'All'); @endphp
+                                    <x-ui.button
+                                        variant="{{ $loop->first ? 'solid' : 'outlined' }}"
+                                        shape="rounded"
+                                        color="primary_muted"
+                                        size="sm"
+                                        class="filter-tab-btn {{ $loop->first ? 'active' : '' }}"
+                                        data-filter="{{ $slug }}"
+                                        onclick="filterCategory('{{ $slug }}', this)">
+                                        {{ $label }}
+                                    </x-ui.button>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div id="portfolioGrid" class="portfolio-grid">
+                            @foreach($portfolios as $p)
+                                @php $cat = Str::slug($p['category'] ?? 'All'); @endphp
+                                <div class="portfolio-item" data-category="{{ $cat }}">
+                                    <x-cards.portfolio-card :portfolio="$p" />
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <x-ui.see-all text="See all Projects" onclick="showAllProjects()" />
+                    </section>
+
+                    <script>
+                        (function () {
+                            const grid = document.getElementById('portfolioGrid');
+                            const btns = document.querySelectorAll('.filter-tab-btn');
+
+                            window.filterCategory = function (category, buttonElement) {
+                                btns.forEach(btn => {
+                                    btn.classList.remove('btn-solid', 'active');
+                                    btn.classList.add('btn-outlined');
+                                });
+                                if (buttonElement) {
+                                    buttonElement.classList.remove('btn-outlined');
+                                    buttonElement.classList.add('btn-solid', 'active');
+                                }
+                                const items = grid.querySelectorAll('.portfolio-item');
+                                const cat = (category || 'all').toLowerCase();
+                                items.forEach(el => {
+                                    const c = (el.dataset.category || 'all').toLowerCase();
+                                    el.style.display = (cat === 'all' || c === cat) ? '' : 'none';
+                                });
+                            };
+
+                            window.showAllProjects = function () {
+                                const firstBtn = document.querySelector('.filter-tab-btn[data-filter="all"]') || btns[0];
+                                if (firstBtn) filterCategory(firstBtn.dataset.filter, firstBtn);
+                            };
+                        })();
+                    </script>
+                @endif
+
+                {{-- Skills showcase --}}
+                @if(!empty($skillsData))
+                <x-sections.skills-showcase :skills="$skillsData" :soft-skills="$user->softSkills" />
+                    @endif
+
+                {{-- Experience --}}
+                @if(!empty($experiences))
+                    <x-sections.experience :experiences="$experiences" />
+                @endif
+
+                {{-- Reviews --}}
+                @if(!empty($reviews))
+                    <x-sections.reviews :reviews="$reviews" />
+                @endif
             </main>
 
-            <!-- Right Sidebar -->
+            {{-- Right Sidebar --}}
             <aside class="right-sidebar">
-                <!-- AI Profile Creator -->
+                {{-- AI Profile Creator --}}
                 <section class="ai-profile-creator">
                     <div class="ai-creator-header">
                         <h3 class="ai-creator-title">AI Profile Creator</h3>
@@ -103,7 +200,6 @@
                     </div>
 
                     <div class="ai-creator-content">
-                        <!-- Upload Section -->
                         <div class="upload-section">
                             <label for="cv-upload" class="upload-box">
                                 <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
@@ -112,71 +208,60 @@
                             <input type="file" id="cv-upload" accept=".pdf,.doc,.docx" hidden>
                         </div>
 
-                        <!-- Divider -->
                         <div class="or-divider">
                             <span class="or-line"></span>
                             <span class="or-text">OR</span>
                             <span class="or-line"></span>
                         </div>
 
-                        <!-- Textarea Section -->
                         <div class="textarea-section">
                             <div class="textarea-wrapper">
                                 <textarea class="describe-textarea" placeholder="Describe yourself here...." rows="3"></textarea>
                             </div>
                         </div>
 
-                        <!-- Generate Button -->
-                        <button class="generate-profile-btn">
-                            Generate Profile
-                        </button>
+                        <button class="generate-profile-btn">Generate Profile</button>
                     </div>
                 </section>
 
-
-
-                <!-- Why Choose Me -->
-                <section class="card pad24">
-                    <div class="cards-header">
-                        <h2 class="portfolios-title">Why Choose Me?</h2>
-                        <button class="edit-card icon-btn" aria-label="Edit card">
-                            <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
-                        </button>
-                    </div>
-                    @foreach ($user->whyChooseMe ?? [] as $reason)
-                        <div class="choose-item">
-                            <i class="fas fa-check-square"></i>
-                            <span>{{ $reason }}</span>
+                {{-- Why Choose Me --}}
+                @if(!empty($user->whyChooseMe))
+                    <section class="card pad24">
+                        <div class="cards-header">
+                            <h2 class="portfolios-title">Why Choose Me?</h2>
+                            <button class="edit-card icon-btn" aria-label="Edit card">
+                                <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
+                            </button>
                         </div>
-                    @endforeach
-                    <x-ui.see-all text="See all Why Choose Me" onclick="showAllWhyChooseMe()" />
-                </section>
+                        @foreach ($user->whyChooseMe as $reason)
+                            <div class="choose-item">
+                                <i class="fas fa-check-square"></i>
+                                <span>{{ $reason }}</span>
+                            </div>
+                        @endforeach
+                        <x-ui.see-all text="See all Why Choose Me" onclick="showAllWhyChooseMe()" />
+                    </section>
+                @endif
 
-                <!-- Services -->
-                <section class="card pad24">
-                    <div class="cards-header">
-                        <h2 class="portfolios-title">Services</h2>
-                        <button class="edit-card icon-btn" aria-label="Edit card">
-                            <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
-                        </button>
-                    </div>
-                    @foreach ($user->services ?? [] as $service)
-                        <div class="choose-item">
-                            <i class="fas fa-check-square"></i>
-                            <span>{{ $service }}</span>
+                {{-- Services --}}
+                @if(!empty($user->services))
+                    <section class="card pad24">
+                        <div class="cards-header">
+                            <h2 class="portfolios-title">Services</h2>
+                            <button class="edit-card icon-btn" aria-label="Edit card">
+                                <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
+                            </button>
                         </div>
-                    @endforeach
-                    <x-ui.see-all text="See all Services" onclick="showAllServices()" />
-                </section>
-
-
-
-                </aside>
-            </div>
+                        @foreach ($user->services as $service)
+                            <div class="choose-item">
+                                <i class="fas fa-check-square"></i>
+                                <span>{{ $service }}</span>
+                            </div>
+                        @endforeach
+                        <x-ui.see-all text="See all Services" onclick="showAllServices()" />
+                    </section>
+                @endif
+            </aside>
         </div>
-
-
-        
+    </div>
 @endsection
-
-

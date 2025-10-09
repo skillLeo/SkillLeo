@@ -3,22 +3,35 @@
         <h2 class="portfolios-title">Experience</h2>
         <button class="edit-card icon-btn" aria-label="Edit card">
             <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
-          </button>
-          
+        </button>
     </div>
 
-    @foreach($experiences ?? [] as $experience)
+    @foreach(($experiences ?? []) as $experience)
+        @php
+            $title   = $experience['title'] ?? '';
+            $desc    = $experience['description'] ?? '';
+            $period  = $experience['period'] ?? ($experience['date'] ?? '');   // ✅ fallback
+            $current = (bool) ($experience['current'] ?? false);
+            $loc     = $experience['location'] ?? '';
+        @endphp
+
         <div class="experience-item">
             <div class="experience-header">
-                <h4 class="experience-title">{{ $experience['title'] }}</h4>
-                <span class="experience-badge {{ $experience['current'] ?? false ? '' : 'dark' }}">
-                    {{ $experience['current'] ?? false ? 'Current' : ($experience['period'] ?? '') }}
+                <h4 class="experience-title">{{ $title }}</h4>
+                <span class="experience-badge {{ $current ? '' : 'dark' }}">
+                    {{ $current ? 'Current' : $period }}
                 </span>
             </div>
-            <p class="experience-desc">{{ $experience['description'] }}</p>
+            @if($desc !== '')
+                <p class="experience-desc">{{ $desc }}</p>
+            @endif
             <div class="experience-meta">
-                <span>{{ $experience['period'] }}</span>
-                <span>{{ $experience['location'] }}</span>
+                @if($period !== '')
+                    <span>{{ $period }}</span>
+                @endif
+                @if($loc !== '')
+                    <span>{{ $loc }}</span>
+                @endif
             </div>
         </div>
     @endforeach
@@ -33,7 +46,7 @@
                 Lorem ipsum is placeholder, Lorem ipsum is placeholder, Lorem ipsum is placeholder
             </p>
             <div class="experience-meta">
-                <span>Jul 2024 - Present</span>
+                <span>Jul 2024 — Present</span>
                 <span>Sargodha, Pakistan</span>
             </div>
         </div>
