@@ -28,6 +28,36 @@
     @stack('scripts')
     @section('scripts')
 
-
+    <x-modals.edit-profile :user="$user" />
+    <x-modals.edit-experience />
+    <x-modals.edit-education />
+    <x-modals.edit-skills />
+    <x-modals.edit-portfolio />
+    <x-modals.edit-languages />
+    
+    {{-- Update edit buttons to trigger modals --}}
+    <script>
+    document.querySelectorAll('.edit-card').forEach(button => {
+        // Skip if button already has onclick attribute (hero section buttons)
+        if (button.hasAttribute('onclick')) {
+            return;
+        }
+        
+        button.addEventListener('click', function() {
+            const section = this.closest('section');
+            
+            if (section.classList.contains('hero-merged')) {
+                openModal('editProfileModal');
+            } else if (section.classList.contains('experience-section')) {
+                openModal('editExperienceModal');
+            } else if (section.classList.contains('portfolios-section')) {
+                openModal('editPortfolioModal');
+            } else if (section.classList.contains('skills-showcase')) {
+                openModal('editSkillsModal');
+            }
+            // Add more conditions for other sections
+        });
+    });
+    </script>
 </body>
 </html>

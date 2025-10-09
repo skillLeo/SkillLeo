@@ -15,7 +15,6 @@
                 <x-hero.desktop :user="$user" />
 
                 {{-- Top Skills --}}
-                @if(!empty($user->topSkills))
                     <x-cards.sidebar-card title="Top Skills" :show-see-all="true">
                         <div class="tags" style="margin-bottom:8px">
                             @foreach ($user->topSkills as $skill)
@@ -23,10 +22,8 @@
                             @endforeach
                         </div>
                     </x-cards.sidebar-card>
-                @endif
 
                 {{-- Soft Skills --}}
-                @if(!empty($user->softSkills))
                     <x-cards.sidebar-card title="Soft Skills" :show-see-all="true" see-all-icon="arrow-right">
                         @foreach ($user->softSkills as $index => $skill)
                             <div class="skill-item">
@@ -37,10 +34,8 @@
                             </div>
                         @endforeach
                     </x-cards.sidebar-card>
-                @endif
 
                 {{-- Languages --}}
-                @if(!empty($user->languages))
                     <x-cards.sidebar-card title="Language">
                         @foreach ($user->languages as $language)
                             <div class="lang-row">
@@ -49,10 +44,8 @@
                             </div>
                         @endforeach
                     </x-cards.sidebar-card>
-                @endif
 
                 {{-- Education --}}
-                @if(!empty($user->education))
                     <x-cards.sidebar-card title="Education" :show-see-all="true" see-all-icon="arrow-right">
                         @foreach ($user->education as $edu)
                             <div class="edu-item">
@@ -68,7 +61,6 @@
                             </div>
                         @endforeach
                     </x-cards.sidebar-card>
-                @endif
             </aside>
 
             {{-- Main Content --}}
@@ -86,7 +78,6 @@
                 </div>
 
                 {{-- Portfolios (only if user has projects) --}}
-                @if(!empty($portfolios) && count($portfolios) > 0)
 
                     <section class="portfolios-section">
                         <style>
@@ -170,22 +161,15 @@
                             };
                         })();
                     </script>
-                @endif
 
                 {{-- Skills showcase --}}
-                @if(!empty($skillsData))
                 <x-sections.skills-showcase :skills="$skillsData" :soft-skills="$user->softSkills" />
-                    @endif
 
                 {{-- Experience --}}
-                @if(!empty($experiences))
                     <x-sections.experience :experiences="$experiences" />
-                @endif
 
                 {{-- Reviews --}}
-                @if(!empty($reviews))
                     <x-sections.reviews :reviews="$reviews" />
-                @endif
             </main>
 
             {{-- Right Sidebar --}}
@@ -225,7 +209,7 @@
                 </section>
 
                 {{-- Why Choose Me --}}
-                @if(!empty($user->whyChooseMe))
+                {{-- @if(!empty($user->whyChooseMe)) --}}
                     <section class="card pad24">
                         <div class="cards-header">
                             <h2 class="portfolios-title">Why Choose Me?</h2>
@@ -241,10 +225,9 @@
                         @endforeach
                         <x-ui.see-all text="See all Why Choose Me" onclick="showAllWhyChooseMe()" />
                     </section>
-                @endif
+                {{-- @endif --}}
 
                 {{-- Services --}}
-                @if(!empty($user->services))
                     <section class="card pad24">
                         <div class="cards-header">
                             <h2 class="portfolios-title">Services</h2>
@@ -260,8 +243,71 @@
                         @endforeach
                         <x-ui.see-all text="See all Services" onclick="showAllServices()" />
                     </section>
-                @endif
             </aside>
         </div>
     </div>
+
+
+
+
+
+
+
+    {{-- At the bottom of your profile page, before @endsection --}}
+
+    <x-modals.edit-profile :user="$user" />
+    <x-modals.edit-experience />
+    <x-modals.edit-education />
+    <x-modals.edit-skills />
+    <x-modals.edit-portfolio />
+    <x-modals.edit-languages />
+    <x-modals.edit-services />
+    <x-modals.edit-why-choose />
+    
+    {{-- Modal triggers script --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle all edit buttons
+        document.querySelectorAll('.edit-card').forEach(button => {
+            // Skip buttons that already have specific handlers
+            if (button.id === 'desktopMenuBtn' || button.classList.contains('edit-profile-btn')) {
+                return;
+            }
+            
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                const section = this.closest('section');
+                const card = this.closest('.card');
+                
+                // Determine which modal to open based on section/card class or title
+                if (section && section.classList.contains('hero-merged')) {
+                    openModal('editProfileModal');
+                } else if (section && section.classList.contains('experience-section')) {
+                    openModal('editExperienceModal');
+                } else if (section && section.classList.contains('portfolios-section')) {
+                    openModal('editPortfolioModal');
+                } else if (section && section.classList.contains('skills-showcase')) {
+                    openModal('editSkillsModal');
+                } else if (card) {
+                    // Check by title text for sidebar cards
+                    const titleEl = card.querySelector('.section-title, .portfolios-title');
+                    const title = titleEl ? titleEl.textContent.trim() : '';
+                    
+                    if (title === 'Top Skills') {
+                        openModal('editSkillsModal');
+                    } else if (title === 'Education') {
+                        openModal('editEducationModal');
+                    } else if (title === 'Language' || title === 'Languages') {
+                        openModal('editLanguagesModal');
+                    } else if (title === 'Why Choose Me?') {
+                        openModal('editWhyChooseModal');
+                    } else if (title === 'Services') {
+                        openModal('editServicesModal');
+                    }
+                }
+            });
+        });
+    });
+    </script>
 @endsection

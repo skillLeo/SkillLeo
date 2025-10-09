@@ -1,14 +1,8 @@
-{{-- Hero Section with Professional Icons --}}
 <section class="hero-merged">
-    {{-- Default: uses --border bg on hover, bigger icon --}}
-
-    {{-- Default: uses --border bg on hover, bigger icon --}}
-    <button class="edit-card icon-btn" aria-label="Edit card">
+    {{-- Edit Profile Button --}}
+    <button class="edit-card icon-btn edit-profile-btn" aria-label="Edit card">
         <x-ui.icon name="edit" variant="outlined" size="xl" class="color-muted ui-edit" />
     </button>
-
-
-
 
     <div class="photo-wrap">
         <div class="photo-ring">
@@ -26,11 +20,6 @@
 
     <div class="name-row">
         <h2 class="name">{{ $user->name }}</h2>
-        {{-- <span class="otw-pill">
-    <x-ui.icon name="check" size="xs" color="success" />
-    
-    Open
-    </span> --}}
     </div>
 
     <div class="stack">
@@ -49,10 +38,8 @@
             align-items: center;
             gap: 3px;
             line-height: 1.4;
-            /* keeps text readable */
         }
 
-        /* ensure icon is centered visually with text */
         .loc .ui-icon {
             display: inline-flex;
             align-items: center;
@@ -60,7 +47,6 @@
             position: relative;
             margin-bottom: 1px !important;
         }
-
 
         .about-row span {
             padding: 0 !important;
@@ -71,6 +57,7 @@
             margin-bottom: 10px !important;
         }
     </style>
+
     <div class="hr"></div>
 
     <div class="about-row">
@@ -83,32 +70,24 @@
         @if (Illuminate\Support\Str::length($user->about) > 110)
             <a href="#" class="see-more-inline">
                 See more
-                {{-- <x-ui.icon name="arrow-right" size="xs" color="primary" /> --}}
             </a>
         @endif
     </p>
 
     <div class="hr2"></div>
+
     <div class="cta">
-        <x-ui.button 
-        variant="solid" 
-        shape="square" 
-        color="primary" 
-        size="sm" 
-        class="btn-chat"
-    >
-        <x-ui.icon name="message" variant="outlined" size="sm" />
-        Chat!
-    </x-ui.button>
+        <x-ui.button variant="solid" shape="square" color="primary" size="sm" class="btn-chat">
+            <x-ui.icon name="message" variant="outlined" size="sm" />
+            Chat!
+        </x-ui.button>
 
         <x-ui.button variant="outlined" shape="square" color="primary" size="sm" class="btn-follow">
             <x-ui.icon name="user-plus" size="sm" variant="outlined" />
             Follow
         </x-ui.button>
 
-        <button class="edit-card icon-btn" aria-label="More options"
-            style="  position: static !important; /* or relative/fixed/sticky */
-">
+        <button class="menu-kebab icon-btn" id="desktopMenuBtn" aria-label="More options">
             <x-ui.icon name="more-vertical" variant="outlined" size="lg" class="color-muted" />
         </button>
     </div>
@@ -122,7 +101,7 @@
             margin-top: 16px;
         }
 
-        .cta .edit-card {
+        .cta .menu-kebab {
             width: 100%;
             height: 36px;
             display: flex;
@@ -132,15 +111,14 @@
             border-radius: var(--radius);
             cursor: pointer;
             transition: all 0.18s ease;
+            border: none;
         }
 
-        .cta .edit-card:hover {
+        .cta .menu-kebab:hover {
             background: var(--apc-bg);
-            border-color: var(--muted);
-
         }
 
-        .cta .edit-card .ui-icon {
+        .cta .menu-kebab .ui-icon {
             width: 18px !important;
             height: 18px !important;
         }
@@ -157,8 +135,6 @@
             }
         }
     </style>
-
-
 
     <div class="socials">
         @if ($user->facebook)
@@ -188,117 +164,197 @@
     </div>
 </section>
 
-{{-- <style>
-    .otw-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: #e8f5e9;
-        border: 1px solid #cfe7d1;
-        color: #2e7d32;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: var(--fs-micro);
-        font-weight: var(--fw-semibold);
-        white-space: nowrap;
+{{-- Desktop Dropdown Menu (Outside section) --}}
+<div class="desktop-dropdown" id="desktopDropdown">
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="edit" size="sm" color="secondary" />
+        <span>Edit Profile</span>
+    </button>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="eye" size="sm" color="secondary" />
+        <span>View as Visitor</span>
+    </button>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="download" size="sm" color="secondary" />
+        <span>Download CV</span>
+    </button>
+    <div class="desktop-dropdown-divider"></div>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="share" size="sm" color="secondary" />
+        <span>Share Profile</span>
+    </button>
+    <button class="desktop-dropdown-item danger">
+        <x-ui.icon name="flag" size="sm" color="secondary" />
+        <span>Report</span>
+    </button>
+</div>
+
+<style>
+    .desktop-dropdown {
+        display: none;
+        position: fixed;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        min-width: 220px;
+        max-width: 240px;
+        z-index: 999999;
+        animation: slideDown 0.2s ease;
+        overflow: hidden;
     }
 
-    .see-more-inline {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        margin-left: 4px;
-        font-size: var(--fs-subtle);
-        font-weight: var(--fw-bold);
-        color: var(--accent);
-        text-decoration: none;
-        border-bottom: 1px dotted transparent;
-        transition: color .18s ease, border-color .18s ease, transform .12s ease;
+    .desktop-dropdown.active {
+        display: block;
     }
 
-    .see-more-inline:hover,
-    .see-more-inline:focus-visible {
-        color: #0a58f5;
-        border-bottom-color: currentColor;
-        outline: none;
-    }
-
-    .btn-chat,
-    .btn-follow {
+    .desktop-dropdown-item {
+        width: 100%;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 6px;
-        flex: 1;
-        transition: all 0.2s ease;
+        gap: 12px;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        color: var(--text-body);
+        font-size: var(--fs-body);
+        font-weight: var(--fw-medium);
+        cursor: pointer;
+        transition: background 0.2s ease;
+        text-align: left;
+        font-family: inherit;
     }
 
-    .btn-chat:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    .desktop-dropdown-item:hover {
+        background: var(--apc-bg);
     }
 
-    .btn-follow:hover {
-        background-color: rgba(59, 130, 246, 0.05);
-        border-color: var(--accent);
-        transform: translateY(-1px);
+    .desktop-dropdown-item .ui-icon {
+        flex-shrink: 0;
     }
 
-    .about-text .see-more-inline {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        margin-left: 4px;
-        font-size: var(--fs-subtle);
-        font-weight: var(--fw-bold);
-        color: var(--accent);
-        text-decoration: none;
-        border-bottom: 1px dotted transparent;
-        transition: color .18s ease, border-color .18s ease, transform .12s ease;
+    .desktop-dropdown-item.danger {
+        color: var(--error);
     }
 
-    .about-text .see-more-inline:hover,
-    .about-text .see-more-inline:focus-visible {
-        color: #0a58f5;
-        border-bottom-color: currentColor;
-        outline: none;
+    .desktop-dropdown-item.danger .ui-icon {
+        color: var(--error);
     }
 
+    .desktop-dropdown-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 4px 0;
+    }
+</style>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle edit profile button
+        const editProfileBtn = document.querySelector('.edit-profile-btn');
+        if (editProfileBtn) {
+            editProfileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openModal('editProfileModal');
+            });
+        }
 
-    .btn-chat,
-    .btn-follow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        flex: 1;
-        transition: all 0.2s ease;
+        // Handle desktop menu button
+        const menuBtn = document.getElementById('desktopMenuBtn');
+        if (menuBtn) {
+            menuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleDesktopDropdown(e);
+            });
+        }
+
+        // Handle dropdown items
+        const dropdownItems = document.querySelectorAll('.desktop-dropdown-item');
+        dropdownItems.forEach((item, index) => {
+            item.addEventListener('click', function() {
+                closeDesktopDropdown();
+                
+                // Handle each action
+                if (index === 0) openModal('editProfileModal');
+                else if (index === 1) viewAsVisitor();
+                else if (index === 2) downloadCV();
+                else if (index === 3) shareProfile();
+                else if (index === 4) reportProfile();
+            });
+        });
+    });
+
+    function toggleDesktopDropdown(event) {
+        const dropdown = document.getElementById('desktopDropdown');
+        const button = document.getElementById('desktopMenuBtn');
+
+        if (!dropdown || !button) return;
+
+        const isActive = dropdown.classList.contains('active');
+
+        if (!isActive) {
+            const rect = button.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+            // Position dropdown below and aligned to the right edge of button
+            dropdown.style.top = (rect.bottom + scrollTop + 8) + 'px';
+            dropdown.style.left = (rect.right + scrollLeft - 220) + 'px'; // 220px is dropdown width
+            dropdown.classList.add('active');
+        } else {
+            dropdown.classList.remove('active');
+        }
     }
 
-    .btn-chat:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    function closeDesktopDropdown() {
+        const dropdown = document.getElementById('desktopDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('active');
+        }
     }
 
-    .btn-follow:hover {
-        background-color: rgba(59, 130, 246, 0.05);
-        border-color: var(--accent);
-        transform: translateY(-1px);
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('desktopDropdown');
+        const button = document.getElementById('desktopMenuBtn');
+
+        if (dropdown && button) {
+            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        }
+    });
+
+    // Close on scroll
+    window.addEventListener('scroll', function() {
+        closeDesktopDropdown();
+    });
+
+    // Utility functions
+    function viewAsVisitor() {
+        window.open(window.location.href + '?preview=1', '_blank');
     }
 
-
-
-    .otw-pill {
-        display: inline-flex;
-        align-items: center;
-        background: #e8f5e9;
-        border: 1px solid #cfe7d1;
-        color: #2e7d32;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: var(--fs-micro);
-        font-weight: var(--fw-semibold);
-        white-space: nowrap;
+    function downloadCV() {
+        window.location.href = '#';
     }
-</style> --}}
+
+    function shareProfile() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ $user->name }}',
+                url: window.location.href
+            });
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied!');
+        }
+    }
+
+    function reportProfile() {
+        if (confirm('Report this profile?')) {
+            // Handle report
+        }
+    }
+</script>

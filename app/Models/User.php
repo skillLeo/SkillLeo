@@ -14,7 +14,7 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable;
 
     protected $fillable = [
-        'tenant_id','name','last_name','email','password','avatar_url','username',
+        'tenant_id','name','last_name','email','password','tagline','bio','avatar_url','username',
         'locale','timezone','is_active','account_status','is_profile_complete',
         'country','state','city','meta',
     ];

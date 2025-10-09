@@ -44,7 +44,7 @@
         <div class="hm-ctas">
             <button class="hm-btn hm-btn-chat">Let's Chat!</button>
             <button class="hm-btn">Follow</button>
-            <button class="hm-kebab" aria-label="More">
+            <button class="hm-kebab" id="hmKebabBtn" onclick="toggleMobileDropdown(event)" aria-label="More">
                 <i class="fa-solid fa-ellipsis"></i>
             </button>
         </div>
@@ -70,3 +70,176 @@
         <div class="hm-sep"></div>
     </div>
 </section>
+
+{{-- Dropdown Menu (Outside section for proper positioning) --}}
+<div class="hm-dropdown" id="hmDropdown">
+    <button class="hm-dropdown-item" onclick="openModal('editProfileModal'); closeDropdown();">
+        <i class="fa-solid fa-pen"></i>
+        <span>Edit Profile</span>
+    </button>
+    <button class="hm-dropdown-item" onclick="viewAsVisitor(); closeDropdown();">
+        <i class="fa-solid fa-eye"></i>
+        <span>View as Visitor</span>
+    </button>
+    <button class="hm-dropdown-item" onclick="downloadCV(); closeDropdown();">
+        <i class="fa-solid fa-download"></i>
+        <span>Download CV</span>
+    </button>
+    <div class="hm-dropdown-divider"></div>
+    <button class="hm-dropdown-item" onclick="shareProfile(); closeDropdown();">
+        <i class="fa-solid fa-share-nodes"></i>
+        <span>Share Profile</span>
+    </button>
+    <button class="hm-dropdown-item danger" onclick="reportProfile(); closeDropdown();">
+        <i class="fa-solid fa-flag"></i>
+        <span>Report</span>
+    </button>
+</div>
+
+<style>
+/* Dropdown Styles */
+.hm-dropdown {
+    display: none;
+    position: fixed;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    min-width: 240px;
+    z-index: 999999;
+    animation: slideDown 0.2s ease;
+    overflow: hidden;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hm-dropdown.active {
+    display: block;
+}
+
+.hm-dropdown-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: transparent;
+    border: none;
+    color: var(--text-body);
+    font-size: var(--fs-body);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-align: left;
+    font-family: inherit;
+}
+
+.hm-dropdown-item:hover {
+    background: var(--apc-bg);
+}
+
+.hm-dropdown-item:first-child {
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.hm-dropdown-item:last-child {
+    border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.hm-dropdown-item i {
+    width: 18px;
+    font-size: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.hm-dropdown-item.danger {
+    color: var(--error);
+}
+
+.hm-dropdown-item.danger i {
+    color: var(--error);
+}
+
+.hm-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+</style>
+
+<script>
+function toggleMobileDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('hmDropdown');
+    const button = document.getElementById('hmKebabBtn');
+    
+    // Toggle dropdown
+    const isActive = dropdown.classList.contains('active');
+    
+    if (!isActive) {
+        // Position dropdown relative to button
+        const rect = button.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + 8) + 'px';
+        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        dropdown.classList.add('active');
+    } else {
+        dropdown.classList.remove('active');
+    }
+}
+
+function closeDropdown() {
+    const dropdown = document.getElementById('hmDropdown');
+    dropdown.classList.remove('active');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('hmDropdown');
+    const kebab = document.getElementById('hmKebabBtn');
+    
+    if (dropdown && !dropdown.contains(e.target) && e.target !== kebab && !kebab?.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+// Close dropdown on scroll
+window.addEventListener('scroll', function() {
+    closeDropdown();
+});
+
+function viewAsVisitor() {
+    window.open(window.location.href + '?preview=1', '_blank');
+}
+
+function downloadCV() {
+    window.location.href = '#';
+}
+
+function shareProfile() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ $user->name }}',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copied!');
+    }
+}
+
+function reportProfile() {
+    if (confirm('Report this profile?')) {
+        // Handle report
+    }
+}
+</script>
