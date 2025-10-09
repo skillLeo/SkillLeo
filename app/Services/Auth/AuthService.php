@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
+    public function __construct(
+        protected DeviceTrackingService $deviceTracking
+    ) {}
+
     public function registerEmail(array $data): User
     {
         return User::create([
@@ -14,13 +18,14 @@ class AuthService
             'email'               => strtolower($data['email']),
             'password'            => Hash::make($data['password']),
             'is_profile_complete' => 'start',
-            'is_active'              => 'active',
-            'account_status'      => 'pending_onboarding', 
-
+            'is_active'           => 'active',
+            'account_status'      => 'pending_onboarding',
         ]);
     }
 
-    /** Optional login metadata */
+    /**
+     * Record login with device tracking
+     */
     public function recordLogin(User $user, ?string $ip = null, ?string $ua = null): void
     {
         $user->forceFill([
@@ -28,11 +33,7 @@ class AuthService
             'login_count'   => ($user->login_count ?? 0) + 1,
         ])->save();
 
-        if ($ip || $ua) {
-            $user->devices()->updateOrCreate(
-                ['name' => substr($ua ?? 'Unknown', 0, 120)],
-                ['ip' => $ip, 'user_agent' => $ua, 'last_seen_at' => now()]
-            );
-        }
+        // Device tracking is now handled by DeviceTrackingService
+        // This method is kept for backward compatibility
     }
 }

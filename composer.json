@@ -9,6 +9,7 @@
         "php": "^8.2",
         "darkaonline/l5-swagger": "*",
         "guzzlehttp/guzzle": "^7.10",
+        "jenssegers/agent": "^2.6",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.34",
         "laravel/pennant": "^1.18",
@@ -23,7 +24,7 @@
         "stancl/tenancy": "^3.9"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
+        "fakerphp/faker": "^1.9.1",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.25",
         "laravel/sail": "^1.46",

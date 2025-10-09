@@ -38,6 +38,8 @@ return new class extends Migration
             $table->string('is_public')->default('onboarding');
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
+
             $table->unsignedInteger('login_count')->default(0);
             $table->json('meta')->nullable();
             $table->timestamps();

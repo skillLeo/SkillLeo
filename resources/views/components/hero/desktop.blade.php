@@ -14,8 +14,56 @@
                     <x-ui.icon name="user" size="lg" color="secondary" class="mb-2" />
                     Upload your<br>profile photo
                 @endif
+                
+                {{-- Professional Desktop Status Badge --}}
+                @php
+                    $isOnline = false;
+                    $lastSeenText = 'Offline';
+                    
+                    if (isset($user->last_seen_at)) {
+                        $lastSeenTime = \Carbon\Carbon::parse($user->last_seen_at);
+                        $now = \Carbon\Carbon::now();
+                        $diffInMinutes = $now->diffInMinutes($lastSeenTime);
+                        
+                        if ($diffInMinutes < 1) {
+                            $isOnline = true;
+                            $lastSeenText = 'Active now';
+                        } elseif ($diffInMinutes < 60) {
+                            $lastSeenText = 'Active ' . $diffInMinutes . 'm ago';
+                        } elseif ($diffInMinutes < 1440) {
+                            $hours = floor($diffInMinutes / 60);
+                            $lastSeenText = 'Active ' . $hours . 'h ago';
+                        } elseif ($diffInMinutes < 10080) {
+                            $days = floor($diffInMinutes / 1440);
+                            $lastSeenText = $days . 'd ago';
+                        } else {
+                            $lastSeenText = 'Last seen ' . $lastSeenTime->format('M d');
+                        }
+                    }
+                @endphp
+                
+                <span class="desktop-status-badge {{ $isOnline ? 'online' : 'offline' }}" 
+                      title="{{ $lastSeenText }}">
+                    @if($isOnline)
+                        <span class="pulse-ring"></span>
+                    @endif
+                </span>
             </div>
         </div>
+        
+        {{-- Status Text Below Avatar --}}
+        @if(isset($user->last_seen_at))
+            <div class="desktop-status-text">
+                @if($isOnline)
+                    <span class="status-indicator online">
+                        <span class="status-dot"></span>
+                        Active now
+                    </span>
+                @else
+                    <span class="status-indicator offline">{{ $lastSeenText }}</span>
+                @endif
+            </div>
+        @endif
     </div>
 
     <div class="name-row">
@@ -30,33 +78,6 @@
         <x-ui.icon name="location" size="xs" color="secondary" />
         {{ $user->location ?? 'Location not specified' }}
     </div>
-
-    <style>
-        .loc {
-            font-size: var(--fs-subtle);
-            color: var(--muted);
-            align-items: center;
-            gap: 3px;
-            line-height: 1.4;
-        }
-
-        .loc .ui-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin-bottom: 1px !important;
-        }
-
-        .about-row span {
-            padding: 0 !important;
-        }
-
-        .about-row .ui-icon {
-            padding: 0 !important;
-            margin-bottom: 10px !important;
-        }
-    </style>
 
     <div class="hr"></div>
 
@@ -91,6 +112,60 @@
             <x-ui.icon name="more-vertical" variant="outlined" size="lg" class="color-muted" />
         </button>
     </div>
+
+    <div class="socials">
+        @if ($user->facebook)
+            <a href="{{ $user->facebook }}" aria-label="Facebook" class="social-link">
+                <x-ui.icon name="facebook" size="sm" color="secondary" class="hover-lift" />
+            </a>
+        @endif
+        @if ($user->instagram)
+            <a href="{{ $user->instagram }}" aria-label="Instagram" class="social-link">
+                <x-ui.icon name="instagram" size="sm" color="secondary" class="hover-lift" />
+            </a>
+        @endif
+        @if ($user->twitter)
+            <a href="{{ $user->twitter }}" aria-label="Twitter" class="social-link">
+                <x-ui.icon name="twitter" size="sm" color="secondary" class="hover-lift" />
+            </a>
+        @endif
+        @if ($user->linkedin)
+            <a href="{{ $user->linkedin }}" aria-label="LinkedIn" class="social-link">
+                <x-ui.icon name="linkedin" size="sm" color="secondary" class="hover-lift" />
+            </a>
+        @endif
+
+        <a href="#" class="social-link" aria-label="Download CV">
+            <x-ui.icon name="download" size="sm" color="secondary" class="hover-lift" />
+        </a>
+    </div>
+</section>
+
+{{-- Desktop Dropdown Menu --}}
+<div class="desktop-dropdown" id="desktopDropdown">
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="edit" size="sm" color="secondary" />
+        <span>Edit Profile</span>
+    </button>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="eye" size="sm" color="secondary" />
+        <span>View as Visitor</span>
+    </button>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="download" size="sm" color="secondary" />
+        <span>Download CV</span>
+    </button>
+    <div class="desktop-dropdown-divider"></div>
+    <button class="desktop-dropdown-item">
+        <x-ui.icon name="share" size="sm" color="secondary" />
+        <span>Share Profile</span>
+    </button>
+    <button class="desktop-dropdown-item danger">
+        <x-ui.icon name="flag" size="sm" color="secondary" />
+        <span>Report</span>
+    </button>
+</div>
+
 
     <style>
         .cta {

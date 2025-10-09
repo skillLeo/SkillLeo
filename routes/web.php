@@ -24,6 +24,26 @@ use App\Http\Controllers\Settings\ConnectedAccountsController;
 use App\Http\Controllers\Api\GeoController;
 
 
+// Route::middleware(['auth', 'track.device.activity'])->prefix('account')->group(function () {
+//     // Device security page
+//     Route::get('/devices', [DeviceController::class, 'index'])->name('account.devices');
+    
+//     // Remove a device
+//     Route::delete('/devices/{device}', [DeviceController::class, 'destroy'])->name('account.devices.destroy');
+    
+//     // Mark device as trusted
+//     Route::post('/devices/{device}/trust', [DeviceController::class, 'trust'])->name('account.devices.trust');
+// });
+
+
+
+
+
+
+
+
+
+
 
 Route::middleware(['auth','throttle:60,1'])
     ->get('/api/username/check', [TenantOnboardingController::class, 'checkUsername'])

@@ -1,11 +1,15 @@
 <?php
 
+
 namespace App\Http\Controllers\Auth;
 
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
 use App\Models\User;
+use App\Services\Auth\AuthRedirectService;
+use App\Services\Auth\DeviceTrackingService;
+use App\Services\Auth\OnlineStatusService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,16 +17,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
-use App\Services\Auth\AuthRedirectService;
 
 class OAuthController extends Controller
 {
-    public function __construct(protected AuthRedirectService $redirects) {}
+    public function __construct(
+        protected AuthRedirectService $redirects,
+        protected DeviceTrackingService $deviceTracking,
+        protected OnlineStatusService $onlineStatus
+    ) {}
 
-    // What Socialite actually supports (drivers)
     private const DRIVER_PROVIDERS = ['google', 'github', 'linkedin-openid'];
-
-    // Accept both in URL; we'll map linkedin -> linkedin-openid
     private const URL_PROVIDERS = ['google', 'github', 'linkedin', 'linkedin-openid'];
 
     private function asDriver(string $provider): string
@@ -33,10 +37,8 @@ class OAuthController extends Controller
     public function redirect(Request $request, string $provider)
     {
         abort_unless(in_array($provider, self::URL_PROVIDERS, true), 404);
-
         $driverName = $this->asDriver($provider);
         abort_unless(in_array($driverName, self::DRIVER_PROVIDERS, true), 404);
-
         $driver = $this->driver($driverName, $request);
 
         Log::info('OAuth Redirect', [
@@ -51,22 +53,21 @@ class OAuthController extends Controller
     public function callback(Request $request, string $provider)
     {
         abort_unless(in_array($provider, self::URL_PROVIDERS, true), 404);
-
         $driverName = $this->asDriver($provider);
         abort_unless(in_array($driverName, self::DRIVER_PROVIDERS, true), 404);
 
         if ($request->filled('error')) {
             $error = $request->query('error');
             $desc = $request->query('error_description', 'Authorization failed');
-            Log::error("OAuth Error - {$driverName}", ['error' => $error, 'desc' => $desc, 'query' => $request->query()]);
+            Log::error("OAuth Error - {$driverName}", ['error' => $error, 'desc' => $desc]);
             return redirect()->route('auth.login')
                 ->withErrors(['oauth' => ucfirst($provider) . ': ' . urldecode($desc)]);
         }
 
         try {
             $social = $this->driver($driverName, $request)->user();
-
             $providerUid = (string) ($social->getId() ?? '');
+            
             if ($providerUid === '') {
                 throw new \Exception(ucfirst($provider) . ' did not return a user ID.');
             }
@@ -88,7 +89,6 @@ class OAuthController extends Controller
                 if ($identity) {
                     $user = $identity->user;
                     $this->refreshUserProfile($user, $name, $email, $avatar);
-
                     $identity->update([
                         'provider_username' => $nickname ?? $identity->provider_username,
                         'avatar_url' => $avatar ?? $identity->avatar_url,
@@ -97,12 +97,10 @@ class OAuthController extends Controller
                         'token_expires_at' => isset($social->expiresIn) ? $now->copy()->addSeconds((int) $social->expiresIn) : null,
                         'provider_raw' => $social->user ?? [],
                     ]);
-
                     $user->update([
                         'last_login_at' => $now,
                         'login_count' => ($user->login_count ?? 0) + 1,
                     ]);
-
                     return $user;
                 }
 
@@ -111,8 +109,8 @@ class OAuthController extends Controller
                 if (!$user) {
                     $user = User::create([
                         'tenant_id' => null,
-                        'name' => $name ?: ($nickname ?: 'LinkedIn User'),
-                        'email' => $email ?: "linkedin_{$providerUid}@users.noreply.local",
+                        'name' => $name ?: ($nickname ?: 'User'),
+                        'email' => $email ?: "oauth_{$providerUid}@users.noreply.local",
                         'avatar_url' => $avatar,
                         'email_verified_at' => $email ? $now : null,
                         'password' => null,
@@ -150,16 +148,21 @@ class OAuthController extends Controller
                 return $user;
             });
 
+            // 🔥 Track device for OAuth login
+            $this->deviceTracking->recordDevice($user, $request);
+
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            // 🔁 Unified redirect logic (works for both new + existing users)
+            // 🔥 Mark user as online after OAuth login
+            $this->onlineStatus->markOnline($user);
+
             return redirect()->to($this->redirects->url($user));
 
         } catch (\Exception $e) {
             Log::error("OAuth Callback Error - {$driverName}", ['error' => $e->getMessage()]);
             return redirect()->route('auth.login')
-                ->withErrors(['oauth' => 'Authentication with ' . ucfirst($provider) . ' failed. Please try again.']);
+                ->withErrors(['oauth' => 'Authentication with ' . ucfirst($provider) . ' failed.']);
         }
     }
 
@@ -167,46 +170,32 @@ class OAuthController extends Controller
     {
         $driver = Socialite::driver($driverName);
         $driver->redirectUrl($this->callbackUrl($driverName));
-
         if ($driverName !== 'linkedin-openid' && filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
             $driver->stateless();
         }
-
         return $driver;
     }
 
     private function callbackUrl(string $driverName): string
     {
         $configured = config("services.$driverName.redirect");
-        if ($configured) {
-            return $configured;
-        }
+        if ($configured) return $configured;
         return rtrim(config('app.url'), '/') . "/auth/{$driverName}/callback";
     }
 
     private function normalizedEmail(string $provider, SocialiteUser $s): ?string
     {
         $email = $s->getEmail();
-        if (is_string($email) && $email !== '') {
-            return strtolower(trim($email));
-        }
-        return null;
+        return (is_string($email) && $email !== '') ? strtolower(trim($email)) : null;
     }
 
     private function displayName(SocialiteUser $s): ?string
     {
-        $name = $s->getName();
-        if ($name) return $name;
-
+        if ($name = $s->getName()) return $name;
         $raw = $s->user ?? [];
-
-        if (isset($raw['name'])) {
-            return $raw['name'];
-        }
-
+        if (isset($raw['name'])) return $raw['name'];
         $first = $raw['given_name'] ?? $raw['localizedFirstName'] ?? null;
         $last  = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
-
         return trim(($first ?: '') . ' ' . ($last ?: '')) ?: null;
     }
 
@@ -215,17 +204,13 @@ class OAuthController extends Controller
         $changes = [];
         if (!$user->name && $name) $changes['name'] = $name;
         if (!$user->avatar_url && $avatar) $changes['avatar_url'] = $avatar;
-
         if (!$user->email_verified_at && $email && str_contains($email, '@')) {
             if (empty($user->email) || str_contains($user->email, '@users.noreply.local')) {
                 $changes['email'] = strtolower($email);
             }
             $changes['email_verified_at'] = Carbon::now();
         }
-
-        if ($changes) {
-            $user->update($changes);
-        }
+        if ($changes) $user->update($changes);
     }
 
     private function uniqueUsername(string $seed): string
@@ -234,7 +219,6 @@ class OAuthController extends Controller
         $base = (string) Str::limit($base ?: 'user', 40, '');
         $username = $base;
         $n = 0;
-
         while (User::where('username', $username)->exists()) {
             $n++;
             $username = Str::limit($base, 40, '') . "_{$n}";

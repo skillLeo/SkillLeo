@@ -7,6 +7,8 @@ use App\Mail\SignupLinkMail;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\AuthRedirectService;
+use App\Services\Auth\DeviceTrackingService;
+use App\Services\Auth\OnlineStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Cache, URL, Mail, DB, Auth};
 use Illuminate\Validation\Rules\Password;
@@ -16,7 +18,9 @@ class PreSignupController extends Controller
 {
     public function __construct(
         protected AuthService $authService,
-        protected AuthRedirectService $redirects
+        protected AuthRedirectService $redirects,
+        protected DeviceTrackingService $deviceTracking,
+        protected OnlineStatusService $onlineStatus
     ) {}
 
     public function sendLink(Request $request)
@@ -53,7 +57,7 @@ class PreSignupController extends Controller
     public function confirm(Request $request, string $token)
     {
         $payload = Cache::pull("signup:{$token}");
-        if (! $payload) {
+        if (!$payload) {
             return redirect(route('auth.login'))->withErrors(['link' => 'This link is invalid or has expired.']);
         }
 
@@ -67,11 +71,15 @@ class PreSignupController extends Controller
             return $user;
         });
 
-        // ✅ Log them in right after confirming (you said: record is submitted then user is logged in)
+        // 🔥 Track device for new signup
+        $this->deviceTracking->recordDevice($user, $request);
+
         Auth::login($user);
         $request->session()->regenerate();
 
-        // 🔁 Unified redirect logic
+        // 🔥 Mark user as online after registration
+        $this->onlineStatus->markOnline($user);
+
         return redirect()->to($this->redirects->url($user))
             ->with('status', 'Welcome! Please complete your onboarding.');
     }

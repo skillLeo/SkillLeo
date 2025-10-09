@@ -7,6 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\OtpService;
+use App\Services\Auth\DeviceTrackingService;
+use App\Services\Auth\OnlineStatusService;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,11 +17,13 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+ 
     public function __construct(
         protected AuthService $authService,
-        protected OtpService $otpService
+        protected OtpService $otpService,
+        protected DeviceTrackingService $deviceTracking,
+        protected OnlineStatusService $onlineStatus
     ) {}
-
 
 
 
@@ -82,6 +87,7 @@ class AuthController extends Controller
     }
     
 
+
     public function submitLogin(Request $request)
     {
         $data = $request->validate([
@@ -121,8 +127,13 @@ class AuthController extends Controller
         return redirect()->route('auth.otp.show', ['email' => $user->email]);
     }
 
-    public function logout(\Illuminate\Http\Request $request)
+    public function logout(Request $request)
     {
+        // 🔥 Mark user as offline before logout
+        if (Auth::check()) {
+            $this->onlineStatus->markOffline(Auth::user());
+        }
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         Auth::logout();

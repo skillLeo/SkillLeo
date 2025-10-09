@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -7,15 +8,20 @@ use App\Models\User;
 use App\Services\Auth\OtpService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\AuthRedirectService;
+use App\Services\Auth\DeviceTrackingService;
+use App\Services\Auth\OnlineStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class OtpController extends Controller
 {
     public function __construct(
         protected OtpService $otp,
         protected AuthService $authService,
-        protected AuthRedirectService $redirects
+        protected AuthRedirectService $redirects,
+        protected DeviceTrackingService $deviceTracking,
+        protected OnlineStatusService $onlineStatus
     ) {}
 
     public function show(Request $request)
@@ -33,7 +39,7 @@ class OtpController extends Controller
         $challengeId = (string) $request->session()->get('login.challenge_id');
         $pendingId   = (int) $request->session()->get('login.pending_user_id');
 
-        if (! $challengeId || ! $pendingId) {
+        if (!$challengeId || !$pendingId) {
             return back()->withErrors(['code' => 'Session expired. Please sign in again.']);
         }
 
@@ -45,15 +51,22 @@ class OtpController extends Controller
             (string) $request->userAgent()
         );
 
-        if (! $ok) {
+        if (!$ok) {
             return back()->withErrors(['code' => 'Invalid or expired code.']);
         }
 
         $user = User::withoutGlobalScopes()->findOrFail($pendingId);
         $remember = (bool) session('login.remember');
-        Auth::login($user, $remember);
 
+        // 🔥 Track device BEFORE login
+        $device = $this->deviceTracking->recordDevice($user, $request);
+        $isNewDevice = $device->wasRecentlyCreated;
+
+        Auth::login($user, $remember);
         $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
+
+        // 🔥 Mark user as online immediately after login
+        $this->onlineStatus->markOnline($user);
 
         $request->session()->forget([
             'login.pending_user_id',
@@ -62,7 +75,14 @@ class OtpController extends Controller
             'login.started_at',
         ]);
 
-        // 🔁 Unified redirect logic
+        if ($isNewDevice) {
+            Log::info('New device login detected', [
+                'user_id' => $user->id,
+                'device_name' => $device->device_name,
+                'ip' => $request->ip(),
+            ]);
+        }
+
         return $this->redirects->intendedResponse($user);
     }
 

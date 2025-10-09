@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Tenant;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Skill;
- 
+
 use App\Models\Education;
 use App\Models\Portfolio;
 use App\Models\Experience;
@@ -27,45 +27,48 @@ class OnboardingController extends Controller
     public function scratch(Request $request)
     {
         $user = $request->user();
-    
+
         $user->update([
             'is_profile_complete' => 'personal',
         ]);
-    
+
         return redirect()
             ->route('tenant.onboarding.personal')
             ->with('status', 'Youve started fresh! Please complete your personal details.');
     }
-    
 
- 
-    
+
+
+
     public function storePersonal(Request $request)
     {
         $user = $request->user();
-    
+
         $data = $request->validate([
-            'first_name' => ['required','string','max:120'],
-            'last_name'  => ['required','string','max:120'],
+            'first_name' => ['required', 'string', 'max:120'],
+            'last_name'  => ['required', 'string', 'max:120'],
             'username'   => [
-                'required','string','min:3','max:50',
+                'required',
+                'string',
+                'min:3',
+                'max:50',
                 'regex:/^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/',
                 // unique among OTHER users (ignore current user id)
                 'unique:users,username,' . $user->id,
             ],
         ]);
-    
+
         $user->forceFill([
             'name'                => $data['first_name'],
             'last_name'           => $data['last_name'],
             'username'            => $data['username'],
             'is_profile_complete' => 'location',  // ➜ next step
         ])->save();
-    
+
         return redirect()->route('tenant.onboarding.location')
             ->with('status', 'Saved. Continue with your location.');
     }
-    
+
 
     public function checkUsername(Request $request)
     {
@@ -76,25 +79,25 @@ class OnboardingController extends Controller
             ->trim('-_')
             ->limit(50, '')
             ->value();
-    
+
         if (strlen($username) < 3) {
             return response()->json([
                 'status' => 'invalid',
                 'error'  => 'At least 3 characters (a-z, 0-9, _ or -).',
             ], 422);
         }
-    
+
         $selfId = (int) optional($request->user())->id;
         $owner  = User::select('id')->where('username', $username)->first();
-    
+
         if (! $owner) {
             return response()->json(['status' => 'available', 'username' => $username], 200);
         }
-    
+
         if ($selfId && (int) $owner->id === $selfId) {
             return response()->json(['status' => 'self', 'username' => $username], 200);
         }
-    
+
         // taken by someone else → find a clean suggestion
         $base = $username;
         $candidates = [
@@ -103,7 +106,7 @@ class OnboardingController extends Controller
             "{$base}-" . random_int(100, 999),
             substr($base, 0, 42) . '-' . random_int(1000, 9999),
         ];
-    
+
         $suggestion = null;
         foreach ($candidates as $cand) {
             $cand = Str::of($cand)->lower()->ascii()
@@ -114,37 +117,37 @@ class OnboardingController extends Controller
                 break;
             }
         }
-    
+
         return response()->json([
             'status'     => 'taken',
             'username'   => $username,
             'suggestion' => $suggestion,
         ], 409);
     }
-    
-
-// app/Http/Controllers/Tenant/OnboardingController.php
 
 
-public function storeLocation(Request $request)
+    // app/Http/Controllers/Tenant/OnboardingController.php
+
+
+    public function storeLocation(Request $request)
     {
         $user = $request->user();
 
         // Validate and normalize inputs coming from manual select OR GPS flow
         $data = $request->validate([
-            'country'        => ['required','string','max:120'],
-            'state'          => ['required','string','max:120'],
-            'city'           => ['required','string','max:120'],
-            'timezone'       => ['nullable','string','max:64'],
-            'coords.lat'     => ['nullable','numeric'],
-            'coords.lng'     => ['nullable','numeric'],
-            'source'         => ['nullable','in:manual,nominatim,gps'], // optional telemetry
+            'country'        => ['required', 'string', 'max:120'],
+            'state'          => ['required', 'string', 'max:120'],
+            'city'           => ['required', 'string', 'max:120'],
+            'timezone'       => ['nullable', 'string', 'max:64'],
+            'coords.lat'     => ['nullable', 'numeric'],
+            'coords.lng'     => ['nullable', 'numeric'],
+            'source'         => ['nullable', 'in:manual,nominatim,gps'], // optional telemetry
         ]);
 
         // tidy/case – keep readable names
-        $country = Str::of($data['country'])->trim()->substr(0,120)->value();
-        $state   = Str::of($data['state'])->trim()->substr(0,120)->value();
-        $city    = Str::of($data['city'])->trim()->substr(0,120)->value();
+        $country = Str::of($data['country'])->trim()->substr(0, 120)->value();
+        $state   = Str::of($data['state'])->trim()->substr(0, 120)->value();
+        $city    = Str::of($data['city'])->trim()->substr(0, 120)->value();
 
         // merge location telemetry into meta without nuking other keys
         $meta = $user->meta ?? [];
@@ -180,54 +183,54 @@ public function storeLocation(Request $request)
 
 
 
-// Add this method to your OnboardingController or relevant controller
+    // Add this method to your OnboardingController or relevant controller
 
-// public function storeLocation(Request $request)
-// {
-//     $user = $request->user();
+    // public function storeLocation(Request $request)
+    // {
+    //     $user = $request->user();
 
-//     // Validate inputs
-//     $data = $request->validate([
-//         'country'        => ['required','string','max:120'],
-//         'state'          => ['required','string','max:120'],
-//         'city'           => ['required','string','max:120'],
-//         'timezone'       => ['nullable','string','max:64'],
-//         'coords.lat'     => ['nullable','numeric'],
-//         'coords.lng'     => ['nullable','numeric'],
-//         'source'         => ['nullable','in:manual,nominatim,gps'],
-//     ]);
+    //     // Validate inputs
+    //     $data = $request->validate([
+    //         'country'        => ['required','string','max:120'],
+    //         'state'          => ['required','string','max:120'],
+    //         'city'           => ['required','string','max:120'],
+    //         'timezone'       => ['nullable','string','max:64'],
+    //         'coords.lat'     => ['nullable','numeric'],
+    //         'coords.lng'     => ['nullable','numeric'],
+    //         'source'         => ['nullable','in:manual,nominatim,gps'],
+    //     ]);
 
-//     // Clean and trim inputs
-//     $country = trim($data['country']);
-//     $state   = trim($data['state']);
-//     $city    = trim($data['city']);
+    //     // Clean and trim inputs
+    //     $country = trim($data['country']);
+    //     $state   = trim($data['state']);
+    //     $city    = trim($data['city']);
 
-//     // Update user location
-//     $meta = $user->meta ?? [];
-//     $meta['location'] = [
-//         'country' => $country,
-//         'state'   => $state,
-//         'city'    => $city,
-//         'coords'  => [
-//             'lat' => $request->input('coords.lat'),
-//             'lng' => $request->input('coords.lng'),
-//         ],
-//         'source'  => $request->input('source', 'manual'),
-//     ];
+    //     // Update user location
+    //     $meta = $user->meta ?? [];
+    //     $meta['location'] = [
+    //         'country' => $country,
+    //         'state'   => $state,
+    //         'city'    => $city,
+    //         'coords'  => [
+    //             'lat' => $request->input('coords.lat'),
+    //             'lng' => $request->input('coords.lng'),
+    //         ],
+    //         'source'  => $request->input('source', 'manual'),
+    //     ];
 
-//     $user->forceFill([
-//         'country'             => $country,
-//         'state'               => $state,
-//         'city'                => $city,
-//         'timezone'            => $data['timezone'] ?? $user->timezone ?? 'UTC',
-//         'is_profile_complete' => 'education', // or next step
-//         'meta'                => $meta,
-//     ])->save();
+    //     $user->forceFill([
+    //         'country'             => $country,
+    //         'state'               => $state,
+    //         'city'                => $city,
+    //         'timezone'            => $data['timezone'] ?? $user->timezone ?? 'UTC',
+    //         'is_profile_complete' => 'education', // or next step
+    //         'meta'                => $meta,
+    //     ])->save();
 
-//     return redirect()
-//         ->route('tenant.onboarding.education')
-//         ->with('status', 'Location saved successfully!');
-// }
+    //     return redirect()
+    //         ->route('tenant.onboarding.education')
+    //         ->with('status', 'Location saved successfully!');
+    // }
 
 
     public function storeSkills(Request $request)
@@ -254,7 +257,7 @@ public function storeLocation(Request $request)
             if ($name === '' || strlen($name) > 100) {
                 continue;
             }
-            if (!in_array($level, [1,2,3], true)) {
+            if (!in_array($level, [1, 2, 3], true)) {
                 $level = 2;
             }
 
@@ -345,7 +348,7 @@ public function storeLocation(Request $request)
         $user = $request->user();
 
         $request->validate([
-            'education' => ['required','string'],
+            'education' => ['required', 'string'],
         ]);
 
         $payload = json_decode($request->input('education'), true);
@@ -371,7 +374,9 @@ public function storeLocation(Request $request)
             if ($start !== null && ($start < $minYear || $start > $maxYear)) $start = null;
             if ($end   !== null && ($end   < $minYear || $end   > $maxYear)) $end   = null;
             if ($curr) $end = null;
-            if ($start !== null && $end !== null && $end < $start) { [$start, $end] = [$end, $start]; }
+            if ($start !== null && $end !== null && $end < $start) {
+                [$start, $end] = [$end, $start];
+            }
 
             $rows[] = [
                 'user_id'        => $user->id,
@@ -406,7 +411,7 @@ public function storeLocation(Request $request)
             ->with('status', 'Education saved. Let’s add your experience.');
     }
 
- 
+
 
 
 
@@ -416,21 +421,21 @@ public function storeLocation(Request $request)
     public function storePreferences(Request $request)
     {
         $user = $request->user();
-    
+
         // Validate request
         $validated = $request->validate([
-            'currency'       => ['required', Rule::in(['PKR','USD','EUR','GBP','AED','INR'])],
-            'rate'           => ['nullable','numeric','min:0'],
-            'unit'           => ['required', Rule::in(['/hour','/day','/project'])],
-            'availability'   => ['required', Rule::in(['now','1week','2weeks','1month'])],
-            'hours_per_week' => ['required', Rule::in(['part-time','full-time','flexible'])],
-    
+            'currency'       => ['required', Rule::in(['PKR', 'USD', 'EUR', 'GBP', 'AED', 'INR'])],
+            'rate'           => ['nullable', 'numeric', 'min:0'],
+            'unit'           => ['required', Rule::in(['/hour', '/day', '/project'])],
+            'availability'   => ['required', Rule::in(['now', '1week', '2weeks', '1month'])],
+            'hours_per_week' => ['required', Rule::in(['part-time', 'full-time', 'flexible'])],
+
             // toggles come as "on"/null; we normalize below
             'remote_work'    => ['nullable'],
             'open_to_work'   => ['nullable'],
             'long_term'      => ['nullable'],
         ]);
-    
+
         // Normalize toggles to booleans
         $data = [
             'currency'       => $validated['currency'],
@@ -442,16 +447,16 @@ public function storeLocation(Request $request)
             'open_to_work'   => (bool) $request->boolean('open_to_work'),
             'long_term'      => (bool) $request->boolean('long_term'),
         ];
-    
+
         // Upsert preferences for this user
         $user->preference()->updateOrCreate(
             ['user_id' => $user->id],
             $data
         );
-    
+
         // Advance onboarding
         $user->forceFill(['is_profile_complete' => 'review'])->save();
-    
+
         return redirect()
             ->route('tenant.onboarding.review')
             ->with('status', 'Preferences saved. Review your profile before publishing.');
@@ -465,16 +470,16 @@ public function storeLocation(Request $request)
     public function storeReview(Request $request)
     {
         $user = $request->user();
-    
+
         $validated = $request->validate([
-            'is_public' => ['required', Rule::in(['0','1'])],
+            'is_public' => ['required', Rule::in(['0', '1'])],
         ]);
-    
+
         $user->forceFill([
             'is_public'           => $validated['is_public'] === '1',
             'is_profile_complete' => 'publish',    // 👈 advance to publish step
         ])->save();
-    
+
         return redirect()
             ->route('tenant.onboarding.publish')   // 👈 go to the publish page (GET)
             ->with('status', 'Ready to publish your profile.');
@@ -512,7 +517,7 @@ public function storeLocation(Request $request)
 
 
 
-    
+
 
     protected function storeDataUrlImage(string $dataUrl, string $dir): ?array
     {
@@ -521,99 +526,99 @@ public function storeLocation(Request $request)
             return null;
         }
         $ext = strtolower($m[1]);
-        $ext = in_array($ext, ['jpg','jpeg','png','webp']) ? $ext : 'jpg';
-    
+        $ext = in_array($ext, ['jpg', 'jpeg', 'png', 'webp']) ? $ext : 'jpg';
+
         $binary = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1));
         if ($binary === false) return null;
-    
+
         $name = Str::random(20) . '.' . $ext;
         $path = trim($dir, '/') . '/' . $name;
-    
+
         Storage::disk('public')->put($path, $binary);
-    
+
         return ['disk' => 'public', 'path' => $path];
     }
-    
-  
-public function storePortfolio(Request $request)
-{
-    $user = $request->user();
 
-    $request->validate([
-        'projects' => ['required','string'],
-    ]);
 
-    $items = json_decode($request->input('projects'), true);
-    if (!is_array($items)) {
-        return back()->withErrors(['projects' => 'Invalid projects payload.'])->withInput();
-    }
+    public function storePortfolio(Request $request)
+    {
+        $user = $request->user();
 
-    $rows = [];
-    foreach (array_values($items) as $i => $p) {
-        $title = trim((string) ($p['title'] ?? ''));
-        $desc  = trim((string) ($p['description'] ?? ''));
-        $link  = trim((string) ($p['link'] ?? ''));
-        $img64 = $p['image'] ?? null;
+        $request->validate([
+            'projects' => ['required', 'string'],
+        ]);
 
-        if ($title === '' || $desc === '') {
-            continue;
+        $items = json_decode($request->input('projects'), true);
+        if (!is_array($items)) {
+            return back()->withErrors(['projects' => 'Invalid projects payload.'])->withInput();
         }
 
-        // normalize link
-        if ($link !== '' && !Str::startsWith($link, ['http://','https://'])) {
-            $link = 'https://' . ltrim($link, '/');
-        }
-        if ($link === '') $link = null;
+        $rows = [];
+        foreach (array_values($items) as $i => $p) {
+            $title = trim((string) ($p['title'] ?? ''));
+            $desc  = trim((string) ($p['description'] ?? ''));
+            $link  = trim((string) ($p['link'] ?? ''));
+            $img64 = $p['image'] ?? null;
 
-        // store optional dataURL
-        $imagePath = null;
-        $imageDisk = null;
-        if ($img64 && preg_match('/^data:image\/(\w+);base64,/', $img64, $m)) {
-            $ext  = strtolower($m[1]);
-            $ext  = in_array($ext, ['jpg','jpeg','png','webp']) ? $ext : 'jpg';
-            $data = base64_decode(substr($img64, strpos($img64, ',') + 1));
-            if ($data !== false) {
-                $name = Str::random(20) . '.' . $ext;
-                $dir  = 'portfolio/' . $user->id;
-                $imagePath = $dir . '/' . $name;
-                $imageDisk = 'public';
-                Storage::disk($imageDisk)->put($imagePath, $data);
+            if ($title === '' || $desc === '') {
+                continue;
             }
+
+            // normalize link
+            if ($link !== '' && !Str::startsWith($link, ['http://', 'https://'])) {
+                $link = 'https://' . ltrim($link, '/');
+            }
+            if ($link === '') $link = null;
+
+            // store optional dataURL
+            $imagePath = null;
+            $imageDisk = null;
+            if ($img64 && preg_match('/^data:image\/(\w+);base64,/', $img64, $m)) {
+                $ext  = strtolower($m[1]);
+                $ext  = in_array($ext, ['jpg', 'jpeg', 'png', 'webp']) ? $ext : 'jpg';
+                $data = base64_decode(substr($img64, strpos($img64, ',') + 1));
+                if ($data !== false) {
+                    $name = Str::random(20) . '.' . $ext;
+                    $dir  = 'portfolio/' . $user->id;
+                    $imagePath = $dir . '/' . $name;
+                    $imageDisk = 'public';
+                    Storage::disk($imageDisk)->put($imagePath, $data);
+                }
+            }
+
+            $rows[] = [
+                'user_id'     => $user->id,
+                'title'       => mb_substr($title, 0, 160),
+                'description' => mb_substr($desc, 0, 3000),
+                'link_url'    => $link,
+                'image_path'  => $imagePath,
+                'image_disk'  => $imageDisk,
+                'position'    => (int) $i,
+                'meta'        => null, // or encode tags/category here
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
         }
 
-        $rows[] = [
-            'user_id'     => $user->id,
-            'title'       => mb_substr($title, 0, 160),
-            'description' => mb_substr($desc, 0, 3000),
-            'link_url'    => $link,
-            'image_path'  => $imagePath,
-            'image_disk'  => $imageDisk,
-            'position'    => (int) $i,
-            'meta'        => null, // or encode tags/category here
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ];
+        if (empty($rows)) {
+            return back()->withErrors(['projects' => 'Please add at least one project with a title and description.'])->withInput();
+        }
+
+        DB::transaction(function () use ($user, $rows) {
+            $user->portfolios()->delete();
+            Portfolio::insert($rows);
+
+            $user->forceFill(['is_profile_complete' => 'preferences'])->save();
+        });
+
+        return redirect()->route('tenant.onboarding.preferences')
+            ->with('status', 'Portfolio saved. Set your work preferences.');
     }
 
-    if (empty($rows)) {
-        return back()->withErrors(['projects' => 'Please add at least one project with a title and description.'])->withInput();
-    }
-
-    DB::transaction(function () use ($user, $rows) {
-        $user->portfolios()->delete();
-        Portfolio::insert($rows);
-
-        $user->forceFill(['is_profile_complete' => 'preferences'])->save();
-    });
-
-    return redirect()->route('tenant.onboarding.preferences')
-        ->with('status', 'Portfolio saved. Set your work preferences.');
-}
 
 
 
 
-  
 
 
 
@@ -699,13 +704,19 @@ public function storePortfolio(Request $request)
             $ey = ($row['endYear']    ?? '') !== '' ? (int)$row['endYear']    : null;
             $current = (bool)($row['current'] ?? false);
 
-            if ($current) { $em = null; $ey = null; }
+            if ($current) {
+                $em = null;
+                $ey = null;
+            }
 
             // Guard: end cannot be before start
             if (!$current && $sm && $sy && $em && $ey) {
                 $start = Carbon::createFromDate($sy, $sm, 1);
                 $end   = Carbon::createFromDate($ey, $em, 1);
-                if ($end->lt($start)) { $em = null; $ey = null; }
+                if ($end->lt($start)) {
+                    $em = null;
+                    $ey = null;
+                }
             }
 
             // ✅ FIX: the 2nd arg of mb_substr is START; we want a MAX LENGTH => use (0, N)
@@ -757,7 +768,9 @@ public function storePortfolio(Request $request)
 
         DB::transaction(function () use ($user, $expRows, $skillsByIndex) {
             // Replace user’s experiences atomically
-            $user->experiences()->each(function ($exp) { $exp->skills()->delete(); });
+            $user->experiences()->each(function ($exp) {
+                $exp->skills()->delete();
+            });
             $user->experiences()->delete();
 
             foreach ($expRows as $idx => $row) {
@@ -765,7 +778,9 @@ public function storePortfolio(Request $request)
                 $exp = Experience::create($row);
 
                 $skillRows = $skillsByIndex[$idx] ?? [];
-                foreach ($skillRows as &$s) { $s['experience_id'] = $exp->id; }
+                foreach ($skillRows as &$s) {
+                    $s['experience_id'] = $exp->id;
+                }
                 if (!empty($skillRows)) {
                     ExperienceSkill::insert($skillRows);
                 }
@@ -794,11 +809,6 @@ public function storePortfolio(Request $request)
 
 
 
-    /**
-     * Store a base64 data URL image to public disk.
-     * Returns the storage path or null.
-     */
-   
 
 
 
@@ -809,21 +819,20 @@ public function storePortfolio(Request $request)
 
 
 
-    
     public function review(Request $request)
     {
         $user = $request->user()->loadMissing([
-            'educations'        => fn ($q) => $q->orderBy('position'),
-            'experiences'       => fn ($q) => $q->orderBy('position')->with('skills'),
-            'portfolioProjects' => fn ($q) => $q->orderBy('position'),
+            'educations'        => fn($q) => $q->orderBy('position'),
+            'experiences'       => fn($q) => $q->orderBy('position')->with('skills'),
+            'portfolios' => fn($q) => $q->orderBy('position'),
             'preference',
         ]);
-    
+
         // Build a light snapshot for the view (used if localStorage is empty or incomplete)
         $profile = [
-            'name'        => trim($user->first_name.' '.$user->last_name) ?: $user->name,
+            'name'        => trim($user->first_name . ' ' . $user->last_name) ?: $user->name,
             'initial'     => strtoupper(mb_substr($user->first_name ?: $user->name, 0, 1)),
-            'username'    => $user->username ?? ('user-'.$user->id),
+            'username'    => $user->username ?? ('user-' . $user->id),
             'location'    => trim(implode(', ', array_filter([$user->city, $user->country]))),
             'skills'      => collect($user->skills ?? [])->values(), // if you store global skills on user
             'experiences' => $user->experiences->map(function ($e) {
@@ -838,7 +847,7 @@ public function storePortfolio(Request $request)
                     'skills'        => $e->skills->map(fn($s) => ['name' => $s->name, 'level' => (int)$s->level])->values(),
                 ];
             })->values(),
-            'projects'    => $user->portfolioProjects->map(function ($p) {
+            'projects'    => $user->portfolios->map(function ($p) {
                 return [
                     'title'       => $p->title,
                     'description' => $p->description,
@@ -848,10 +857,10 @@ public function storePortfolio(Request $request)
             })->values(),
             'is_public'   => (bool) ($user->is_public ?? true),
         ];
-    
+
         return view('tenant.onboarding.review', compact('profile'));
     }
-    
+
 
 
 
@@ -1026,7 +1035,7 @@ public function storePortfolio(Request $request)
         return view('tenant.onboarding.personal');
     }
 
- 
+
     public function location()
     {
         return view('tenant.onboarding.location');
@@ -1043,7 +1052,7 @@ public function storePortfolio(Request $request)
         return view('tenant.onboarding.skills');
     }
 
-    
+
 
     public function experience()
     {
@@ -1070,10 +1079,4 @@ public function storePortfolio(Request $request)
     {
         return view('tenant.onboarding.preferences');
     }
-
-  
-
-   
-
- 
 }

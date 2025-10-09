@@ -310,4 +310,369 @@
         });
     });
     </script>
+    <style>
+        /* ========== MOBILE STATUS BADGE ========== */
+        .hm-avatar {
+            position: relative;
+        }
+        
+        .hm-status-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid var(--card, #fff);
+            background: #9ca3af;
+            z-index: 10;
+            transform: translate(-4px, -4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .hm-status-badge.online {
+            background: #10b981;
+        }
+        
+        .hm-status-badge .pulse-ring {
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 3px solid #10b981;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            opacity: 0;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+        }
+        
+        /* Mobile Status Text Below Name */
+        .hm-online-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: -4px;
+            margin-bottom: 8px;
+            padding: 0 4px;
+        }
+        
+        .hm-online-status .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            flex-shrink: 0;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.15);
+            }
+        }
+        
+        .hm-online-status .status-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted, #6b7280);
+            line-height: 1;
+        }
+        
+        .hm-online-status .status-text.online {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        
+        /* ========== DESKTOP STATUS BADGE ========== */
+        .photo-circle {
+            position: relative;
+        }
+        
+        .desktop-status-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 4px solid var(--card, #fff);
+            background: #9ca3af;
+            z-index: 10;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+            transition: all 0.3s ease;
+        }
+        
+        .desktop-status-badge.online {
+            background: #10b981;
+        }
+        
+        .desktop-status-badge .pulse-ring {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 4px solid #10b981;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            opacity: 0;
+        }
+        
+        /* Desktop Status Text Below Avatar */
+        .desktop-status-text {
+            margin-top: 12px;
+            text-align: center;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted, #6b7280);
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: var(--apc-bg, #f3f4f6);
+            transition: all 0.2s ease;
+        }
+        
+        .status-indicator.online {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            font-weight: 600;
+        }
+        
+        .status-indicator.online .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        
+        .status-indicator.offline {
+            color: var(--text-muted, #6b7280);
+        }
+        
+        /* Hover Effects */
+        .photo-circle:hover .desktop-status-badge {
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        
+        .hm-avatar:hover .hm-status-badge {
+            transform: translate(-4px, -4px) scale(1.1);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        
+        /* ========== EXISTING STYLES ========== */
+        .loc {
+            font-size: var(--fs-subtle);
+            color: var(--muted);
+            align-items: center;
+            gap: 3px;
+            line-height: 1.4;
+        }
+        
+        .loc .ui-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 1px !important;
+        }
+        
+        .about-row span {
+            padding: 0 !important;
+        }
+        
+        .about-row .ui-icon {
+            padding: 0 !important;
+            margin-bottom: 10px !important;
+        }
+        
+        .cta {
+            display: grid;
+            grid-template-columns: 40% 40% 10%;
+            gap: 8px;
+            align-items: center;
+            margin-top: 16px;
+        }
+        
+        .cta .menu-kebab {
+            width: 100%;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.18s ease;
+            border: none;
+        }
+        
+        .cta .menu-kebab:hover {
+            background: var(--apc-bg);
+        }
+        
+        .cta .menu-kebab .ui-icon {
+            width: 18px !important;
+            height: 18px !important;
+        }
+        
+        .cta .btn-chat,
+        .cta .btn-follow {
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .cta {
+                grid-template-columns: 1fr 1fr 60px;
+                gap: 6px;
+            }
+        }
+        
+        /* Dropdown Styles */
+        .hm-dropdown {
+            display: none;
+            position: fixed;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            min-width: 240px;
+            z-index: 999999;
+            animation: slideDown 0.2s ease;
+            overflow: hidden;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hm-dropdown.active {
+            display: block;
+        }
+        
+        .hm-dropdown-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: transparent;
+            border: none;
+            color: var(--text-body);
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-align: left;
+            font-family: inherit;
+        }
+        
+        .hm-dropdown-item:hover {
+            background: var(--apc-bg);
+        }
+        
+        .hm-dropdown-item i {
+            width: 18px;
+            font-size: 16px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        
+        .hm-dropdown-item.danger {
+            color: var(--error);
+        }
+        
+        .hm-dropdown-item.danger i {
+            color: var(--error);
+        }
+        
+        .hm-dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+        
+        .desktop-dropdown {
+            display: none;
+            position: fixed;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            min-width: 220px;
+            max-width: 240px;
+            z-index: 999999;
+            animation: slideDown 0.2s ease;
+            overflow: hidden;
+        }
+        
+        .desktop-dropdown.active {
+            display: block;
+        }
+        
+        .desktop-dropdown-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-body);
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-align: left;
+            font-family: inherit;
+        }
+        
+        .desktop-dropdown-item:hover {
+            background: var(--apc-bg);
+        }
+        
+        .desktop-dropdown-item .ui-icon {
+            flex-shrink: 0;
+        }
+        
+        .desktop-dropdown-item.danger {
+            color: var(--error);
+        }
+        
+        .desktop-dropdown-item.danger .ui-icon {
+            color: var(--error);
+        }
+        
+        .desktop-dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+        </style>
+        
 @endsection

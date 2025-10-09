@@ -1,13 +1,55 @@
+{{-- ============================================ --}}
+{{-- MOBILE HERO SECTION WITH ONLINE STATUS --}}
+{{-- ============================================ --}}
+
 <section class="hero-mobile">
     <div class="hm-banner">
         <img src="#" alt="Banner">
+        
+        {{-- Avatar with Online Status Badge --}}
         <div class="hm-avatar">
             @if($user->avatar)
-                <img src="{{ $user->avatar }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <img src="{{ $user->avatar }}" alt="{{ $user->name }}" 
+                    style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             @else
                 <i class="fa-solid fa-camera u-ic-md" style="margin-bottom: 4px"></i>
             @endif
+            
+            {{-- Professional Online Status Badge --}}
+            @php
+                $isOnline = false;
+                $lastSeenText = 'Offline';
+                
+                if (isset($user->last_seen_at)) {
+                    $lastSeenTime = \Carbon\Carbon::parse($user->last_seen_at);
+                    $now = \Carbon\Carbon::now();
+                    $diffInMinutes = $now->diffInMinutes($lastSeenTime);
+                    
+                    if ($diffInMinutes < 1) {
+                        $isOnline = true;
+                        $lastSeenText = 'Active now';
+                    } elseif ($diffInMinutes < 60) {
+                        $lastSeenText = 'Active ' . $diffInMinutes . 'm ago';
+                    } elseif ($diffInMinutes < 1440) {
+                        $hours = floor($diffInMinutes / 60);
+                        $lastSeenText = 'Active ' . $hours . 'h ago';
+                    } elseif ($diffInMinutes < 10080) {
+                        $days = floor($diffInMinutes / 1440);
+                        $lastSeenText = $days . 'd ago';
+                    } else {
+                        $lastSeenText = 'Last seen ' . $lastSeenTime->format('M d');
+                    }
+                }
+            @endphp
+            
+            <span class="hm-status-badge {{ $isOnline ? 'online' : 'offline' }}" 
+                  title="{{ $lastSeenText }}">
+                @if($isOnline)
+                    <span class="pulse-ring"></span>
+                @endif
+            </span>
         </div>
+        
         <span class="hm-generate">
             <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px"></i>
             Generate
@@ -21,6 +63,18 @@
                 <span class="hm-otw">Open to work</span>
             @endif
         </h2>
+        
+        {{-- Online Status Text Below Name --}}
+        @if(isset($user->last_seen_at))
+            <div class="hm-online-status">
+                @if($isOnline)
+                    <span class="status-dot online"></span>
+                    <span class="status-text online">Active now</span>
+                @else
+                    <span class="status-text">{{ $lastSeenText }}</span>
+                @endif
+            </div>
+        @endif
 
         <div class="hm-title">
             {{ $user->bio ?? 'Professional Developer & Designer' }}
@@ -71,7 +125,7 @@
     </div>
 </section>
 
-{{-- Dropdown Menu (Outside section for proper positioning) --}}
+{{-- Dropdown Menu --}}
 <div class="hm-dropdown" id="hmDropdown">
     <button class="hm-dropdown-item" onclick="openModal('editProfileModal'); closeDropdown();">
         <i class="fa-solid fa-pen"></i>
@@ -95,6 +149,7 @@
         <span>Report</span>
     </button>
 </div>
+
 
 <style>
 /* Dropdown Styles */
