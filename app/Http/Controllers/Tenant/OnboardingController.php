@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Models\ExperienceSkill;
 use Illuminate\Validation\Rule;
 use App\Models\PortfolioProject;
+use App\Services\TimezoneService;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
@@ -129,54 +130,170 @@ class OnboardingController extends Controller
     // app/Http/Controllers/Tenant/OnboardingController.php
 
 
+
     public function storeLocation(Request $request)
     {
         $user = $request->user();
-
-        // Validate and normalize inputs coming from manual select OR GPS flow
+    
+        // Validate and normalize inputs
         $data = $request->validate([
             'country'        => ['required', 'string', 'max:120'],
             'state'          => ['required', 'string', 'max:120'],
             'city'           => ['required', 'string', 'max:120'],
-            'timezone'       => ['nullable', 'string', 'max:64'],
+            'timezone'       => ['nullable', 'string', 'timezone'],
             'coords.lat'     => ['nullable', 'numeric'],
             'coords.lng'     => ['nullable', 'numeric'],
-            'source'         => ['nullable', 'in:manual,nominatim,gps'], // optional telemetry
+            'source'         => ['nullable', 'in:manual,nominatim,gps,auto'],
         ]);
-
-        // tidy/case – keep readable names
+    
+        // Tidy/case – keep readable names
         $country = Str::of($data['country'])->trim()->substr(0, 120)->value();
         $state   = Str::of($data['state'])->trim()->substr(0, 120)->value();
         $city    = Str::of($data['city'])->trim()->substr(0, 120)->value();
-
-        // merge location telemetry into meta without nuking other keys
-        $meta = $user->meta ?? [];
-        $meta['location'] = [
-            'country' => $country,
-            'state'   => $state,
-            'city'    => $city,
-            'coords'  => [
-                'lat' => Arr::get($data, 'coords.lat'),
-                'lng' => Arr::get($data, 'coords.lng'),
-            ],
-            'source'  => $request->input('source', 'manual'),
-        ];
-
-        $user->forceFill([
-            'country'             => $country,
-            'state'               => $state,
-            'city'                => $city,
-            // keep existing timezone unless a valid one is posted
-            'timezone'            => $data['timezone'] ?? $user->timezone,
-            // advance to next stage
+    
+        // 🔥 Auto-detect timezone from location if not provided
+        $timezone = $data['timezone'] 
+            ?? TimezoneService::detectFromLocation($country, $state, $city);
+    
+        // Update user profile with location data
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'country' => $country,
+                'state'   => $state,
+                'city'    => $city,
+                'meta'    => array_merge($user->profile?->meta ?? [], [
+                    'coords' => [
+                        'lat' => Arr::get($data, 'coords.lat'),
+                        'lng' => Arr::get($data, 'coords.lng'),
+                    ],
+                    'source' => $request->input('source', 'manual'),
+                    'timezone_detected' => $timezone,
+                    'location_updated_at' => now()->toIso8601String(),
+                ]),
+            ]
+        );
+    
+        // 🔥 Update user's timezone
+        $user->update([
+            'timezone' => $timezone,
             'is_profile_complete' => 'skills',
-            'meta'                => $meta,
-        ])->save();
-
+        ]);
+    
         return redirect()
             ->route('tenant.onboarding.skills')
-            ->with('status', 'Location saved. Let’s add your skills.');
+            ->with('status', 'Location saved. Let\'s add your skills.');
     }
+
+
+
+
+    // public function storeLocation(Request $request)
+    // {
+    //     $user = $request->user();
+    
+    //     // Validate and normalize inputs
+    //     $data = $request->validate([
+    //         'country'        => ['required', 'string', 'max:120'],
+    //         'state'          => ['required', 'string', 'max:120'],
+    //         'city'           => ['required', 'string', 'max:120'],
+    //         'timezone'       => ['nullable', 'string', 'max:64'],
+    //         'coords.lat'     => ['nullable', 'numeric'],
+    //         'coords.lng'     => ['nullable', 'numeric'],
+    //         'source'         => ['nullable', 'in:manual,nominatim,gps'],
+    //     ]);
+    
+    //     // Tidy/case – keep readable names
+    //     $country = Str::of($data['country'])->trim()->substr(0, 120)->value();
+    //     $state   = Str::of($data['state'])->trim()->substr(0, 120)->value();
+    //     $city    = Str::of($data['city'])->trim()->substr(0, 120)->value();
+    
+    //     // Update user profile with location data
+    //     $user->profile()->updateOrCreate(
+    //         ['user_id' => $user->id],
+    //         [
+    //             'country' => $country,
+    //             'state'   => $state,
+    //             'city'    => $city,
+    //             'meta'    => array_merge($user->profile?->meta ?? [], [
+    //                 'coords' => [
+    //                     'lat' => Arr::get($data, 'coords.lat'),
+    //                     'lng' => Arr::get($data, 'coords.lng'),
+    //                 ],
+    //                 'source' => $request->input('source', 'manual'),
+    //             ]),
+    //         ]
+    //     );
+    
+    //     // Update user's timezone if provided
+    //     if (isset($data['timezone'])) {
+    //         $user->update(['timezone' => $data['timezone']]);
+    //     }
+    
+    //     // Advance to next onboarding stage
+    //     $user->update(['is_profile_complete' => 'skills']);
+    
+    //     return redirect()
+    //         ->route('tenant.onboarding.skills')
+    //         ->with('status', 'Location saved. Lets add your skills.');
+    // }
+    
+
+
+
+
+
+
+
+
+    // public function storeLocation(Request $request)
+    // {
+    //     $user = $request->user();
+
+    //     // Validate and normalize inputs coming from manual select OR GPS flow
+    //     $data = $request->validate([
+    //         'country'        => ['required', 'string', 'max:120'],
+    //         'state'          => ['required', 'string', 'max:120'],
+    //         'city'           => ['required', 'string', 'max:120'],
+    //         'timezone'       => ['nullable', 'string', 'max:64'],
+    //         'coords.lat'     => ['nullable', 'numeric'],
+    //         'coords.lng'     => ['nullable', 'numeric'],
+    //         'source'         => ['nullable', 'in:manual,nominatim,gps'], // optional telemetry
+    //     ]);
+
+    //     // tidy/case – keep readable names
+    //     $country = Str::of($data['country'])->trim()->substr(0, 120)->value();
+    //     $state   = Str::of($data['state'])->trim()->substr(0, 120)->value();
+    //     $city    = Str::of($data['city'])->trim()->substr(0, 120)->value();
+
+    //     // merge location telemetry into meta without nuking other keys
+    //     $meta = $user->meta ?? [];
+    //     $meta['location'] = [
+    //         'country' => $country,
+    //         'state'   => $state,
+    //         'city'    => $city,
+    //         'coords'  => [
+    //             'lat' => Arr::get($data, 'coords.lat'),
+    //             'lng' => Arr::get($data, 'coords.lng'),
+    //         ],
+    //         'source'  => $request->input('source', 'manual'),
+    //     ];
+
+    //     $user->forceFill([
+    //         'country'             => $country,
+    //         'state'               => $state,
+    //         'city'                => $city,
+    //         // keep existing timezone unless a valid one is posted
+    //         'timezone'            => $data['timezone'] ?? $user->timezone,
+    //         // advance to next stage
+    //         'is_profile_complete' => 'skills',
+    //         'meta'                => $meta,
+    //     ])->save();
+
+    //     return redirect()
+    //         ->route('tenant.onboarding.skills')
+    //         ->with('status', 'Location saved. Let’s add your skills.');
+    // }
 
 
 
@@ -674,41 +791,42 @@ class OnboardingController extends Controller
     public function storeExperience(Request $request)
     {
         $user = $request->user();
-
+    
         $request->validate([
             'experiences' => ['required', 'string'],
         ]);
-
+    
         $raw = json_decode($request->input('experiences'), true);
         if (!is_array($raw)) {
-            return back()->withErrors(['experiences' => 'Invalid experiences payload.'])->withInput();
+            return back()
+                ->withErrors(['experiences' => 'Invalid experiences payload.'])
+                ->withInput();
         }
-
+    
         $now = now();
         $expRows = [];
         $skillsByIndex = [];
-
+    
         foreach ($raw as $i => $row) {
             $company = trim((string)($row['company'] ?? ''));
-            $title   = trim((string)($row['title']   ?? ''));
-
+            $title   = trim((string)($row['title'] ?? ''));
+    
             if ($company === '' || $title === '') {
-                // Ignore incomplete lines (UI should prevent these)
-                continue;
+                continue; // skip incomplete
             }
-
+    
             // Normalize dates
             $sm = ($row['startMonth'] ?? '') !== '' ? (int)$row['startMonth'] : null;
             $sy = ($row['startYear']  ?? '') !== '' ? (int)$row['startYear']  : null;
             $em = ($row['endMonth']   ?? '') !== '' ? (int)$row['endMonth']   : null;
             $ey = ($row['endYear']    ?? '') !== '' ? (int)$row['endYear']    : null;
             $current = (bool)($row['current'] ?? false);
-
+    
             if ($current) {
                 $em = null;
                 $ey = null;
             }
-
+    
             // Guard: end cannot be before start
             if (!$current && $sm && $sy && $em && $ey) {
                 $start = Carbon::createFromDate($sy, $sm, 1);
@@ -718,65 +836,62 @@ class OnboardingController extends Controller
                     $ey = null;
                 }
             }
-
-            // ✅ FIX: the 2nd arg of mb_substr is START; we want a MAX LENGTH => use (0, N)
-            $description      = trim((string)($row['description'] ?? ''));
-            $locationCity     = trim((string)($row['locationCity'] ?? ''));
-            $locationCountry  = trim((string)($row['locationCountry'] ?? ''));
-
-            $expRows[] = [
+    
+            $description     = trim((string)($row['description'] ?? ''));
+            $locationCity    = trim((string)($row['locationCity'] ?? ''));
+            $locationCountry = trim((string)($row['locationCountry'] ?? ''));
+    
+            // ✅ Build the experience row (this was missing)
+            $expRows[$i] = [
                 'user_id'          => $user->id,
-                'company'          => mb_substr($company, 0, 160),
-                'company_id'       => $row['company_id'] ?? null,
-                'title'            => mb_substr($title, 0, 160),
-                'description'      => $description !== '' ? mb_substr($description, 0, 3000) : null,
-                'location_city'    => $locationCity !== '' ? mb_substr($locationCity, 0, 120) : null,
-                'location_country' => $locationCountry !== '' ? mb_substr($locationCountry, 0, 120) : null,
+                'company'          => mb_substr($company, 0, 120),
+                'title'            => mb_substr($title, 0, 120),
                 'start_month'      => $sm,
                 'start_year'       => $sy,
                 'end_month'        => $em,
                 'end_year'         => $ey,
                 'is_current'       => $current,
-                'position'         => (int)$i,
+                'location_city'    => $locationCity,
+                'location_country' => $locationCountry,
+                'description'      => mb_substr($description, 0, 2000),
                 'created_at'       => $now,
                 'updated_at'       => $now,
             ];
-
-            // Collect skills for this experience index
-            $skills = array_values(array_filter(($row['skills'] ?? []), function ($s) {
-                return isset($s['name']) && trim((string)$s['name']) !== '';
-            }));
-
+    
+            // Collect skills
+            $skills = array_values(array_filter(($row['skills'] ?? []), fn($s) =>
+                isset($s['name']) && trim((string)$s['name']) !== ''
+            ));
+    
             $skillsByIndex[$i] = array_map(function ($s, $k) use ($now) {
                 $lvl = (int)($s['level'] ?? 2);
                 $lvl = max(1, min(3, $lvl));
                 return [
-                    'name'        => mb_substr(trim((string)$s['name']), 0, 120),
-                    'level'       => $lvl,
-                    'position'    => (int)$k,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
+                    'name'       => mb_substr(trim((string)$s['name']), 0, 120),
+                    'level'      => $lvl,
+                    'position'   => (int)$k,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
             }, $skills, array_keys($skills));
         }
-
+    
+        // Guard: must have at least one experience
         if (empty($expRows)) {
             return back()->withErrors([
-                'experiences' => 'Please add at least one experience with Company & Job title.',
+                'experiences' => 'Please add at least one experience with company & job title.',
             ])->withInput();
         }
-
+    
         DB::transaction(function () use ($user, $expRows, $skillsByIndex) {
-            // Replace user’s experiences atomically
-            $user->experiences()->each(function ($exp) {
-                $exp->skills()->delete();
-            });
+            // Clear existing experiences + skills first
+            $user->experiences()->each(fn($exp) => $exp->skills()->delete());
             $user->experiences()->delete();
-
+    
+            // Create all new experiences + related skills
             foreach ($expRows as $idx => $row) {
-                /** @var \App\Models\Experience $exp */
                 $exp = Experience::create($row);
-
+    
                 $skillRows = $skillsByIndex[$idx] ?? [];
                 foreach ($skillRows as &$s) {
                     $s['experience_id'] = $exp->id;
@@ -785,18 +900,15 @@ class OnboardingController extends Controller
                     ExperienceSkill::insert($skillRows);
                 }
             }
-
-            // ✅ Advance to PREFERENCES (not portfolio)
+    
+            // Update profile progress
             $user->forceFill(['is_profile_complete' => 'portfolio'])->save();
         });
-
-        // ✅ Redirect to the Preferences page
+    
         return redirect()
             ->route('tenant.onboarding.portfolio')
-            ->with('status', 'Experience saved. Set your preferences next.');
+            ->with('status', 'Experience saved successfully. Continue to Portfolio setup.');
     }
-
-
 
 
 

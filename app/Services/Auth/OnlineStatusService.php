@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Models\User;
+use App\Services\TimezoneService;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
@@ -22,7 +23,11 @@ class OnlineStatusService
         $cacheKey = $this->getOnlineCacheKey($user->id);
         
         // Store in cache with 5-minute expiry
-        Cache::put($cacheKey, now()->timestamp, now()->addMinutes(self::CACHE_DURATION_MINUTES));
+        Cache::put(
+            $cacheKey, 
+            now()->timestamp, 
+            now()->addMinutes(self::CACHE_DURATION_MINUTES)
+        );
         
         // Update user's last_seen_at in database (throttled to once per minute)
         $this->updateLastSeen($user);
@@ -37,7 +42,7 @@ class OnlineStatusService
         Cache::forget($cacheKey);
         
         // Update last_seen_at immediately
-        $user->update(['last_seen_at' => now()]);
+        $user->forceFill(['last_seen_at' => now()])->save();
     }
 
     /**
@@ -51,12 +56,22 @@ class OnlineStatusService
 
     /**
      * Get user's online status
-     * Returns: 'online', 'offline', or null if never seen
+     * Returns: 'online', 'active_recently', or 'offline'
      */
     public function getStatus(User $user): string
     {
         if ($this->isOnline($user)) {
             return 'online';
+        }
+
+        if (!$user->last_seen_at) {
+            return 'offline';
+        }
+
+        $diffInMinutes = now()->diffInMinutes($user->last_seen_at);
+
+        if ($diffInMinutes <= 30) {
+            return 'active_recently';
         }
 
         return 'offline';
@@ -78,95 +93,55 @@ class OnlineStatusService
     }
 
     /**
-     * Get formatted last seen text (like WhatsApp)
-     * Examples: "Online", "Last seen 5 minutes ago", "Last seen today at 3:45 PM"
+     * ✅ Get formatted last seen text in viewer's timezone
      */
-    public function getLastSeenText(User $user, bool $showExactTime = true): string
+    public function getLastSeenText(User $user, ?string $viewerTimezone = null): string
     {
-        if ($this->isOnline($user)) {
-            return 'Online';
-        }
-
-        $lastSeen = $user->last_seen_at;
-
-        if (!$lastSeen) {
-            return 'Offline';
-        }
-
-        $now = now();
-        $diffInMinutes = $lastSeen->diffInMinutes($now);
-        $diffInHours = $lastSeen->diffInHours($now);
-        $diffInDays = $lastSeen->diffInDays($now);
-
-        // Less than 1 minute ago
-        if ($diffInMinutes < 1) {
-            return 'Last seen just now';
-        }
-
-        // Less than 1 hour ago
-        if ($diffInMinutes < 60) {
-            return $diffInMinutes === 1 
-                ? 'Last seen 1 minute ago' 
-                : "Last seen {$diffInMinutes} minutes ago";
-        }
-
-        // Today
-        if ($lastSeen->isToday()) {
-            if ($showExactTime) {
-                return 'Last seen today at ' . $lastSeen->format('g:i A');
-            }
-            return $diffInHours === 1 
-                ? 'Last seen 1 hour ago' 
-                : "Last seen {$diffInHours} hours ago";
-        }
-
-        // Yesterday
-        if ($lastSeen->isYesterday()) {
-            if ($showExactTime) {
-                return 'Last seen yesterday at ' . $lastSeen->format('g:i A');
-            }
-            return 'Last seen yesterday';
-        }
-
-        // Within last week
-        if ($diffInDays < 7) {
-            if ($showExactTime) {
-                return 'Last seen ' . $lastSeen->format('l \a\t g:i A'); // e.g., "Monday at 3:45 PM"
-            }
-            return $diffInDays === 1 
-                ? 'Last seen 1 day ago' 
-                : "Last seen {$diffInDays} days ago";
-        }
-
-        // More than a week ago
-        if ($showExactTime) {
-            return 'Last seen ' . $lastSeen->format('M j \a\t g:i A'); // e.g., "Jan 15 at 3:45 PM"
-        }
-
-        return 'Last seen ' . $lastSeen->diffForHumans();
+        return TimezoneService::getOnlineStatusText(
+            $user->last_seen_at,
+            $viewerTimezone
+        );
     }
 
     /**
-     * Get online users count
+     * Get online users count (requires Redis)
      */
     public function getOnlineUsersCount(): int
     {
-        $pattern = $this->getOnlineCacheKey('*');
-        $keys = Cache::store('redis')->keys($pattern) ?? [];
-        return count($keys);
+        // Check if Redis is being used
+        if (config('cache.default') !== 'redis') {
+            return 0;
+        }
+
+        try {
+            $pattern = $this->getOnlineCacheKey('*');
+            $keys = Cache::getRedis()->keys($pattern) ?? [];
+            return count($keys);
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
 
     /**
-     * Get list of online user IDs
+     * Get list of online user IDs (requires Redis)
      */
     public function getOnlineUserIds(): array
     {
-        $pattern = $this->getOnlineCacheKey('*');
-        $keys = Cache::store('redis')->keys($pattern) ?? [];
-        
-        return array_map(function ($key) {
-            return (int) str_replace('user_online:', '', $key);
-        }, $keys);
+        // Check if Redis is being used
+        if (config('cache.default') !== 'redis') {
+            return [];
+        }
+
+        try {
+            $pattern = $this->getOnlineCacheKey('*');
+            $keys = Cache::getRedis()->keys($pattern) ?? [];
+            
+            return array_map(function ($key) {
+                return (int) str_replace('user_online:', '', $key);
+            }, $keys);
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -199,7 +174,7 @@ class OnlineStatusService
 
         Cache::put($throttleKey, true, now()->addMinute());
         
-        $user->update(['last_seen_at' => now()]);
+        $user->forceFill(['last_seen_at' => now()])->save();
     }
 
     /**
@@ -220,6 +195,6 @@ class OnlineStatusService
         
         return User::where('last_seen_at', '<', $threshold)
             ->whereNotNull('last_seen_at')
-            ->update(['last_seen_at' => null]);
+            ->count();
     }
 }

@@ -32,6 +32,7 @@ class AuthService
             'last_login_at' => now(),
             'login_count'   => ($user->login_count ?? 0) + 1,
         ])->save();
+        
 
         // Device tracking is now handled by DeviceTrackingService
         // This method is kept for backward compatibility

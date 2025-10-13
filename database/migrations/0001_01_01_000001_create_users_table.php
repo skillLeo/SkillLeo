@@ -19,13 +19,9 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('email')->unique();
             $table->string('password')->nullable();
-            $table->string('tagline')->nullable();
-            $table->string('bio')->nullable();
+        
             $table->string('avatar_url')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('country')->nullable();
-            $table->string('state')->nullable();
-            $table->string('city')->nullable();
+       
             $table->timestamp('email_verified_at')->nullable();
         
             $table->string('locale', 12)->default('en');

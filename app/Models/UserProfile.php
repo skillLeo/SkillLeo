@@ -3,44 +3,90 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserProfile extends Model
 {
     protected $fillable = [
         'user_id',
+        'phone',
         'country',
         'state',
         'city',
-        'skills',
-        'experience',
-        'portfolio',
-        'education',
-        'currency',
-        'rate',
-        'rate_unit',
-        'availability',
-        'hours_per_week',
-        'remote_work',
-        'open_to_work',
-        'long_term',
-        'is_public',
-        'onboarding_completed',
+        'tagline',
+        'bio',
+        'social_links',
+        'filter_preferences',
+        'meta',
     ];
 
     protected $casts = [
-        'skills' => 'array',
-        'experience' => 'array',
-        'portfolio' => 'array',
-        'education' => 'array',
-        'remote_work' => 'boolean',
-        'open_to_work' => 'boolean',
-        'long_term' => 'boolean',
-        'is_public' => 'boolean',
-        'onboarding_completed' => 'boolean',
+        'social_links' => 'array',
+        'meta' => 'array',
+    'filter_preferences' => 'array', 
     ];
 
-    public function user()
+    /**
+     * Get the user that owns the profile
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get full location string
+     */
+    public function getLocationAttribute(): ?string
+    {
+        $parts = array_filter([$this->city, $this->state, $this->country]);
+        return !empty($parts) ? implode(', ', $parts) : null;
+    }
+
+    /**
+     * Get a specific social link
+     */
+    public function getSocialLink(string $platform): ?string
+    {
+        return $this->social_links[$platform] ?? null;
+    }
+
+    /**
+     * Set a social link
+     */
+    public function setSocialLink(string $platform, ?string $url): void
+    {
+        $links = $this->social_links ?? [];
+        
+        if ($url) {
+            $links[$platform] = $url;
+        } else {
+            unset($links[$platform]);
+        }
+        
+        $this->social_links = $links;
+    }
+
+    /**
+     * Check if profile has location data
+     */
+    public function hasLocation(): bool
+    {
+        return !is_null($this->country) || !is_null($this->state) || !is_null($this->city);
+    }
+
+    /**
+     * Check if profile has any social links
+     */
+    public function hasSocialLinks(): bool
+    {
+        return !empty($this->social_links);
+    }
+
+
+
+    // Add to your Profile model
+
+
+
 }

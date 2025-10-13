@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Auth/AuthController.php
 
 namespace App\Http\Controllers\Auth;
 
@@ -9,7 +8,7 @@ use App\Services\Auth\AuthService;
 use App\Services\Auth\OtpService;
 use App\Services\Auth\DeviceTrackingService;
 use App\Services\Auth\OnlineStatusService;
-
+use App\Services\TimezoneService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -17,15 +16,12 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
- 
     public function __construct(
         protected AuthService $authService,
         protected OtpService $otpService,
         protected DeviceTrackingService $deviceTracking,
         protected OnlineStatusService $onlineStatus
     ) {}
-
-
 
     public function accountType()
     {
@@ -37,19 +33,15 @@ class AuthController extends Controller
         return view('auth.otp');
     }
 
-
-
-
-
     public function loginshow()
     {
-        return view('auth.login');
+        return view('auth.login', [
+            'detectTimezone' => true, // Flag for JS timezone detection
+        ]);
     }
 
     /**
-     * After choosing account type on auth.account-type, set the next step correctly:
-     *  - freelancer/professional → 'personal'
-     *  - client                → 'info'
+     * After choosing account type on auth.account-type
      */
     public function selectAccountType(Request $request)
     {
@@ -65,15 +57,12 @@ class AuthController extends Controller
             'client'     => route('client.onboarding.info'),
         ];
     
-        // Map UI type -> persisted account_status
+        // Map UI type → persisted account_status
         $statusMap = [
             'freelancer' => 'professional',
             'client'     => 'client',
         ];
     
-        // ✅ As requested:
-        //    - ALWAYS set is_profile_complete = 'personal'
-        //    - Set account_status from the selection
         $user->update([
             'account_status'      => $statusMap[$request->type],
             'is_profile_complete' => 'welcome',
@@ -83,11 +72,12 @@ class AuthController extends Controller
         ]);
     
         return redirect($redirects[$request->type])
-            ->with('status', 'Welcome! Let’s complete your onboarding.');
+            ->with('status', 'Welcome! Lets complete your onboarding.');
     }
-    
 
-
+    /**
+     * Handle login submission
+     */
     public function submitLogin(Request $request)
     {
         $data = $request->validate([
@@ -95,7 +85,13 @@ class AuthController extends Controller
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
+            'timezone' => ['nullable', 'string', 'timezone'], // ✅ Capture timezone
         ]);
+
+        // ✅ Store timezone in session for non-authenticated viewer
+        if (!empty($data['timezone'])) {
+            TimezoneService::storeViewerTimezone($data['timezone']);
+        }
 
         $email = strtolower(trim($data['email']));
         $user  = User::where('email', $email)->first();
@@ -127,9 +123,12 @@ class AuthController extends Controller
         return redirect()->route('auth.otp.show', ['email' => $user->email]);
     }
 
+    /**
+     * Handle logout
+     */
     public function logout(Request $request)
     {
-        // 🔥 Mark user as offline before logout
+        // Mark user as offline before logout
         if (Auth::check()) {
             $this->onlineStatus->markOffline(Auth::user());
         }

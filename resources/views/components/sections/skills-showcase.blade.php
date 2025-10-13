@@ -1,4 +1,13 @@
 <section class="skills-showcase">
+  @php
+      // Use your variables; harmonize to these names:
+      $allHardSkills  = $skillsData ?? ($skills ?? []);
+      $allSoftSkills  = $user->softSkills ?? ($softSkills ?? []);
+      $visibleHard    = collect($allHardSkills)->take(4);
+      $visibleSoft    = collect($allSoftSkills)->take(6);
+      $showSeeAllSkills = (count($allHardSkills) > 4) || (count($allSoftSkills) > 6);
+  @endphp
+
   <div class="cards-header">
     <h2 class="portfolios-title">Skills</h2>
     <button class="edit-card icon-btn" aria-label="Edit card">
@@ -7,9 +16,9 @@
   </div>
 
   <div class="skills-main-content">
-    {{-- LEFT: Progress bars for hard skills --}}
+    {{-- LEFT: Progress bars for hard skills (max 4) --}}
     <div class="skills-progress-section">
-      @forelse($skills ?? [] as $skill)
+      @forelse($visibleHard as $skill)
         <div class="skill-progress">
           <div class="skill-header">
             <span class="skill-name">{{ $skill['name'] }}</span>
@@ -26,13 +35,13 @@
       @endforelse
     </div>
 
-    {{-- RIGHT: Soft skills --}}
+    {{-- RIGHT: Soft skills (max 6) --}}
     <div class="soft-skills-section">
       <h4>Soft Skills</h4>
 
-      @if(!empty($softSkills))
+      @if(!empty($visibleSoft))
         <ul class="soft-skills-list">
-          @foreach($softSkills as $s)
+          @foreach($visibleSoft as $s)
             <li class="soft-skill">
               <span class="soft-skill-icon">
                 <i class="fa-solid fa-{{ $s['icon'] ?? 'sparkles' }}"></i>
@@ -42,12 +51,20 @@
           @endforeach
         </ul>
       @endif
-      {{-- If empty, we simply don’t render anything on the right column --}}
     </div>
   </div>
 
-  <x-ui.see-all text="See all Skills" onclick="showAllSkills()" />
+  @if($showSeeAllSkills)
+    <x-ui.see-all text="See all Skills" onclick="showAllSkills()" />
+  @endif
 </section>
+
+<script>
+    // Open the "See All Skills" modal
+    window.showAllSkills = function () {
+        openModal('seeAllSkillsModal');
+    };
+</script>
 
 
 
@@ -79,22 +96,11 @@
   
   .soft-skill{
     display:flex; align-items:center; gap:8px;
-    background:var(--apc-bg); border:1px solid var(--border);
-    padding:8px 10px; border-radius:12px;
   }
   .soft-skill-icon{ width:22px; height:22px; display:grid; place-items:center; color:var(--accent, #3b5bff); }
   .soft-skill-name{ font-size:14px; color:var(--text-body); }
-  </style>
+
  
-
-<style>
-   /* =========================
-   Skills – Responsive Fixes
-   Goal: remove extra top/bottom space around .tech-stack-section
-   on tablet & mobile while keeping desktop layout intact.
-   Drop this AFTER your current styles (override patch).
-   ========================= */
-
 /* ---------- Base tidy-up (all screens) ---------- */
 .skills-showcase .skills-main-content{
   display:grid;

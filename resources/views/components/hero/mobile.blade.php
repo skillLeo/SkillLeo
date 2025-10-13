@@ -59,9 +59,9 @@
     <div class="hm-body">
         <h2 class="hm-name">
             {{ $user->name }}
-            @if($user->open_to_work)
+            {{-- @if($user->open_to_work)
                 <span class="hm-otw">Open to work</span>
-            @endif
+            @endif --}}
         </h2>
         
         {{-- Online Status Text Below Name --}}

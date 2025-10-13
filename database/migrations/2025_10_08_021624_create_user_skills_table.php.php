@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->tinyInteger('level')->default(2)
                 ->comment('1=Beginner, 2=Proficient, 3=Expert');
 
-            $table->unsignedSmallInteger('position')->default(0); // keeps user order
+            $table->unsignedSmallInteger('position')->default(0); 
             $table->timestamps();
 
             $table->unique(['user_id', 'skill_id']);

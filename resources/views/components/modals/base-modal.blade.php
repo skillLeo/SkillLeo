@@ -1,97 +1,83 @@
-@props([
-    'id',
-    'title',
-    'size' => 'md',
-    'showFooter' => true
-])
+@props(['id', 'title', 'size' => 'md'])
 
-<div class="modal-overlay" id="{{ $id }}" style="display: none;">
-    <div class="modal-container modal-{{ $size }}">
-        <div class="modal-header">
-            <h2 class="modal-title">{{ $title }}</h2>
-            <button type="button" class="modal-close" onclick="closeModal('{{ $id }}')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
+<div id="{{ $id }}" class="modal-overlay-v2" onclick="handleOverlayClick(event, '{{ $id }}')">
+    <div class="modal-dialog-v2 modal-{{ $size }}-v2" onclick="event.stopPropagation()">
+        <div class="modal-header-v2">
+            <h2 class="modal-title-v2">{{ $title }}</h2>
+            <button type="button" class="modal-close-v2" onclick="closeModal('{{ $id }}')" aria-label="Close">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M5 5L15 15M15 5L5 15"/>
                 </svg>
             </button>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body-v2">
             {{ $slot }}
         </div>
-
-        @if($showFooter)
-            <div class="modal-footer">
-                {{ $footer ?? '' }}
-            </div>
-        @endif
     </div>
 </div>
 
 <style>
-.modal-overlay {
+/* Modal Overlay */
+.modal-overlay-v2 {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-lg);
-    animation: fadeIn 0.2s ease;
+    background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(2px);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 99999;
+    overflow-y: auto;
+    padding: 40px 20px;
+    transition: opacity 0.2s ease;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.modal-container {
-    background: var(--card);
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    max-height: 90vh;
-    overflow: hidden;
+.modal-overlay-v2.active {
     display: flex;
-    flex-direction: column;
-    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+/* Modal Dialog */
+.modal-dialog-v2 {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    margin: auto 0;
+    transform: scale(0.95) translateY(-20px);
+    transition: transform 0.2s ease;
 }
 
-.modal-sm { width: 100%; max-width: 480px; }
-.modal-md { width: 100%; max-width: 680px; }
-.modal-lg { width: 100%; max-width: 840px; }
-.modal-xl { width: 100%; max-width: 1000px; }
+.modal-overlay-v2.active .modal-dialog-v2 {
+    transform: scale(1) translateY(0);
+}
 
-.modal-header {
+.modal-md-v2 { max-width: 680px; }
+.modal-lg-v2 { max-width: 900px; }
+.modal-xl-v2 { max-width: 1140px; }
+
+/* Header */
+.modal-header-v2 {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid var(--border);
     background: var(--card);
+    border-radius: var(--radius) var(--radius) 0 0;
 }
 
-.modal-title {
-    font-size: var(--fs-h2);
-    font-weight: var(--fw-bold);
+.modal-title-v2 {
+    font-size: var(--fs-h4);
+    font-weight: var(--fw-semibold);
     color: var(--text-heading);
     margin: 0;
-    letter-spacing: -0.01em;
+    line-height: 1.3;
 }
 
-.modal-close {
+/* Close Button */
+.modal-close-v2 {
     width: 40px;
     height: 40px;
     display: flex;
@@ -99,151 +85,157 @@
     justify-content: center;
     border: none;
     background: transparent;
-    border-radius: 50%;
     color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    margin: -8px -8px -8px 12px;
 }
 
-.modal-close:hover {
-    background: var(--apc-bg);
+.modal-close-v2:hover {
+    background: var(--hover-bg);
     color: var(--text-heading);
 }
 
-.modal-body {
-    padding: 24px;
-    overflow-y: auto;
-    flex: 1;
+.modal-close-v2:active {
+    transform: scale(0.95);
 }
 
-.modal-body::-webkit-scrollbar {
+.modal-close-v2:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Body */
+.modal-body-v2 {
+    padding: 0;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    background: var(--body);
+    border-radius: 0 0 var(--radius) var(--radius);
+    scroll-behavior: smooth;
+}
+
+/* Scrollbar */
+.modal-body-v2::-webkit-scrollbar {
     width: 8px;
 }
 
-.modal-body::-webkit-scrollbar-track {
-    background: var(--apc-bg);
+.modal-body-v2::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.modal-body::-webkit-scrollbar-thumb {
+.modal-body-v2::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
-.modal-body::-webkit-scrollbar-thumb:hover {
+.modal-body-v2::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
+    background-clip: padding-box;
 }
 
-.modal-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    background: var(--card);
-}
-
-.btn-modal {
-    padding: 10px 24px;
-    border-radius: var(--radius);
-    font-size: var(--fs-body);
-    font-weight: var(--fw-semibold);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    font-family: inherit;
-    min-height: 40px;
-}
-
-.btn-cancel {
-    background: var(--card);
-    color: var(--text-body);
-    border: 1px solid var(--border);
-}
-
-.btn-cancel:hover {
-    background: var(--apc-bg);
-    border-color: var(--text-muted);
-}
-
-.btn-save {
-    background: var(--accent);
-    color: var(--btn-text-primary);
-    min-width: 100px;
-}
-
-.btn-save:hover {
-    background: var(--accent-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(19, 81, 216, 0.3);
-}
-
-.btn-save:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
+/* Mobile */
 @media (max-width: 768px) {
-    .modal-overlay {
+    .modal-overlay-v2 {
         padding: 0;
-        align-items: flex-end;
+        align-items: stretch;
     }
 
-    .modal-container {
-        max-height: 95vh;
-        border-radius: 12px 12px 0 0;
-        width: 100% !important;
-        max-width: 100% !important;
+    .modal-dialog-v2 {
+        border-radius: 0;
+        max-height: 100vh;
+        min-height: 100vh;
+        margin: 0;
+        box-shadow: none;
     }
 
-    .modal-header {
+    .modal-md-v2, 
+    .modal-lg-v2, 
+    .modal-xl-v2 {
+        max-width: 100%;
+    }
+
+    .modal-header-v2 {
         padding: 16px 20px;
+        border-radius: 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: var(--shadow-sm);
     }
 
-    .modal-body {
-        padding: 20px;
+    .modal-title-v2 {
+        font-size: var(--fs-h5);
     }
 
-    .modal-footer {
-        padding: 14px 20px;
+    .modal-close-v2 {
+        width: 36px;
+        height: 36px;
+    }
+
+    .modal-body-v2 {
+        max-height: calc(100vh - 64px);
+        border-radius: 0;
+    }
+}
+
+/* Tablet */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .modal-overlay-v2 {
+        padding: 24px 16px;
+    }
+
+    .modal-lg-v2 { max-width: 90%; }
+    .modal-xl-v2 { max-width: 95%; }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .modal-header-v2 {
+        padding: 14px 16px;
+    }
+
+    .modal-title-v2 {
+        font-size: var(--fs-body);
+    }
+
+    .modal-close-v2 {
+        width: 32px;
+        height: 32px;
+        margin: -6px -6px -6px 8px;
+    }
+
+    .modal-close-v2 svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay-v2,
+    .modal-dialog-v2,
+    .modal-close-v2 {
+        transition: none;
+    }
+}
+
+/* Print */
+@media print {
+    .modal-overlay-v2 {
+        display: none !important;
     }
 }
 </style>
 
 <script>
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+window.handleOverlayClick = function(event, modalId) {
+    if (event.target.classList.contains('modal-overlay-v2')) {
+        closeModal(modalId);
     }
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-overlay')) {
-        e.target.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-});
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const modals = document.querySelectorAll('.modal-overlay');
-        modals.forEach(modal => {
-            if (modal.style.display === 'flex') {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-        });
-    }
-});
+};
 </script>

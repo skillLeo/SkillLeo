@@ -1,48 +1,61 @@
+<section class="reviews-section">
+    @php
+        $totalReviews   = count($reviews ?? []);
+        $visibleReviews = collect($reviews ?? [])->take(2);
+    @endphp
 
-    
-    <section class="reviews-section">
-        <div class="cards-header">
-            <h2 class="portfolios-title">Reviews</h2>
-            <button class="edit-card icon-btn" aria-label="More options">
-                <x-ui.icon name="more-vertical" variant="outlined" size="xl" class="color-muted ui-edit" />
-            </button>
-        </div>
-    
-        <div class="review-cards">
-            @foreach($reviews ?? [] as $review)
+    <div class="cards-header">
+        <h2 class="portfolios-title">Reviews</h2>
+        <button class="edit-card icon-btn" aria-label="More options">
+            <x-ui.icon name="more-vertical" variant="outlined" size="xl" class="color-muted ui-edit" />
+        </button>
+    </div>
+
+    <div class="review-cards">
+        @forelse($visibleReviews as $review)
             <div class="review-card">
                 <div class="reviewer-avatar-large">
-                    <img src="#" 
-                         alt="{{ $review['name'] ?? 'Sophie Carter' }}" 
+                    <img src="{{ $review['avatar'] ?? '#' }}"
+                         alt="{{ $review['name'] ?? 'Reviewer' }}"
                          class="avatar-image" />
                 </div>
-                <h5 class="reviewer-name">{{ $review['name'] ?? 'Sophie Carter' }}</h5>
-                <span class="reviewer-location">{{ $review['location'] ?? 'New York, USA' }}</span>
+                <h5 class="reviewer-name">{{ $review['name'] ?? 'Reviewer' }}</h5>
+                <span class="reviewer-location">{{ $review['location'] ?? '' }}</span>
                 <div class="review-content">
                     <div class="review-text-wrapper" style="font-size: var(--fs-body) !important;">
-                        <span class="quote-mark quote-left">"</span><span class="review-text">{{ $review['review'] ?? 'Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups.' }}</span><span class="quote-mark quote-right">"</span>
+                        <span class="quote-mark quote-left">"</span>
+                        <span class="review-text">{{ $review['review'] ?? '' }}</span>
+                        <span class="quote-mark quote-right">"</span>
                     </div>
                 </div>
             </div>
-            @endforeach
-    
-            @if(empty($reviews))
+        @empty
+            {{-- fallback card --}}
             <div class="review-card">
                 <div class="reviewer-avatar-large">
-                    <img src="#" 
-                         alt="James Bennett" 
-                         class="avatar-image" />
+                    <img src="#" alt="Reviewer" class="avatar-image" />
                 </div>
-                <h5 class="reviewer-name">James Bennett</h5>
-                <span class="reviewer-location">Toronto, Canada</span>
+                <h5 class="reviewer-name">Sample Reviewer</h5>
+                <span class="reviewer-location">Location</span>
                 <div class="review-content">
                     <div class="review-text-wrapper" style="font-size: var(--fs-body) !important;">
-                        <span class="quote-mark quote-left">"</span><span class="review-text">Lorem ipsum is placeholder text commonly used in the graphic, print, and publishing industries for previewing layouts and visual mockups.</span><span class="quote-mark quote-right">"</span>
+                        <span class="quote-mark quote-left">"</span>
+                        <span class="review-text">Sample review content goes here.</span>
+                        <span class="quote-mark quote-right">"</span>
                     </div>
                 </div>
             </div>
-            @endif
-        </div>
-    
+        @endforelse
+    </div>
+
+    @if ($totalReviews > 2)
         <x-ui.see-all text="See all Reviews" onclick="showAllReviews()" />
-    </section>
+    @endif
+</section>
+
+<script>
+    // Open the "See All Reviews" modal
+    window.showAllReviews = function () {
+        openModal('seeAllReviewsModal');
+    };
+</script>

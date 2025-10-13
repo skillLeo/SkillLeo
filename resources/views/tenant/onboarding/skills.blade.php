@@ -263,18 +263,12 @@
     .skill-item {
         display: flex;
         align-items: center;
-        justify-content: space-between;
         padding: 14px 16px;
-        border: 1.5px solid var(--border);
         background: var(--card);
-        border-radius: 10px;
         transition: all 0.2s ease;
     }
 
-    .skill-item:hover {
-        border-color: var(--accent);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
+ 
 
     .skill-content {
         display: flex;

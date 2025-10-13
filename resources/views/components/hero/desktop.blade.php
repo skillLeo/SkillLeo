@@ -1,3 +1,11 @@
+
+@php
+
+use Carbon\Carbon;
+use Illuminate\Support\Str; 
+
+@endphp
+
 <section class="hero-merged">
     {{-- Edit Profile Button --}}
     <button class="edit-card icon-btn edit-profile-btn" aria-label="Edit card">
@@ -66,34 +74,82 @@
         @endif
     </div>
 
+
+
+    <style>
+.user-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1; /* only one line */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  font-weight: 600;
+  /* font-size: 1rem; */
+  color: var(--text-heading);
+  line-height: 1.3;
+  vertical-align: middle;
+  word-break: keep-all;
+}
+
+/* Responsive tightening like LinkedIn */
+@media (max-width: 480px) {
+  .user-name {
+    font-size: 0.95rem;
+    max-width: 12ch; /* mobile: tighter space */
+  }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+  .user-name {
+    max-width: 18ch; /* tablet: moderate space */
+  }
+}
+@media (min-width: 1025px) {
+  .user-name {
+    max-width: 22ch; /* desktop: full space */
+  }
+}
+
+    </style>
     <div class="name-row">
-        <h2 class="name">{{ $user->name }}</h2>
-    </div>
-
-    <div class="stack">
-        {{ implode(' · ', $user->skills ?? ['PHP', 'Laravel', 'React']) }}
-    </div>
-
-    <div class="loc">
+        <h2 class="user-name" title="{{ $user->name }}">
+            {{ $user->name }}
+          </h2>
+          
+            </div>
+    
+    {{-- Headline instead of skills --}}
+    @if(!empty($user->headline))
+      <div class="stack">{{ $user->headline }}</div>
+    @endif
+    
+    {{-- Location from user_profile --}}
+    @if(!empty($user->location))
+      <div class="loc">
         <x-ui.icon name="location" size="xs" color="secondary" />
-        {{ $user->location ?? 'Location not specified' }}
-    </div>
-
+        {{ $user->location }}
+      </div>
+    @endif
+    
     <div class="hr"></div>
-
-    <div class="about-row">
+    
+    {{-- About from user_profile->bio, limited to 200 chars --}}
+    @php $bio = (string) ($user->bio ?? ''); @endphp
+    
+    @if($bio !== '')
+      <div class="about-row">
         <span class="label">About:</span>
         <x-ui.icon name="about" size="xs" color="secondary" class="hover-lift clickable" />
-    </div>
-
-    <p class="about-text">
-        {{ Illuminate\Support\Str::limit($user->about, 110) }}
-        @if (Illuminate\Support\Str::length($user->about) > 110)
-            <a href="#" class="see-more-inline">
-                See more
-            </a>
+      </div>
+      <p class="about-text">
+        {{ Str::limit($bio, 200) }}
+        @if(Str::length($bio) > 200)
+          <a href="#" class="see-more-inline">See more</a>
         @endif
-    </p>
+      </p>
+    @endif
+    
 
     <div class="hr2"></div>
 
@@ -114,57 +170,102 @@
     </div>
 
     <div class="socials">
-        @if ($user->facebook)
-            <a href="{{ $user->facebook }}" aria-label="Facebook" class="social-link">
-                <x-ui.icon name="facebook" size="sm" color="secondary" class="hover-lift" />
-            </a>
+        @php
+            $socials = [
+                'facebook'  => $user->facebook,
+                'instagram' => $user->instagram,
+                'twitter'   => $user->twitter,
+                'linkedin'  => $user->linkedin,
+            ];
+            $filled = array_filter($socials);
+            $count = count($filled);
+        @endphp
+    
+        @if ($count === 0)
+            <button type="button" class="btn-add-social" onclick="openModal('editProfileModal')">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Add social links</span>
+            </button>
+        @else
+            {{-- Show existing links --}}
+            @foreach ($filled as $key => $url)
+                <a href="{{ $url }}" aria-label="{{ ucfirst($key) }}" target="_blank" rel="noopener" class="social-link">
+                    <x-ui.icon name="{{ $key }}" size="sm" color="secondary" class="hover-lift" />
+                </a>
+            @endforeach
+    
+            {{-- Add icon if 1–2 only --}}
+            @if ($count < 3)
+                <button type="button" class="social-link add-more" title="Add more" onclick="openModal('editProfileModal')">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            @endif
+    
+            {{-- CV download --}}
+            {{-- <a href="#" class="social-link" aria-label="Download CV">
+                <x-ui.icon name="download" size="sm" color="secondary" class="hover-lift" />
+            </a> --}}
         @endif
-        @if ($user->instagram)
-            <a href="{{ $user->instagram }}" aria-label="Instagram" class="social-link">
-                <x-ui.icon name="instagram" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-        @if ($user->twitter)
-            <a href="{{ $user->twitter }}" aria-label="Twitter" class="social-link">
-                <x-ui.icon name="twitter" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-        @if ($user->linkedin)
-            <a href="{{ $user->linkedin }}" aria-label="LinkedIn" class="social-link">
-                <x-ui.icon name="linkedin" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-
-        <a href="#" class="social-link" aria-label="Download CV">
-            <x-ui.icon name="download" size="sm" color="secondary" class="hover-lift" />
-        </a>
     </div>
+
+    <style>
+        .socials {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+
+
+.btn-add-social {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--card);
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    cursor: pointer !important;
+}
+
+
+
+.social-link.add-more {
+    border-style: dashed;
+    color: var(--text-muted);
+    cursor: pointer !important;
+
+}
+
+.social-link.add-more:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+    </style>
+    
 </section>
 
-{{-- Desktop Dropdown Menu --}}
-<div class="desktop-dropdown" id="desktopDropdown">
-    <button class="desktop-dropdown-item">
-        <x-ui.icon name="edit" size="sm" color="secondary" />
-        <span>Edit Profile</span>
-    </button>
-    <button class="desktop-dropdown-item">
-        <x-ui.icon name="eye" size="sm" color="secondary" />
-        <span>View as Visitor</span>
-    </button>
-    <button class="desktop-dropdown-item">
-        <x-ui.icon name="download" size="sm" color="secondary" />
-        <span>Download CV</span>
-    </button>
-    <div class="desktop-dropdown-divider"></div>
-    <button class="desktop-dropdown-item">
-        <x-ui.icon name="share" size="sm" color="secondary" />
-        <span>Share Profile</span>
-    </button>
-    <button class="desktop-dropdown-item danger">
-        <x-ui.icon name="flag" size="sm" color="secondary" />
-        <span>Report</span>
-    </button>
-</div>
+
 
 
     <style>
@@ -211,32 +312,7 @@
         }
     </style>
 
-    <div class="socials">
-        @if ($user->facebook)
-            <a href="{{ $user->facebook }}" aria-label="Facebook" class="social-link">
-                <x-ui.icon name="facebook" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-        @if ($user->instagram)
-            <a href="{{ $user->instagram }}" aria-label="Instagram" class="social-link">
-                <x-ui.icon name="instagram" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-        @if ($user->twitter)
-            <a href="{{ $user->twitter }}" aria-label="Twitter" class="social-link">
-                <x-ui.icon name="twitter" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-        @if ($user->linkedin)
-            <a href="{{ $user->linkedin }}" aria-label="LinkedIn" class="social-link">
-                <x-ui.icon name="linkedin" size="sm" color="secondary" class="hover-lift" />
-            </a>
-        @endif
-
-        <a href="#" class="social-link" aria-label="Download CV">
-            <x-ui.icon name="download" size="sm" color="secondary" class="hover-lift" />
-        </a>
-    </div>
+    
 </section>
 
 {{-- Desktop Dropdown Menu (Outside section) --}}
@@ -322,7 +398,6 @@
         margin: 4px 0;
     }
 </style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Handle edit profile button
@@ -333,17 +408,17 @@
                 openModal('editProfileModal');
             });
         }
-
+    
         // Handle desktop menu button
         const menuBtn = document.getElementById('desktopMenuBtn');
         if (menuBtn) {
             menuBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 e.preventDefault();
-                toggleDesktopDropdown(e);
+                toggleDesktopDropdown();
             });
         }
-
+    
         // Handle dropdown items
         const dropdownItems = document.querySelectorAll('.desktop-dropdown-item');
         dropdownItems.forEach((item, index) => {
@@ -359,62 +434,85 @@
             });
         });
     });
-
-    function toggleDesktopDropdown(event) {
+    
+    function toggleDesktopDropdown() {
         const dropdown = document.getElementById('desktopDropdown');
         const button = document.getElementById('desktopMenuBtn');
-
+    
         if (!dropdown || !button) return;
-
+    
         const isActive = dropdown.classList.contains('active');
-
+    
         if (!isActive) {
+            // Get button position
             const rect = button.getBoundingClientRect();
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-
-            // Position dropdown below and aligned to the right edge of button
-            dropdown.style.top = (rect.bottom + scrollTop + 8) + 'px';
-            dropdown.style.left = (rect.right + scrollLeft - 220) + 'px'; // 220px is dropdown width
+            
+            // Position dropdown right next to button (LinkedIn style)
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = (rect.bottom + 8) + 'px';
+            dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+            dropdown.style.left = 'auto';
+            
+            // Check if dropdown goes off-screen and adjust
+            setTimeout(() => {
+                const dropdownRect = dropdown.getBoundingClientRect();
+                
+                // If goes off right edge, align to left of button
+                if (dropdownRect.right > window.innerWidth) {
+                    dropdown.style.right = 'auto';
+                    dropdown.style.left = rect.left + 'px';
+                }
+                
+                // If goes off bottom, show above button
+                if (dropdownRect.bottom > window.innerHeight) {
+                    dropdown.style.top = (rect.top - dropdownRect.height - 8) + 'px';
+                }
+            }, 10);
+            
             dropdown.classList.add('active');
         } else {
             dropdown.classList.remove('active');
         }
     }
-
+    
     function closeDesktopDropdown() {
         const dropdown = document.getElementById('desktopDropdown');
         if (dropdown) {
             dropdown.classList.remove('active');
         }
     }
-
+    
     // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('desktopDropdown');
         const button = document.getElementById('desktopMenuBtn');
-
+    
         if (dropdown && button) {
             if (!dropdown.contains(e.target) && !button.contains(e.target)) {
                 dropdown.classList.remove('active');
             }
         }
     });
-
+    
     // Close on scroll
     window.addEventListener('scroll', function() {
         closeDesktopDropdown();
+    }, { passive: true });
+    
+    // Close on window resize
+    window.addEventListener('resize', function() {
+        closeDesktopDropdown();
     });
-
+    
     // Utility functions
     function viewAsVisitor() {
         window.open(window.location.href + '?preview=1', '_blank');
     }
-
+    
     function downloadCV() {
         window.location.href = '#';
     }
-
+    
     function shareProfile() {
         if (navigator.share) {
             navigator.share({
@@ -426,10 +524,10 @@
             alert('Link copied!');
         }
     }
-
+    
     function reportProfile() {
         if (confirm('Report this profile?')) {
             // Handle report
         }
     }
-</script>
+    </script>

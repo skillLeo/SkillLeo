@@ -1,4 +1,9 @@
 <section class="experience-section">
+    @php
+        $totalExperiences   = count($experiences ?? []);
+        $visibleExperiences = collect($experiences ?? [])->take(3);
+    @endphp
+
     <div class="cards-header">
         <h2 class="portfolios-title">Experience</h2>
         <button class="edit-card icon-btn" aria-label="Edit card">
@@ -6,11 +11,11 @@
         </button>
     </div>
 
-    @foreach(($experiences ?? []) as $experience)
+    @forelse ($visibleExperiences as $experience)
         @php
             $title   = $experience['title'] ?? '';
             $desc    = $experience['description'] ?? '';
-            $period  = $experience['period'] ?? ($experience['date'] ?? '');   // ✅ fallback
+            $period  = $experience['period'] ?? ($experience['date'] ?? '');
             $current = (bool) ($experience['current'] ?? false);
             $loc     = $experience['location'] ?? '';
         @endphp
@@ -34,9 +39,7 @@
                 @endif
             </div>
         </div>
-    @endforeach
-
-    @if(empty($experiences))
+    @empty
         <div class="experience-item">
             <div class="experience-header">
                 <h4 class="experience-title">Full Stack Developer</h4>
@@ -50,7 +53,16 @@
                 <span>Sargodha, Pakistan</span>
             </div>
         </div>
-    @endif
+    @endforelse
 
-    <x-ui.see-all text="See all Experiences" onclick="showAllExperiences()" />
+    @if ($totalExperiences > 3)
+        <x-ui.see-all text="See all Experiences" onclick="showAllExperiences()" />
+    @endif
 </section>
+
+<script>
+    // Open the "See All Experiences" modal
+    window.showAllExperiences = function () {
+        openModal('seeAllExperiencesModal');
+    };
+</script>

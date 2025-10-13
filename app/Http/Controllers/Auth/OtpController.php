@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -34,7 +33,9 @@ class OtpController extends Controller
 
     public function verify(Request $request)
     {
-        $data = $request->validate(['code' => ['required','digits:6']]);
+        $data = $request->validate([
+            'code' => ['required', 'digits:6']
+        ]);
 
         $challengeId = (string) $request->session()->get('login.challenge_id');
         $pendingId   = (int) $request->session()->get('login.pending_user_id');
@@ -58,16 +59,18 @@ class OtpController extends Controller
         $user = User::withoutGlobalScopes()->findOrFail($pendingId);
         $remember = (bool) session('login.remember');
 
-        // 🔥 Track device BEFORE login
+        // Track device BEFORE login
         $device = $this->deviceTracking->recordDevice($user, $request);
         $isNewDevice = $device->wasRecentlyCreated;
 
+        // Login user
         Auth::login($user, $remember);
         $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
 
-        // 🔥 Mark user as online immediately after login
+        // Mark user as online immediately after login
         $this->onlineStatus->markOnline($user);
 
+        // Clear session data
         $request->session()->forget([
             'login.pending_user_id',
             'login.challenge_id',
@@ -90,6 +93,7 @@ class OtpController extends Controller
     {
         $pendingId = (int) $request->session()->get('login.pending_user_id');
         $user = User::withoutGlobalScopes()->findOrFail($pendingId);
+        
         $challengeId = $this->otp->resend($user, $request->session()->getId());
         $request->session()->put('login.challenge_id', $challengeId);
 

@@ -1,18 +1,12 @@
 @props([
     'text' => 'See all',
-    'href' => '#',
     'onclick' => null,
+    'class' => '',
 ])
 
-<div class="see-all-container">
-    <a href="{{ $href }}" class="see-all-link"
-        @if ($onclick) onclick="{{ $onclick }}" @endif {{ $attributes }}>
+<div class="see-all-container {{ $class }}" @if ($onclick) onclick="{{ $onclick }}" @endif {{ $attributes }}>
+    <a href="javascript:void(0)" class="see-all-link">
         <span class="see-all-text">{{ $text }}</span>
         <i class="fas fa-arrow-right see-all-icon"></i>
     </a>
 </div>
-
-
-<style>
-
-</style>

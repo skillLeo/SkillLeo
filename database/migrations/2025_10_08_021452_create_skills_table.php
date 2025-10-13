@@ -9,11 +9,11 @@ return new class extends Migration {
     {
         Schema::create('skills', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100);                 // display name (original case)
-            $table->string('slug', 120)->unique();       // dedupe key (lowercase/kebab)
+            $table->string('name', 100);              
+            $table->string('slug', 120)->unique();      
             $table->timestamps();
 
-            $table->index('name'); // quick lookups
+            $table->index('name');  
         });
     }
 

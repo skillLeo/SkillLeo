@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/onboarding-components.css') }}">
     @stack('styles')
+    <x-timezone-detector />
 
     <style>
         /* Theme-based logo visibility */
@@ -65,6 +66,21 @@
             });
         });
         </script>
+
+
+
+<script>
+    (function () {
+      try {
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        if (tz && (!document.cookie.includes('tz=') || !document.cookie.includes(encodeURIComponent(tz)))) {
+          var expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+          document.cookie = "tz=" + encodeURIComponent(tz) + "; path=/; expires=" + expires + "; samesite=lax";
+        }
+      } catch(e) {}
+    })();
+  </script>
+  
     @stack('scripts')
 </body>
 </html>

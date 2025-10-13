@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Auth;
 
 use Illuminate\Support\Facades\Log;
@@ -10,6 +9,7 @@ use App\Models\User;
 use App\Services\Auth\AuthRedirectService;
 use App\Services\Auth\DeviceTrackingService;
 use App\Services\Auth\OnlineStatusService;
+use App\Services\TimezoneService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,8 +78,11 @@ class OAuthController extends Controller
             $avatar = $social->getAvatar();
             $now = now();
 
+            // ✅ Get timezone from request (captured by frontend JS)
+            $timezone = $request->input('timezone', 'UTC');
+
             $user = DB::transaction(function () use (
-                $driverName, $providerUid, $email, $name, $nickname, $avatar, $social, $now
+                $driverName, $providerUid, $email, $name, $nickname, $avatar, $social, $now, $timezone
             ) {
                 $identity = OAuthIdentity::where([
                     'provider' => $driverName,
@@ -87,26 +90,34 @@ class OAuthController extends Controller
                 ])->first();
 
                 if ($identity) {
+                    // Existing user - update profile
                     $user = $identity->user;
                     $this->refreshUserProfile($user, $name, $email, $avatar);
+                    
                     $identity->update([
                         'provider_username' => $nickname ?? $identity->provider_username,
                         'avatar_url' => $avatar ?? $identity->avatar_url,
                         'access_token' => $social->token ?? null,
                         'refresh_token' => $social->refreshToken ?? null,
-                        'token_expires_at' => isset($social->expiresIn) ? $now->copy()->addSeconds((int) $social->expiresIn) : null,
+                        'token_expires_at' => isset($social->expiresIn) 
+                            ? $now->copy()->addSeconds((int) $social->expiresIn) 
+                            : null,
                         'provider_raw' => $social->user ?? [],
                     ]);
+                    
                     $user->update([
                         'last_login_at' => $now,
                         'login_count' => ($user->login_count ?? 0) + 1,
                     ]);
+                    
                     return $user;
                 }
 
+                // Check if user exists by email
                 $user = $email ? User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first() : null;
 
                 if (!$user) {
+                    // ✅ Create new user with timezone
                     $user = User::create([
                         'tenant_id' => null,
                         'name' => $name ?: ($nickname ?: 'User'),
@@ -116,7 +127,7 @@ class OAuthController extends Controller
                         'password' => null,
                         'username' => $this->uniqueUsername($nickname ?: ($name ?: 'user')),
                         'locale' => 'en',
-                        'timezone' => 'UTC',
+                        'timezone' => $timezone, // ✅ Set detected timezone
                         'is_active' => 'active',
                         'is_profile_complete' => 'start',
                         'account_status' => 'pending_onboarding',
@@ -125,6 +136,7 @@ class OAuthController extends Controller
                         'meta' => ['created_via' => $driverName],
                     ]);
                 } else {
+                    // Existing user - update profile
                     $this->refreshUserProfile($user, $name, $email, $avatar);
                     $user->update([
                         'last_login_at' => $now,
@@ -132,15 +144,24 @@ class OAuthController extends Controller
                     ]);
                 }
 
+                // ✅ Store timezone in session
+                TimezoneService::storeViewerTimezone($timezone);
+
+                // Create OAuth identity
                 OAuthIdentity::updateOrCreate(
-                    ['provider' => $driverName, 'provider_user_id' => $providerUid],
+                    [
+                        'provider' => $driverName, 
+                        'provider_user_id' => $providerUid
+                    ],
                     [
                         'user_id' => $user->id,
                         'provider_username' => $nickname,
                         'avatar_url' => $avatar,
                         'access_token' => $social->token ?? null,
                         'refresh_token' => $social->refreshToken ?? null,
-                        'token_expires_at' => isset($social->expiresIn) ? $now->copy()->addSeconds((int) $social->expiresIn) : null,
+                        'token_expires_at' => isset($social->expiresIn) 
+                            ? $now->copy()->addSeconds((int) $social->expiresIn) 
+                            : null,
                         'provider_raw' => $social->user ?? [],
                     ]
                 );
@@ -148,19 +169,24 @@ class OAuthController extends Controller
                 return $user;
             });
 
-            // 🔥 Track device for OAuth login
+            // Track device for OAuth login
             $this->deviceTracking->recordDevice($user, $request);
 
+            // Login user
             Auth::login($user, true);
             $request->session()->regenerate();
 
-            // 🔥 Mark user as online after OAuth login
+            // Mark user as online after OAuth login
             $this->onlineStatus->markOnline($user);
 
             return redirect()->to($this->redirects->url($user));
 
         } catch (\Exception $e) {
-            Log::error("OAuth Callback Error - {$driverName}", ['error' => $e->getMessage()]);
+            Log::error("OAuth Callback Error - {$driverName}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('auth.login')
                 ->withErrors(['oauth' => 'Authentication with ' . ucfirst($provider) . ' failed.']);
         }
@@ -170,16 +196,21 @@ class OAuthController extends Controller
     {
         $driver = Socialite::driver($driverName);
         $driver->redirectUrl($this->callbackUrl($driverName));
+        
         if ($driverName !== 'linkedin-openid' && filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
             $driver->stateless();
         }
+        
         return $driver;
     }
 
     private function callbackUrl(string $driverName): string
     {
         $configured = config("services.$driverName.redirect");
-        if ($configured) return $configured;
+        if ($configured) {
+            return $configured;
+        }
+        
         return rtrim(config('app.url'), '/') . "/auth/{$driverName}/callback";
     }
 
@@ -191,26 +222,44 @@ class OAuthController extends Controller
 
     private function displayName(SocialiteUser $s): ?string
     {
-        if ($name = $s->getName()) return $name;
+        if ($name = $s->getName()) {
+            return $name;
+        }
+        
         $raw = $s->user ?? [];
-        if (isset($raw['name'])) return $raw['name'];
+        
+        if (isset($raw['name'])) {
+            return $raw['name'];
+        }
+        
         $first = $raw['given_name'] ?? $raw['localizedFirstName'] ?? null;
         $last  = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
+        
         return trim(($first ?: '') . ' ' . ($last ?: '')) ?: null;
     }
 
     private function refreshUserProfile(User $user, ?string $name, ?string $email, ?string $avatar): void
     {
         $changes = [];
-        if (!$user->name && $name) $changes['name'] = $name;
-        if (!$user->avatar_url && $avatar) $changes['avatar_url'] = $avatar;
+        
+        if (!$user->name && $name) {
+            $changes['name'] = $name;
+        }
+        
+        if (!$user->avatar_url && $avatar) {
+            $changes['avatar_url'] = $avatar;
+        }
+        
         if (!$user->email_verified_at && $email && str_contains($email, '@')) {
             if (empty($user->email) || str_contains($user->email, '@users.noreply.local')) {
                 $changes['email'] = strtolower($email);
             }
             $changes['email_verified_at'] = Carbon::now();
         }
-        if ($changes) $user->update($changes);
+        
+        if ($changes) {
+            $user->update($changes);
+        }
     }
 
     private function uniqueUsername(string $seed): string
@@ -219,14 +268,17 @@ class OAuthController extends Controller
         $base = (string) Str::limit($base ?: 'user', 40, '');
         $username = $base;
         $n = 0;
+        
         while (User::where('username', $username)->exists()) {
             $n++;
             $username = Str::limit($base, 40, '') . "_{$n}";
+            
             if ($n > 5000) {
                 $username = 'user_' . Str::random(8);
                 break;
             }
         }
+        
         return $username;
     }
 }

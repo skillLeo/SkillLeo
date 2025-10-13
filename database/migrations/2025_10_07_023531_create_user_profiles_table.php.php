@@ -4,19 +4,36 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('phone')->nullable();
-            $table->string('country')->nullable();
-            $table->string('state')->nullable();
-            $table->string('city')->nullable();
+            
+            // Contact & Location
+            $table->string('phone', 20)->nullable();
+            $table->string('country', 120)->nullable();
+            $table->string('state', 120)->nullable();
+            $table->string('city', 120)->nullable();
+            
+            // Bio & Professional Info
+            $table->string('tagline', 255)->nullable();
+            $table->text('bio')->nullable();
+            
+            // Social Links (stored as JSON)
+            $table->json('social_links')->nullable()->comment('LinkedIn, GitHub, Facebook, Twitter, etc.');
+            $table->json('filter_preferences')->nullable();
+
+            // Additional metadata
+            $table->json('meta')->nullable();
+            
             $table->timestamps();
 
-            $table->index(['user_id', 'country', 'state']);
+            // Indexes for performance
+            $table->index('user_id');
+            $table->index(['country', 'state', 'city']);
         });
     }
 

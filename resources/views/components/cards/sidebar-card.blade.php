@@ -25,6 +25,7 @@
     </div>
     
     @if($showSeeAll ?? false)
-        <x-ui.see-all :text="'See all ' . $title" onclick="showAll{{ str_replace(' ', '', $title) }}()" />
-    @endif
+    <x-ui.see-all :text="'See all ' . $title" onclick="showAll{{ str_replace(' ', '', $title) }}()" />
+@endif
+
 </section>

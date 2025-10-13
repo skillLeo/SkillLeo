@@ -14,19 +14,26 @@
 <form id="portfolioForm" action="{{ route('tenant.onboarding.portfolio.store') }}" method="POST">
     @csrf
 
-    <div class="projects-list" id="projectsList">
-        <div class="empty-state" id="emptyState">
-            <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📁</div>
-            <div style="font-weight: var(--fw-semibold); margin-bottom: var(--space-xs);">No projects yet</div>
-            <div style="color: var(--text-muted); font-size: var(--fs-subtle);">Add your first project to get started</div>
-        </div>
+    {{-- Projects List --}}
+    <div class="pf-onboard-list" id="projectsList"></div>
+
+    {{-- Empty State --}}
+    <div class="pf-onboard-empty" id="emptyState">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        <p>No projects yet</p>
+        <span>Add your first project to showcase your work</span>
     </div>
 
-    <button type="button" class="btn-add" id="addBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    {{-- Add Button --}}
+    <button type="button" class="pf-onboard-add-btn" id="addBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        Add project
+        Add Project
     </button>
 
     <input type="hidden" name="projects" id="projectsData">
@@ -41,234 +48,484 @@
 
 @push('styles')
 <style>
-.projects-list { margin: var(--space-lg) 0; }
+/* ============================================
+   ONBOARDING PORTFOLIO - PROFESSIONAL DESIGN
+   ============================================ */
 
-.project-card {
-    position: relative;
-    margin-bottom: var(--space-md);
-}
-
-.display-card {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: var(--space-lg);
-    background: var(--card);
-    transition: all var(--transition-base);
-}
-
-.display-card:hover { box-shadow: var(--shadow-sm); }
-
-.card-actions {
-    position: absolute;
-    top: var(--space-lg);
-    right: var(--space-lg);
+.pf-onboard-list {
     display: flex;
-    gap: var(--space-sm);
+    flex-direction: column;
+    gap: 12px;
+    margin: var(--space-lg) 0;
 }
 
-.card-edit, .card-remove {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--text-muted);
-    cursor: pointer;
+/* Empty State */
+.pf-onboard-empty {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-base);
-}
-
-.card-edit:hover {
-    background: var(--accent);
-    color: var(--btn-text-primary);
-    border-color: var(--accent);
-}
-
-.card-remove:hover {
-    background: var(--error);
-    color: var(--btn-text-primary);
-    border-color: var(--error);
-}
-
-.card-media {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-muted);
+    border: 1.5px dashed var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
-    margin-bottom: var(--space-md);
     background: var(--apc-bg);
-    aspect-ratio: 16 / 9;
 }
 
-.card-media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.pf-onboard-empty svg {
+    margin-bottom: 16px;
+    opacity: 0.2;
 }
 
-.card-title {
+.pf-onboard-empty p {
     font-size: var(--fs-title);
     font-weight: var(--fw-semibold);
     color: var(--text-heading);
-    margin-bottom: var(--space-sm);
+    margin: 0 0 4px 0;
 }
 
-.card-description {
-    color: var(--text-body);
-    line-height: var(--lh-relaxed);
-    margin-bottom: var(--space-md);
-}
-
-.card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.card-link {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: var(--fw-medium);
-    font-size: var(--fs-subtle);
-    transition: color var(--transition-base);
-}
-
-.card-link:hover { color: var(--accent-dark); }
-
-.card-tech {
-    font-size: var(--fs-micro);
+.pf-onboard-empty span {
+    font-size: var(--fs-body);
     color: var(--text-muted);
-    background: var(--apc-bg);
-    padding: 4px 10px;
-    border-radius: 12px;
 }
 
-.img-dropzone {
-    border: 1.5px dashed var(--border);
-    border-radius: var(--radius);
-    padding: var(--space-md);
-    background: var(--apc-bg);
-    cursor: pointer;
-    transition: all var(--transition-base);
-}
-
-.img-dropzone:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
-}
-
-.dz-inner {
+/* ==================== PREVIEW CARD ==================== */
+.pf-onboard-preview {
     display: flex;
-    gap: var(--space-md);
-    align-items: center;
-}
-
-.img-thumb {
-    width: 100px;
-    height: 60px;
-    border-radius: var(--radius);
-    overflow: hidden;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
     background: var(--card);
     border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-preview:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.pf-onboard-preview-main {
+    flex: 1;
+    display: flex;
+    gap: 14px;
+    min-width: 0;
+}
+
+.pf-onboard-preview-img,
+.pf-onboard-preview-img-empty {
+    flex-shrink: 0;
+    width: 100px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--apc-bg);
+    border: 1px solid var(--border);
+}
+
+.pf-onboard-preview-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+.pf-onboard-preview-img-empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--fs-micro);
     color: var(--text-muted);
+}
+
+.pf-onboard-preview-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pf-onboard-preview-title {
+    font-size: var(--fs-title);
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    margin: 0 0 6px 0;
+    line-height: var(--lh-tight);
+}
+
+.pf-onboard-preview-desc {
+    font-size: var(--fs-subtle);
+    color: var(--text-body);
+    line-height: var(--lh-relaxed);
+    margin: 0 0 8px 0;
+}
+
+.pf-onboard-preview-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-subtle);
+    color: var(--text-muted);
+}
+
+.pf-onboard-preview-link svg {
     flex-shrink: 0;
 }
 
-.img-thumb img {
+.pf-onboard-preview-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.pf-onboard-action-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.pf-onboard-action-btn.edit:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.pf-onboard-action-btn.delete:hover {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+}
+
+/* ==================== EDIT CARD ==================== */
+.pf-onboard-edit-card {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.pf-onboard-edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--apc-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.pf-onboard-edit-header h4 {
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    margin: 0;
+}
+
+.pf-onboard-close-edit {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-close-edit:hover {
+    background: var(--card);
+    color: var(--text-heading);
+}
+
+.pf-onboard-edit-body {
+    padding: 20px;
+}
+
+.pf-onboard-form-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 20px;
+}
+
+.pf-onboard-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Form Fields */
+.pf-onboard-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pf-onboard-label {
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+}
+
+.pf-onboard-required {
+    color: #dc2626;
+}
+
+.pf-onboard-input,
+.pf-onboard-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--input-border);
+    border-radius: 8px;
+    font-size: var(--fs-body);
+    font-family: inherit;
+    background: var(--input-bg);
+    color: var(--input-text);
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-input:focus,
+.pf-onboard-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.pf-onboard-input::placeholder,
+.pf-onboard-textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+.pf-onboard-textarea {
+    resize: vertical;
+    line-height: var(--lh-relaxed);
+    min-height: 80px;
+}
+
+.pf-onboard-count {
+    text-align: right;
+    font-size: var(--fs-micro);
+    color: var(--text-muted);
+}
+
+/* Image Upload */
+.pf-onboard-img-upload {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--apc-bg);
+    border: 2px dashed var(--border);
+}
+
+.pf-onboard-img-preview {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.pf-onboard-img-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.img-actions {
-    display: flex;
-    gap: var(--space-sm);
-    flex-wrap: wrap;
-}
-
-.img-btn {
-    background: var(--card);
-    border: 1px solid var(--border);
-    color: var(--text-body);
-    padding: 6px 12px;
-    border-radius: var(--radius);
-    font-weight: var(--fw-medium);
-    font-size: var(--fs-micro);
-    cursor: pointer;
-    transition: all var(--transition-base);
-}
-
-.img-btn:hover {
-    background: var(--accent);
-    color: var(--btn-text-primary);
-    border-color: var(--accent);
-}
-
-.img-hint {
-    font-size: var(--fs-micro);
-    color: var(--text-subtle);
-    margin-top: 4px;
-}
-
-.btn-add {
-    width: 100%;
-    padding: var(--space-md) var(--space-lg);
-    background: var(--card);
-    color: var(--text-body);
-    border: 1.5px dashed var(--border);
-    border-radius: var(--radius);
-    font-size: var(--fs-body);
-    font-weight: var(--fw-medium);
-    cursor: pointer;
+.pf-onboard-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-lg);
-    transition: all var(--transition-base);
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
-.btn-add:hover {
+.pf-onboard-img-preview:hover .pf-onboard-img-overlay {
+    opacity: 1;
+}
+
+.pf-onboard-img-change,
+.pf-onboard-img-remove {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--card);
+    color: var(--text-heading);
+    border: none;
+    border-radius: 6px;
+    font-size: var(--fs-subtle);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-img-change:hover {
+    background: var(--accent);
+    color: var(--text-white);
+}
+
+.pf-onboard-img-remove {
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+}
+
+.pf-onboard-img-remove:hover {
+    background: #dc2626;
+}
+
+.pf-onboard-img-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pf-onboard-img-empty:hover {
     border-color: var(--accent);
     background: var(--accent-light);
-    color: var(--accent);
 }
 
-.form-header-actions {
-    display: flex;
-    gap: var(--space-sm);
-    justify-content: flex-end;
-    margin-bottom: var(--space-md);
+.pf-onboard-img-empty svg {
+    margin-bottom: 10px;
+    color: var(--text-muted);
 }
 
-.save-btn, .cancel-btn {
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    font-weight: var(--fw-medium);
+.pf-onboard-img-empty p {
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    margin: 0 0 4px 0;
+}
+
+.pf-onboard-img-empty span {
     font-size: var(--fs-subtle);
-    cursor: pointer;
-    transition: all var(--transition-base);
+    color: var(--text-muted);
 }
 
-.save-btn {
-    background: var(--success);
-    color: var(--btn-text-primary);
+/* Edit Footer */
+.pf-onboard-edit-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    background: var(--apc-bg);
+    border-top: 1px solid var(--border);
+}
+
+.pf-onboard-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 20px;
     border: none;
+    border-radius: 8px;
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.cancel-btn {
+.pf-onboard-btn.primary {
+    background: var(--accent);
+    color: var(--text-white);
+}
+
+.pf-onboard-btn.primary:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+}
+
+.pf-onboard-btn.secondary {
     background: var(--card);
     color: var(--text-body);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
 }
 
+.pf-onboard-btn.secondary:hover {
+    background: var(--apc-bg);
+}
+
+/* Add Button */
+.pf-onboard-add-btn {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--card);
+    color: var(--text-heading);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: var(--space-lg);
+}
+
+.pf-onboard-add-btn:hover {
+    border-color: var(--accent);
+    border-style: solid;
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .dz-inner { flex-direction: column; }
-    .img-thumb { width: 100%; height: 120px; }
+    .pf-onboard-form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pf-onboard-edit-header,
+    .pf-onboard-edit-body,
+    .pf-onboard-edit-footer {
+        padding: 14px;
+    }
+    
+    .pf-onboard-preview {
+        flex-direction: column;
+    }
+    
+    .pf-onboard-preview-main {
+        width: 100%;
+    }
+    
+    .pf-onboard-preview-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .pf-onboard-edit-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .pf-onboard-btn {
+        width: 100%;
+    }
 }
 </style>
 @endpush
@@ -290,19 +547,18 @@
   let projectIdCounter = 0;
   let editingId = null;
 
-  // ---- Config ----
-  const MIN_PROJECTS = 2;       // change to 1 if you want to allow moving on with a single project
+  const MIN_PROJECTS = 2;
   const TITLE_MAX = 80;
   const DESC_MAX  = 280;
-  const IMG_MAX_W = 1600;
-  const IMG_MAX_H = 1200;
-  const IMG_QUALITY = 0.86;
+  const IMG_MAX_W = 1200;
+  const IMG_MAX_H = 900;
+  const IMG_QUALITY = 0.85;
 
   const esc = (s) => String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const normURL = (url='') => { const v = String(url).trim(); if (!v) return ''; if (/^https?:\/\//i.test(v)) return v; return 'https://' + v.replace(/^\/+/, ''); };
   const hostnameFrom = (url) => { try { return new URL(normURL(url)).hostname.replace(/^www\./,''); } catch { return ''; } };
+  const truncate = (str, len) => (str || '').length > len ? str.slice(0, len) + '...' : str;
 
-  // ---------- storage + pack ----------
   function packAndStore(){
     const data = projects.filter(p => (p.title || p.description || p.link || p.image));
     try { localStorage.setItem('onboarding_portfolio', JSON.stringify(data)); } catch {}
@@ -327,123 +583,185 @@
     } catch {}
   }
 
-  // ---------- validation + continue state ----------
   function validProjectsCount(){
     return projects.filter(p => p.title.trim() && p.description.trim()).length;
   }
 
   function updateContinueState(){
     if (!continueBtn) return;
-    continueBtn.disabled = validProjectsCount() < MIN_PROJECTS; // ✅ enable even while editing if enough valid rows
+    continueBtn.disabled = validProjectsCount() < MIN_PROJECTS;
   }
 
-  // ---------- rendering ----------
   function render(){
     projectsList.innerHTML = '';
     if (projects.length === 0) {
-      emptyState.style.display = 'block';
+      emptyState.style.display = 'flex';
       projectsList.appendChild(emptyState);
-      updateContinueState();
-      packAndStore();
-      return;
+    } else {
+      emptyState.style.display = 'none';
+      projects.forEach(p => {
+        const html = (editingId === p.id) ? renderEdit(p) : renderPreview(p);
+        projectsList.insertAdjacentHTML('beforeend', html);
+      });
     }
-    emptyState.style.display = 'none';
-    projects.forEach(p => {
-      const html = (editingId === p.id) ? renderEdit(p) : renderCard(p);
-      projectsList.insertAdjacentHTML('beforeend', html);
-    });
     updateContinueState();
     packAndStore();
   }
 
-  function renderCard(p){
+  function renderPreview(p){
     const link = p.link ? normURL(p.link) : '';
-    const hasLink = !!link;
-    const hasImg = !!p.image;
+    const host = link ? hostnameFrom(link) : '';
+
     return `
-      <div class="project-card display-card" id="proj-${p.id}">
-        <div class="card-actions">
-          <button type="button" class="card-edit"   title="Edit"   onclick="editProject(${p.id})" aria-label="Edit project">✎</button>
-          <button type="button" class="card-remove" title="Remove" onclick="removeProject(${p.id})" aria-label="Remove project">×</button>
+      <div class="pf-onboard-preview" id="proj-${p.id}">
+        <div class="pf-onboard-preview-main">
+          ${p.image ? `
+            <div class="pf-onboard-preview-img">
+              <img src="${p.image}" alt="${esc(p.title)}">
+            </div>
+          ` : `
+            <div class="pf-onboard-preview-img-empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </div>
+          `}
+          
+          <div class="pf-onboard-preview-content">
+            <h4 class="pf-onboard-preview-title">${esc(p.title) || 'Untitled Project'}</h4>
+            ${p.description ? `<p class="pf-onboard-preview-desc">${esc(truncate(p.description, 100))}</p>` : ''}
+            ${host ? `
+              <div class="pf-onboard-preview-link">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                <span>${esc(host)}</span>
+              </div>
+            ` : ''}
+          </div>
         </div>
-
-        ${hasImg ? `
-          <div class="card-media">
-            <img src="${p.image}" alt="${esc(p.title || 'Project image')}" loading="lazy">
-          </div>` : ''}
-
-        <div class="card-title">${esc(p.title) || 'Untitled project'}</div>
-        ${p.description ? `<div class="card-description">${esc(p.description)}</div>` : ''}
-
-        <div class="card-footer">
-          ${hasLink ? `<a class="card-link" href="${link}" target="_blank" rel="noopener">View project →</a>`
-                    : `<span class="card-link" style="opacity:.6;pointer-events:none;">No link added</span>`}
-          ${hasLink ? `<span class="card-tech">${esc(hostnameFrom(link))}</span>` : `<span></span>`}
+        
+        <div class="pf-onboard-preview-actions">
+          <button type="button" class="pf-onboard-action-btn edit" onclick="editProject(${p.id})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button type="button" class="pf-onboard-action-btn delete" onclick="removeProject(${p.id})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
         </div>
       </div>
     `;
   }
 
   function renderEdit(p){
-    const hasImg = !!p.image;
     return `
-      <div class="project-card" id="proj-${p.id}">
-        <div class="form-header-actions">
-          <button type="button" class="save-btn"   onclick="saveProject(${p.id})">✓ Save</button>
-          <button type="button" class="cancel-btn" onclick="cancelEdit(${p.id})">Cancel</button>
+      <div class="pf-onboard-edit-card" id="proj-${p.id}">
+        <div class="pf-onboard-edit-header">
+          <h4>${p.title ? 'Edit Project' : 'New Project'}</h4>
+          <button type="button" class="pf-onboard-close-edit" onclick="cancelEdit(${p.id})">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-
-        <div class="form-group">
-          <label class="form-label">Project title <span class="required">*</span></label>
-          <input class="form-input" maxlength="${TITLE_MAX}" data-id="${p.id}" data-field="title"
-                 value="${esc(p.title)}" placeholder="e.g., Analytics Dashboard for E-commerce"/>
-          <div class="char-count" id="ct-title-${p.id}">${(p.title||'').length}/${TITLE_MAX}</div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Short description <span class="required">*</span></label>
-          <textarea class="form-textarea" maxlength="${DESC_MAX}" data-id="${p.id}" data-field="description"
-                    placeholder="What was the goal, what did you build, and what was the impact?">${esc(p.description)}</textarea>
-          <div class="char-count" id="ct-desc-${p.id}">${(p.description||'').length}/${DESC_MAX}</div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Project link (optional)</label>
-          <input class="form-input" data-id="${p.id}" data-field="link" value="${esc(p.link)}" placeholder="https://example.com/project"/>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Cover image (optional)</label>
-          <div class="img-dropzone" data-id="${p.id}">
-            <div class="dz-inner">
-              <div class="img-thumb">
-                ${hasImg ? `<img src="${p.image}" alt="Preview">` : `No image`}
+        
+        <div class="pf-onboard-edit-body">
+          <div class="pf-onboard-form-grid">
+            <div class="pf-onboard-form-col">
+              <div class="pf-onboard-field">
+                <label class="pf-onboard-label">Project Title <span class="pf-onboard-required">*</span></label>
+                <input type="text" class="pf-onboard-input" maxlength="${TITLE_MAX}" 
+                       value="${esc(p.title)}" data-id="${p.id}" data-field="title"
+                       placeholder="Enter project title"/>
+                <div class="pf-onboard-count" id="ct-title-${p.id}">${(p.title||'').length}/${TITLE_MAX}</div>
               </div>
-              <div>
-                <div class="img-actions">
-                  <button type="button" class="img-btn img-upload-btn" data-id="${p.id}">Upload image</button>
-                  ${hasImg ? `<button type="button" class="img-btn img-remove-btn" data-id="${p.id}">Remove</button>` : ``}
-                </div>
-                <div class="img-hint">PNG/JPG/WebP • we'll resize and optimize automatically</div>
+
+              <div class="pf-onboard-field">
+                <label class="pf-onboard-label">Description <span class="pf-onboard-required">*</span></label>
+                <textarea class="pf-onboard-textarea" maxlength="${DESC_MAX}" rows="4"
+                          data-id="${p.id}" data-field="description"
+                          placeholder="Describe your project, technologies used, and key achievements...">${esc(p.description)}</textarea>
+                <div class="pf-onboard-count" id="ct-desc-${p.id}">${(p.description||'').length}/${DESC_MAX}</div>
+              </div>
+
+              <div class="pf-onboard-field">
+                <label class="pf-onboard-label">Project Link (Optional)</label>
+                <input type="url" class="pf-onboard-input" value="${esc(p.link)}" 
+                       data-id="${p.id}" data-field="link"
+                       placeholder="https://example.com"/>
               </div>
             </div>
-            <input class="img-input" data-id="${p.id}" type="file" accept="image/*" hidden />
+
+            <div class="pf-onboard-form-col">
+              <div class="pf-onboard-field">
+                <label class="pf-onboard-label">Cover Image (Optional)</label>
+                <div class="pf-onboard-img-upload">
+                  ${p.image ? `
+                    <div class="pf-onboard-img-preview">
+                      <img src="${p.image}" alt="Cover">
+                      <div class="pf-onboard-img-overlay">
+                        <button type="button" class="pf-onboard-img-change" onclick="document.getElementById('img-input-${p.id}').click()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          Change
+                        </button>
+                        <button type="button" class="pf-onboard-img-remove" onclick="removeImage(${p.id})">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="pf-onboard-img-empty" onclick="document.getElementById('img-input-${p.id}').click()">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                      </svg>
+                      <p>Click to upload</p>
+                      <span>PNG, JPG up to 10MB</span>
+                    </div>
+                  `}
+                  <input type="file" id="img-input-${p.id}" accept="image/*" hidden onchange="handleImage(${p.id}, this)"/>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div class="pf-onboard-edit-footer">
+          <button type="button" class="pf-onboard-btn secondary" onclick="cancelEdit(${p.id})">Cancel</button>
+          <button type="button" class="pf-onboard-btn primary" onclick="saveProject(${p.id})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Save Project
+          </button>
         </div>
       </div>
     `;
   }
 
-  // ---------- actions ----------
   function addProject(){
     const id = ++projectIdCounter;
     projects.unshift({ id, title:'', description:'', link:'', image:'' });
     editingId = id;
     render();
-    setTimeout(() => {
-      const first = document.querySelector(`#proj-${id} .form-input[data-field="title"]`);
-      if (first) first.focus();
-    }, 50);
   }
 
   function editProject(id){ editingId = id; render(); }
@@ -480,21 +798,36 @@
     else if (field === 'description') p.description = value.slice(0, DESC_MAX);
     else if (field === 'link') p.link = value.trim();
     packAndStore();
-    updateContinueState(); // ✅ live enable
+    updateContinueState();
   }
 
-  async function handlePickedFile(id, file){
+  // ✅ FIXED: Expose handleImage globally
+  window.handleImage = async function(id, input) {
+    const file = input.files[0];
     if (!file || !file.type.startsWith('image/')) return;
     try {
       const dataUrl = await compressImage(file);
       const p = projects.find(x => x.id === id);
-      if (p) {
-        p.image = dataUrl;
-        packAndStore();
-        render();
+      if (p) { 
+        p.image = dataUrl; 
+        packAndStore(); 
+        render(); 
       }
-    } catch {}
-  }
+    } catch (e) { 
+      console.error(e); 
+    }
+    input.value = '';
+  };
+
+  // ✅ FIXED: Expose removeImage globally
+  window.removeImage = function(id) {
+    const p = projects.find(x => x.id === id);
+    if (p) { 
+      p.image = ''; 
+      packAndStore(); 
+      render(); 
+    }
+  };
 
   async function compressImage(file) {
     return new Promise((resolve) => {
@@ -516,7 +849,7 @@
     });
   }
 
-  // ---------- events ----------
+  // Events
   projectsList.addEventListener('input', (e) => {
     const el = e.target;
     if (!el.dataset || !el.dataset.field) return;
@@ -532,30 +865,8 @@
     }
   });
 
-  projectsList.addEventListener('click', (e) => {
-    if (e.target.closest('.img-upload-btn')) {
-      const id = Number(e.target.dataset.id);
-      const input = document.querySelector(`.img-input[data-id="${id}"]`);
-      if (input) input.click();
-    }
-    if (e.target.closest('.img-remove-btn')) {
-      const id = Number(e.target.dataset.id);
-      const p = projects.find(x => x.id === id);
-      if (p) { p.image = ''; packAndStore(); render(); }
-    }
-  });
-
-  projectsList.addEventListener('change', async (e) => {
-    if (e.target.matches('.img-input')) {
-      const file = e.target.files[0];
-      if (file) await handlePickedFile(Number(e.target.dataset.id), file);
-      e.target.value = '';
-    }
-  });
-
   addBtn.addEventListener('click', addProject);
 
-  // ✅ Ensure Continue actually submits (even if it's type="button")
   if (continueBtn) {
     continueBtn.addEventListener('click', () => {
       if (continueBtn.disabled) return;
@@ -564,21 +875,20 @@
     });
   }
 
-  // Keep submit handler; enforce minimum and pack JSON
   formEl.addEventListener('submit', (e) => {
     if (validProjectsCount() < MIN_PROJECTS) {
       e.preventDefault();
-      alert(`Please add at least ${MIN_PROJECTS} project${MIN_PROJECTS>1?'s':''} (title + description).`);
+      alert(`Please add at least ${MIN_PROJECTS} projects (title + description).`);
       return;
     }
     packAndStore();
   });
 
-  // ---------- boot ----------
+  // Boot
   loadFromStorage();
   render();
 
-  // expose for inline handlers
+  // Expose for inline handlers
   window.editProject   = editProject;
   window.removeProject = removeProject;
   window.saveProject   = saveProject;

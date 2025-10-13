@@ -16,19 +16,17 @@
         justify-content: space-around;
     }
 
-    .left-sidebar,
+    /* .left-sidebar,
     .main-content,
     .right-sidebar {
         position: sticky;
         top: var(--sticky-offset);
         align-self: start;
         height: max-content;
-    }
+    } */
 }
 
-/* ===================================
-   DESKTOP - 992px+
-   =================================== */
+ 
 @media (min-width: 992px) {
     .hero-mobile {
         display: none;
@@ -49,9 +47,7 @@
     }
 }
 
-/* ===================================
-   TABLET LARGE - 768px to 1199px
-   =================================== */
+ 
 
 
    @media (min-width: 768px) and (max-width: 900.98px) {
@@ -69,7 +65,6 @@
     }
 
     .portfolio-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .hero-mobile {

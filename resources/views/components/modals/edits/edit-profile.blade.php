@@ -1,5 +1,7 @@
-<x-modals.base-modal id="editProfileModal" title="Edit Profile" size="lg">
-    <form id="profileForm" method="POST" action="#" enctype="multipart/form-data">
+@props(['user' => null])
+
+<x-modals.edits.base-modal id="editProfileModal" title="Edit Profile" size="lg">
+    <form id="profileForm" method="POST" action="{{ route('tenant.profile.update') }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -7,8 +9,8 @@
         <div class="modal-section photo-section">
             <div class="photo-upload-wrap">
                 <div class="photo-preview-large" id="photoPreviewLarge">
-                    @if($user->avatar ?? false)
-                        <img src="{{ $user->avatar }}" alt="{{ $user->name }}">
+                    @if(($user->avatar ?? false) || ($user->avatar_url ?? false))
+                        <img src="{{ $user->avatar ?? $user->avatar_url }}" alt="{{ $user->name ?? 'User' }}">
                     @else
                         <i class="fa-solid fa-user" style="font-size: 40px; color: var(--text-muted);"></i>
                     @endif
@@ -19,7 +21,7 @@
                         <i class="fa-solid fa-camera"></i>
                         Upload Photo
                     </button>
-                    @if($user->avatar ?? false)
+                    @if(($user->avatar ?? false) || ($user->avatar_url ?? false))
                         <button type="button" class="btn-photo-remove" onclick="removeAvatar()">
                             <i class="fa-solid fa-trash"></i>
                         </button>
@@ -33,9 +35,16 @@
         <div class="modal-section">
             <h3 class="section-title">Basic Information</h3>
             
-            <div class="form-group">
-                <label class="form-label">Full Name *</label>
-                <input type="text" name="name" class="form-input" value="{{ $user->name ?? '' }}" required>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">First Name <span class="required">*</span></label>
+                    <input type="text" name="first_name" class="form-input" value="{{ $user->first_name ?? '' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-input" value="{{ $user->last_name ?? '' }}">
+                </div>
             </div>
 
             <div class="form-group">
@@ -46,7 +55,7 @@
 
             <div class="form-group">
                 <label class="form-label">About</label>
-                <textarea name="about" class="form-textarea" rows="6" maxlength="2000" placeholder="Tell us about yourself...">{{ $user->about ?? '' }}</textarea>
+                <textarea name="about" class="form-textarea" rows="6" maxlength="2000" placeholder="Tell us about yourself...">{{ $user->about ?? $user->bio ?? '' }}</textarea>
                 <div class="char-count"><span id="aboutCount">0</span> / 2000</div>
             </div>
         </div>
@@ -61,7 +70,7 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Email *</label>
+                <label class="form-label">Email <span class="required">*</span></label>
                 <input type="email" name="email" class="form-input" value="{{ $user->email ?? '' }}" required>
             </div>
 
@@ -99,9 +108,9 @@
 
     <x-slot:footer>
         <button type="button" class="btn-modal btn-cancel" onclick="closeModal('editProfileModal')">Cancel</button>
-        <button type="submit" form="profileForm" class="btn-modal btn-save">Save</button>
+        <button type="submit" form="profileForm" class="btn-modal btn-save">Save Changes</button>
     </x-slot:footer>
-</x-modals.base-modal>
+</x-modals.edits.base-modal>
 
 <style>
 .modal-section {
@@ -117,8 +126,8 @@
 }
 
 .section-title {
-    font-size: var(--fs-h3);
-    font-weight: var(--fw-bold);
+    font-size: 18px;
+    font-weight: 600;
     color: var(--text-heading);
     margin-bottom: 16px;
 }
@@ -126,7 +135,7 @@
 .photo-section {
     background: var(--apc-bg);
     padding: 20px;
-    border-radius: var(--radius);
+    border-radius: 8px;
     border-bottom: none;
     margin-bottom: 24px;
 }
@@ -168,11 +177,11 @@
     gap: 8px;
     padding: 10px 18px;
     background: var(--accent);
-    color: var(--btn-text-primary);
+    color: white;
     border: none;
-    border-radius: var(--radius);
-    font-size: var(--fs-body);
-    font-weight: var(--fw-semibold);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -189,22 +198,29 @@
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: var(--error);
-    border: 1px solid var(--error);
-    border-radius: var(--radius);
+    color: #dc2626;
+    border: 1px solid #dc2626;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .btn-photo-remove:hover {
-    background: var(--error);
-    color: var(--btn-text-primary);
+    background: #dc2626;
+    color: white;
 }
 
 .photo-hint {
-    font-size: var(--fs-micro);
+    font-size: 12px;
     color: var(--text-muted);
     margin-top: 8px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
 }
 
 .form-group {
@@ -213,8 +229,8 @@
 
 .form-label {
     display: block;
-    font-size: var(--fs-body);
-    font-weight: var(--fw-medium);
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-body);
     margin-bottom: 6px;
 }
@@ -224,13 +240,18 @@
     color: var(--text-muted);
 }
 
+.required {
+    color: #dc2626;
+    margin-left: 2px;
+}
+
 .form-input,
 .form-textarea {
     width: 100%;
     padding: 10px 14px;
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius);
-    font-size: var(--fs-body);
+    border: 1.5px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 15px;
     font-family: inherit;
     background: var(--input-bg);
     color: var(--input-text);
@@ -241,7 +262,7 @@
 .form-textarea:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-textarea {
@@ -251,7 +272,7 @@
 
 .char-count {
     text-align: right;
-    font-size: var(--fs-micro);
+    font-size: 12px;
     color: var(--text-muted);
     margin-top: 4px;
 }
@@ -260,6 +281,10 @@
     .photo-upload-wrap {
         flex-direction: column;
         text-align: center;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
     }
 }
 </style>
@@ -302,4 +327,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headline) document.getElementById('headlineCount').textContent = headline.value.length;
     if (about) document.getElementById('aboutCount').textContent = about.value.length;
 });
-</script>
+</script> 

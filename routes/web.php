@@ -9,7 +9,7 @@ use App\Http\Controllers\Auth\{
     PreSignupController,
     EmailVerificationController,
     OAuthController,
-    GatewayController
+    
 };
 use App\Http\Controllers\Tenant\{
     OnboardingController as TenantOnboardingController,
@@ -22,18 +22,104 @@ use App\Http\Controllers\Client\{
 use App\Http\Controllers\Api\LocationApiController;
 use App\Http\Controllers\Settings\ConnectedAccountsController;
 use App\Http\Controllers\Api\GeoController;
+use App\Services\TimezoneService;
+use Illuminate\Http\Request;
+
+use App\Http\Controllers\Tenant\ProfilePage\ProfileController;
 
 
-// Route::middleware(['auth', 'track.device.activity'])->prefix('account')->group(function () {
-//     // Device security page
-//     Route::get('/devices', [DeviceController::class, 'index'])->name('account.devices');
-    
-//     // Remove a device
-//     Route::delete('/devices/{device}', [DeviceController::class, 'destroy'])->name('account.devices.destroy');
-    
-//     // Mark device as trusted
-//     Route::post('/devices/{device}/trust', [DeviceController::class, 'trust'])->name('account.devices.trust');
-// });
+
+
+
+
+
+
+    Route::prefix('{username}')
+    ->name('tenant.')
+    ->group(function () {
+
+
+
+     
+        Route::get('/', [ProfileController::class, 'index'])->name('profile');
+        Route::get('times', [ProfileController::class, 'times'])->name('times');
+
+
+
+
+
+
+
+
+
+
+
+    });
+
+
+
+
+    Route::put('profile', [ProfileController::class, 'updateProfile'])->name('tenant.profile.update');
+    Route::put('skills', [ProfileController::class, 'updateSkills'])->name('tenant.skills.update');
+    Route::put('language', [ProfileController::class, 'updateLanguages'])->name('tenant.language.update');
+    Route::put('educaiton', [ProfileController::class, 'updateEducation'])->name('tenant.education.update');
+    Route::put('experience', [ProfileController::class, 'updateExperience'])->name('tenant.experience.update');
+    Route::put('reviews', [ProfileController::class, 'updateReviews'])
+    ->name('tenant.reviews.update');
+
+    Route::put('services', [ProfileController::class, 'updateServices'])
+    ->name('tenant.services.update');
+
+Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
+    ->name('tenant.why.update');
+
+
+
+    Route::put('portfolio', [ProfileController::class, 'updatePortfolio'])->name('tenant.portfolio.update');
+
+    Route::post('/filter-preferences', [ProfileController::class, 'updateFilterPreferences'])
+    ->name('tenant.filter-preferences')
+    ->middleware('auth');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::post('/api/timezone/store', function (Request $request) {
+    $request->validate(['timezone' => 'required|string|timezone']);
+    TimezoneService::storeViewerTimezone($request->timezone);
+    return response()->json(['success' => true]);
+})->name('timezone.store');
 
 
 
@@ -52,8 +138,8 @@ Route::middleware(['auth','throttle:60,1'])
 
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('select-account-type', [AuthController::class, 'selectAccountType'])->name('select-account-type');
-    Route::get('account-type', [GatewayController::class, 'accountType'])->name('account-type');
-    Route::post('account-type', [GatewayController::class, 'setAccountType'])->name('account-type.set');
+    Route::get('account-type', [AuthController::class, 'accountType'])->name('account-type');
+    Route::post('account-type', [AuthController::class, 'setAccountType'])->name('account-type.set');
 });
 
 
@@ -211,13 +297,5 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
-
-
-
-// routes/tenant.php
-Route::get('{username}', [ProfilePageController::class, 'index'])
-    ->where('username', '[a-zA-Z0-9_-]+')
-    ->name('tenant.profile');
 
 

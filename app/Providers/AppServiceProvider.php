@@ -37,4 +37,7 @@ class AppServiceProvider extends ServiceProvider
             return hash('sha256', implode('|', array_filter($components)));
         });
     }
+
+
+    
 }
