@@ -847,17 +847,19 @@
     }
 </style>
 
+
 <!-- NAVBAR (HTML ONLY, NO CSS CHANGES) -->
 <nav class="top-nav">
     <div class="nav-inner">
         <!-- Mobile View -->
         <div class="nav-row nav-row--top">
             <img class="nav-avatar" src="{{ $user->avatar ?: ('https://i.pravatar.cc/64?u=' . urlencode($user->email ?? $user->id ?? $user->name ?? 'user')) }}" alt="{{ $user->name }}">
-            <a class="brand" href="#">
+            <a class="brand" href="{{route('tenant.profile', $username)}}">
+                
                 <img class="brand-logo" src="{{ asset('assets/images/logos/croped/logo_light.png') }}" alt="Brand"
-                    data-theme-src-light="                    <img class='brand-logo'
+                    data-theme-src-light="<img class='brand-logo'
                     src='{{ asset('assets/images/logos/croped/logo_light.png') }}' "
-                            data-theme-src-dark="                    <img class='brand-logo'
+                            data-theme-src-dark="<img class='brand-logo'
                     src='{{ asset('assets/images/logos/croped/logo_dark.png') }}' ">
             </a>
             <button class="share-btn">
@@ -1198,9 +1200,9 @@
             @if(!empty($user->headline))
                 <div class="profile-bio">{{ $user->headline }}</div>
             @endif
-            @if(!empty($user->bio))
+            {{-- @if(!empty($user->bio))
                 <div class="profile-bio-text">{{ \Illuminate\Support\Str::limit(strip_tags($user->bio), 140) }}</div>
-            @endif
+            @endif --}}
         </div>
     </div>
 

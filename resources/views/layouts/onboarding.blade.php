@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>@yield('title', 'Onboarding - ProMatch')</title>
-    
+    <title>@yield('title', 'Onboarding - SkillLeo')</title>
+    <link rel="shortcut icon" href="{{asset('assets/images/logos/fav/fav7.png')}}">
+
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/onboarding-components.css') }}">
     @stack('styles')

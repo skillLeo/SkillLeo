@@ -30,13 +30,13 @@
 
 @extends('layouts.app')
 
-@section('title', $user->name . ' - Professional Portfolio')
+@section('title', $user->name . ' |  SkillLeo')
 
 @section('content')
 
 
 
-    <x-navigation.top-nav :user="$user" />
+    <x-navigation.top-nav :user="$user"  :username="$username"/>
 
     <div class="main-container">
         <div class="content-wrapper">

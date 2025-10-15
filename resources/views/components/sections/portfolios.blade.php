@@ -1,4 +1,3 @@
-{{-- Professional Portfolio Section with Skills-Based Filters (Way 2) --}}
 <section class="pro-portfolio-section">
     @php
         use Illuminate\Support\Str;

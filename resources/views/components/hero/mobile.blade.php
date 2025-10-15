@@ -15,7 +15,6 @@
                 <i class="fa-solid fa-camera u-ic-md" style="margin-bottom: 4px"></i>
             @endif
 
-            {{-- Professional Online Status Badge --}}
             @php
                 $isOnline = false;
                 $lastSeenText = 'Offline';

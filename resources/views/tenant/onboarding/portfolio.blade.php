@@ -48,10 +48,7 @@
 
 @push('styles')
 <style>
-/* ============================================
-   ONBOARDING PORTFOLIO - PROFESSIONAL DESIGN
-   ============================================ */
-
+ 
 .pf-onboard-list {
     display: flex;
     flex-direction: column;

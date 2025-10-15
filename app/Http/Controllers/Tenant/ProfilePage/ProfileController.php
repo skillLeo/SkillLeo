@@ -543,6 +543,8 @@ class ProfileController extends Controller
             'totalProjects'        => count($portfolios),
             'LIMITS'               => $LIMITS,
             'userSkills'           => $owner->skills,
+            'username'           => $username,
+
         ]);
     }
     

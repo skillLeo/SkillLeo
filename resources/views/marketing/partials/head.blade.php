@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Title -->
 <title> SassTech - Saas Software and IT Solution Multipurpose HTML Template | @yield('title')</title>
-<!-- Favicon -->
 <link rel="shortcut icon" href="{{asset('assets/marketing/images/logo/favicon.png')}}">
 <!-- Bootstrap -->
 <link rel="stylesheet" href="{{asset('assets/marketing/css/bootstrap.min.css')}}">

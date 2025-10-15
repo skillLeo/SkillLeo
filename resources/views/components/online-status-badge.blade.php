@@ -1,6 +1,4 @@
-{{-- resources/views/components/online-status-badge.blade.php --}}
-{{-- Professional online status badge with avatar wrapper --}}
-
+ 
 @props([
     'user',
     'size' => 'md',
