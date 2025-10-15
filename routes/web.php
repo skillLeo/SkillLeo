@@ -24,8 +24,49 @@ use App\Http\Controllers\Settings\ConnectedAccountsController;
 use App\Http\Controllers\Api\GeoController;
 use App\Services\TimezoneService;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Tenant\CvUploadController;
 
 use App\Http\Controllers\Tenant\ProfilePage\ProfileController;
+
+
+
+
+// In routes/web.php
+
+Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function () {
+    Route::post('/cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
+    Route::post('/cv-upload',      [CvUploadController::class, 'upload'])->name('cv.upload');
+    Route::get('/cv-output',       [CvUploadController::class, 'output'])->name('cv.output');
+    Route::post('/cv-save', [CvUploadController::class, 'save'])->name('cv.save');
+
+});
+// Route::post('/cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
+// Route::post('/cv-upload', [CvUploadController::class, 'upload'])->name('cv.upload');
+// Route::get('/cv-output', [CvUploadController::class, 'output'])->name('cv.output');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -82,7 +123,9 @@ Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
     ->middleware('auth');
 
 
-
+    Route::post('/banner', [ProfileController::class, 'updateBanner'])
+    ->name('tenant.banner.update')
+    ->middleware(['auth']);
 
 
 
@@ -144,6 +187,11 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
 
 
+Route::post('skill', [AuthController::class, 'setAccountType'])->name('account-type.set');
+Route::delete('skill', [AuthController::class, 'setAccountType'])->name('account-type.set');
+Route::get('skill', [AuthController::class, 'setAccountType'])->name('account-type.set');
+Route::put('skill', [AuthController::class, 'setAccountType'])->name('account-type.set');
+Route::delete('skill', [AuthController::class, 'setAccountType'])->name('account-type.set');
 
 
 
@@ -237,43 +285,48 @@ Route::middleware('auth')->group(function () {
 
 
 
-    // Tenant onboarding (professional)
-    Route::prefix('onboarding/tenant')
-    ->middleware(['tenant','onboarding:tenant']) // GET guard for pages
-    ->name('tenant.onboarding.')
-    ->group(function () {
+    Route::prefix('onboarding/tenant')->middleware(['tenant','onboarding:tenant'])->name('tenant.onboarding.')
+        ->group(function () {
 
-        Route::post('start-from-scratch', [TenantOnboardingController::class, 'scratch'])
-            ->name('scratch');
-            
-        Route::get('welcome',    action: [TenantOnboardingController::class, 'welcome'])->name('welcome');
-        Route::get('personal',   [TenantOnboardingController::class, 'personal'])->name('personal');
-        Route::get('location',   [TenantOnboardingController::class, 'location'])->name('location');
-        Route::get('skills',     [TenantOnboardingController::class, 'skills'])->name('skills');
-        Route::get('experience', [TenantOnboardingController::class, 'experience'])->name('experience');
-        Route::get('portfolio',  [TenantOnboardingController::class, 'portfolio'])->name('portfolio');
-        Route::get('education',  [TenantOnboardingController::class, 'education'])->name('education');
-        Route::get('preferences',[TenantOnboardingController::class, 'preferences'])->name('preferences');
-        Route::get('review',     [TenantOnboardingController::class, 'review'])->name('review');
-        Route::get('publish',    [TenantOnboardingController::class, 'publish'])->name('publish'); 
+            // GET routes (pages)
+            Route::get('welcome',    [TenantOnboardingController::class, 'welcome'])->name('welcome');
+            Route::get('personal',   [TenantOnboardingController::class, 'personal'])->name('personal');
+            Route::get('location',   [TenantOnboardingController::class, 'location'])->name('location');
+            Route::get('skills',     [TenantOnboardingController::class, 'skills'])->name('skills');
+            Route::get('experience', [TenantOnboardingController::class, 'experience'])->name('experience');
+            Route::get('portfolio',  [TenantOnboardingController::class, 'portfolio'])->name('portfolio');
+            Route::get('education',  [TenantOnboardingController::class, 'education'])->name('education');
+            Route::get('preferences',[TenantOnboardingController::class, 'preferences'])->name('preferences');
+            Route::get('review',     [TenantOnboardingController::class, 'review'])->name('review');
+            Route::get('publish',    [TenantOnboardingController::class, 'publish'])->name('publish');
 
+            // CV Upload routes - GET
+            // Route::get('cv-output', [CvUploadController::class, 'output'])->name('cv.output');
 
-
-
-
+            // POST routes (form submissions)
             Route::middleware('onboarding.post:tenant')->group(function () {
-            Route::post('personal', [TenantOnboardingController::class, 'storePersonal'])->name('personal.store');
+                // Standard onboarding POST routes
+                Route::post('personal',    [TenantOnboardingController::class, 'storePersonal'])->name('personal.store');
+                Route::post('location',    [TenantOnboardingController::class, 'storeLocation'])->name('location.store');
+                Route::post('skills',      [TenantOnboardingController::class, 'storeSkills'])->name('skills.store');
+                Route::post('experience',  [TenantOnboardingController::class, 'storeExperience'])->name('experience.store');
+                Route::post('portfolio',   [TenantOnboardingController::class, 'storePortfolio'])->name('portfolio.store');
+                Route::post('education',   [TenantOnboardingController::class, 'storeEducation'])->name('education.store');
+                Route::post('preferences', [TenantOnboardingController::class, 'storePreferences'])->name('preferences.store');
+                Route::post('review',      [TenantOnboardingController::class, 'storeReview'])->name('review.store');
+                Route::post('publish',     [TenantOnboardingController::class, 'storePublish'])->name('publish.store');
 
-            Route::post('location',    [TenantOnboardingController::class, 'storeLocation'])->name('location.store');
-            Route::post('skills',      [TenantOnboardingController::class, 'storeSkills'])->name('skills.store');
-            Route::post('experience',  [TenantOnboardingController::class, 'storeExperience'])->name('experience.store');
-            Route::post('portfolio',   [TenantOnboardingController::class, 'storePortfolio'])->name('portfolio.store');
-            Route::post('education',   [TenantOnboardingController::class, 'storeEducation'])->name('education.store');
-            Route::post('preferences', [TenantOnboardingController::class, 'storePreferences'])->name('preferences.store');
-            Route::post('review',     [TenantOnboardingController::class, 'storeReview'])->name('review.store');
-            Route::post('publish',     [TenantOnboardingController::class, 'storePublish'])->name('publish.store');
+                // CV Upload POST routes
+                // Route::post('cv-upload',      [CvUploadController::class, 'upload'])->name('cv.upload');
+                // Route::post('cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
+                
+                // Additional actions
+                Route::post('start-from-scratch', [TenantOnboardingController::class, 'scratch'])->name('scratch');
+                Route::post('confirm', function () {
+                    return redirect()->route('tenant.onboarding.personal');
+                })->name('confirm');
+            });
         });
-    });
 
 
  Route::prefix('onboarding/client')

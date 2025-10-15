@@ -21,8 +21,9 @@ return new class extends Migration
             // Bio & Professional Info
             $table->string('tagline', 255)->nullable();
             $table->text('bio')->nullable();
+            $table->string('banner')->nullable();
+            $table->json('banner_preference')->nullable();
             
-            // Social Links (stored as JSON)
             $table->json('social_links')->nullable()->comment('LinkedIn, GitHub, Facebook, Twitter, etc.');
             $table->json('filter_preferences')->nullable();
 

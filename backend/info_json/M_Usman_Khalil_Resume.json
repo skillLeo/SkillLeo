@@ -1,0 +1,53 @@
+{
+  "Name": "MUHAMMAD USMAN KHALIL",
+  "About": "Experienced in AI, machine learning, neural networks, and agentic AI using Python, TensorFlow, and Keras. Proficient in deploying production-ready API solutions with React, Django, and FastAPI. Skilled in building intelligent systems including multi agentic AI chatbots with RAG and voice agents using LangGraph for real-time, context-aware interactions. Strong background in full-stack web development using PHP, SQL, Django, and React. Experienced with Power BI for data-driven decision-making and adept at data visualization to effectively communicate complex insights and drive informed strategies.",
+  "Education": [
+    {
+      "Degree": "Bachelor of Science in Computer Science",
+      "Institution": "University of Lahore (Sgd Campus)",
+      "Year": "Oct 2021 - June 2025",
+      "Major": "AI & ML",
+      "FYP": "Technological Advancements within the current Agriculture Industry"
+    }
+  ],
+  "Skills": [
+    "Machine Learning (tensorflow, Multi agentic AI, n8n)",
+    "Web development (django, PHP, React, FastAPI)",
+    "Neural Network (keras)",
+    "Data Analyst (Excel, python, Github)",
+    "RAG, VectorDB (pinecone, chroma)",
+    "PowerBI",
+    "Process Automation"
+  ],
+  "Experience": [
+    {
+      "Title": "Python/ML developer",
+      "Company": "One Machine Software",
+      "Duration": "June 2025 - Present",
+      "Description": "Developed a Retrieval-Augmented Generation (RAG) pipeline using Pinecone for efficient medical data retrieval and analysis. Implemented and fine-tuned a Large Language Model (LLM) using LSTM architecture for domain-specific text understanding and prediction."
+    },
+    {
+      "Title": "Database Intern",
+      "Company": "University Of Lahore (SGD campus)",
+      "Duration": "",
+      "Description": "Developed and implemented an organizational database to oversee student assessments, including quizzes and assignments, which resulted in improved visibility of key performance metrics and enabled easier decision-making in grading at the organizational level."
+    }
+  ],
+  "Projects": [
+    {
+      "Name": "Plant Disease Detection and Treatment (FYP)",
+      "Description": "The project uses a Convolutional Neural Network (CNN) to analyze plant images and determine if they are healthy or diseased. A FastAPI-based backend handles image upload, prediction, and model inference efficiently.",
+      "Technologies": ["CNN", "FastAPI"]
+    },
+    {
+      "Name": "Liver Cancer Detection and Diagnosis using Deep Learning (Research Project)",
+      "Description": "Developed a binary classification system using EfficientNet-B0, TinyViT, and MobileViTv2 models to detect Hepatocellular Carcinoma (HCC) from DICOM CT scan images converted to JPG format, achieving up to 98%. Deployed the trained models using FastAPI, enabling image upload, inference, and HCC prediction through a user-accessible web API.",
+      "Technologies": ["EfficientNet-B0", "TinyViT", "MobileViTv2", "FastAPI"]
+    },
+    {
+      "Name": "AI Chatbot for Financial & Stock Market",
+      "Description": "Developed an AI chatbot using Groq, Agno, and DeepSeek for financial and stock-related queries. Integrated real-time stock data using yfinance for accurate insights.",
+      "Technologies": ["Groq", "Agno", "DeepSeek", "yfinance"]
+    }
+  ]
+}

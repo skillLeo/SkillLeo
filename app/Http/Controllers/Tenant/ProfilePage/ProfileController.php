@@ -36,6 +36,11 @@ use App\Services\Auth\OnlineStatusService;
 use App\Http\Requests\Tenant\UpdateProfileRequest;
 
 
+use Intervention\Image\Laravel\Facades\Image;
+
+
+
+
 
 class ProfileController extends Controller
 {
@@ -46,6 +51,173 @@ class ProfileController extends Controller
         protected OnlineStatusService $onlineStatus
 
     ) {}
+
+
+
+
+
+
+
+
+
+    public function updateBanner(Request $request)
+    {
+        $user = Auth::user();
+
+        /** @var \App\Models\UserProfile $profile */
+        $profile = UserProfile::firstOrCreate(['user_id' => $user->id]);
+
+        $validated = $request->validate([
+            'banner_image'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,svg', 'max:8192'],
+            'banner_clear'     => ['nullable', 'boolean'],
+            'banner_fit'       => ['nullable', Rule::in(['contain', 'cover'])],
+            'banner_position'  => ['nullable', Rule::in([
+                'center center',
+                'left center',
+                'right center',
+                'center top',
+                'center bottom'
+            ])],
+            'banner_zoom'      => ['nullable', 'integer', 'min:10', 'max:200'],
+            'banner_offset_x'  => ['nullable', 'numeric'],
+            'banner_offset_y'  => ['nullable', 'numeric'],
+        ]);
+
+        $wantsJson = $request->ajax() || $request->wantsJson();
+
+        // merge prefs (only non-null keys)
+        $prefs = $profile->banner_preference ?? [];
+        $prefs = array_merge($prefs, array_filter([
+            'fit'       => $validated['banner_fit']       ?? null,
+            'position'  => $validated['banner_position']  ?? null,
+            'zoom'      => isset($validated['banner_zoom'])     ? (int)$validated['banner_zoom']     : null,
+            'offset_x'  => isset($validated['banner_offset_x']) ? (float)$validated['banner_offset_x'] : null,
+            'offset_y'  => isset($validated['banner_offset_y']) ? (float)$validated['banner_offset_y'] : null,
+        ], fn($v) => !is_null($v)));
+
+        $clearing = (bool) ($validated['banner_clear'] ?? false);
+        $uploaded = $request->file('banner_image');
+
+        // remove old file helper
+        $deleteOldIfLocal = function (?string $path) {
+            if (!$path) return;
+            $possible = $path;
+            $prefix = '/storage/';
+            if (str_contains($possible, $prefix)) {
+                $possible = ltrim(substr($possible, strpos($possible, $prefix) + strlen($prefix)), '/');
+            }
+            try {
+                if (Storage::disk('public')->exists($possible)) {
+                    Storage::disk('public')->delete($possible);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to delete old banner: ' . $e->getMessage());
+            }
+        };
+
+        if ($uploaded) {
+            // 1) write to public disk (no image lib — least moving parts)
+            $ext      = strtolower($uploaded->getClientOriginalExtension() ?: 'png');
+            $dir      = 'banners/' . $user->id;
+            $filename = 'banner_' . $user->id . '_' . time() . '.' . $ext;
+
+            Storage::disk('public')->makeDirectory($dir);
+            Storage::disk('public')->putFileAs($dir, $uploaded, $filename);
+
+            $newPath = $dir . '/' . $filename;
+
+            // 2) swap files
+            $deleteOldIfLocal($profile->banner);
+            $profile->banner = $newPath;
+
+            // sensible defaults if newly set
+            $prefs['fit']      = $prefs['fit']      ?? 'cover';
+            $prefs['position'] = $prefs['position'] ?? 'center center';
+            $prefs['zoom']     = $prefs['zoom']     ?? 100;
+            $prefs['offset_x'] = $prefs['offset_x'] ?? 0;
+            $prefs['offset_y'] = $prefs['offset_y'] ?? 0;
+        } else {
+            if ($clearing) {
+                $deleteOldIfLocal($profile->banner);
+                $profile->banner = null;
+                $prefs = [
+                    'fit'      => 'cover',
+                    'position' => 'center center',
+                    'zoom'     => 100,
+                    'offset_x' => 0,
+                    'offset_y' => 0,
+                ];
+            } else {
+                // prefs only update
+                $prefs['fit']      = $prefs['fit']      ?? ($profile->banner_preference['fit']      ?? 'cover');
+                $prefs['position'] = $prefs['position'] ?? ($profile->banner_preference['position'] ?? 'center center');
+                $prefs['zoom']     = $prefs['zoom']     ?? (int)($profile->banner_preference['zoom']     ?? 100);
+                $prefs['offset_x'] = $prefs['offset_x'] ?? (float)($profile->banner_preference['offset_x'] ?? 0);
+                $prefs['offset_y'] = $prefs['offset_y'] ?? (float)($profile->banner_preference['offset_y'] ?? 0);
+            }
+        }
+
+        $profile->banner_preference = $prefs;
+        $profile->save();
+        $profile->refresh();
+
+        $publicUrl = $profile->banner ? Storage::disk('public')->url($profile->banner) : null;
+
+        if ($wantsJson) {
+            return response()->json([
+                'success'  => true,
+                'url'      => $publicUrl,
+                'fit'      => $prefs['fit'] ?? 'cover',
+                'position' => $prefs['position'] ?? 'center center',
+                'zoom'     => (int)($prefs['zoom'] ?? 100),
+                'offset_x' => (float)($prefs['offset_x'] ?? 0),
+                'offset_y' => (float)($prefs['offset_y'] ?? 0),
+            ]);
+        }
+
+        return back()->with('status', 'Banner updated successfully.');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -60,24 +232,24 @@ class ProfileController extends Controller
                 'languages'   => fn($q) => $q->orderBy('position'),
                 'educations'  => fn($q) => $q->orderBy('position'),
                 'experiences' => fn($q) => $q->orderBy('position')->with('skills'),
-                'portfolios'  => fn($q) => $q->orderBy('position'), // ✅ Always order by position from DB
+                'portfolios'  => fn($q) => $q->orderBy('position'),
                 'services'    => fn($q) => $q->orderBy('position'),
                 'reasons'     => fn($q) => $q->orderBy('position'),
             ])
             ->where('username', $username)
             ->firstOrFail();
-
-        // ... (all your existing user/profile setup code - keep as is)
-
-        $titleCase = static fn($s) => $s !== '' ? Str::of($s)->squish()->title()->toString() : '';
+    
+        // ===== Basic user view-model =====
+        $titleCase = static fn($s) => $s !== '' ? \Illuminate\Support\Str::of($s)->squish()->title()->toString() : '';
         $first = $owner->name ?? '';
         $last  = $owner->last_name ?? '';
         $full  = trim($titleCase($first) . ' ' . $titleCase($last)) ?: ($owner->username ?? 'User');
-        $p = $owner->profile;
-        $social = is_array($p?->social_links) ? $p->social_links : [];
-        $avatar = $owner->avatar_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($full) . '&size=200&background=random');
+    
+        $p = $owner->profile; // short alias to profile
+        $social   = is_array($p?->social_links) ? $p->social_links : [];
+        $avatar   = $owner->avatar_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($full) . '&size=200&background=random');
         $location = collect([$p?->city, $p?->state, $p?->country])->filter()->join(', ');
-
+    
         $user = (object) [
             'first_name'     => $titleCase($first),
             'last_name'      => $titleCase($last),
@@ -102,25 +274,21 @@ class ProfileController extends Controller
             'last_seen_text' => $owner->last_seen_text ?? null,
             'open_to_work'   => false,
         ];
-
-        $user->services = $owner->services->sortBy('position')->pluck('title')->values()->all();
+    
+        $user->services    = $owner->services->sortBy('position')->pluck('title')->values()->all();
         $user->whyChooseMe = $owner->reasons->sortBy('position')->pluck('text')->values()->all();
-        $modalServices = $owner->services->sortBy('position')->pluck('title')->values()->all();
-        $modalReasons  = $owner->reasons->sortBy('position')->pluck('text')->values()->all();
-
+    
+        // ===== Skills summary =====
         $skillsData = $owner->skills
             ->sortBy('pivot.position')
             ->map(fn($s) => [
                 'name'       => (string) $s->name,
-                'percentage' => (int) match ((int)($s->pivot->level ?? 1)) {
-                    3       => 95,
-                    2       => 82,
-                    default => 68,
-                }
+                'percentage' => (int) match ((int)($s->pivot->level ?? 1)) { 3 => 95, 2 => 82, default => 68 },
             ])->values()->all();
-
+    
         $skillNames = $owner->skills->sortBy('pivot.position')->pluck('name')->take(8)->values()->all();
-
+    
+        // ===== Experiences list =====
         $experiences = $owner->experiences->map(function ($e) {
             $period = '';
             if ($e->start_month && $e->start_year) {
@@ -144,57 +312,43 @@ class ProfileController extends Controller
                 ])->values()->all(),
             ];
         })->values()->all();
-
-        // ✅ USER SKILLS FOR FILTERS
-        // ✅ SKILLS USED IN PROJECTS (only)
+    
+        // ===== Filters: only skills used in projects =====
         $usedSkillIds = $owner->portfolios
             ->flatMap(function ($p) {
                 $meta = is_array($p->meta) ? $p->meta : [];
                 return $meta['skill_ids'] ?? [];
             })
-            ->filter()
-            ->map(fn($id) => (int) $id)
-            ->unique()
-            ->values();
-
-        // ✅ Only those user skills that appear in at least one project
+            ->filter()->map(fn($id) => (int) $id)->unique()->values();
+    
         $userSkillsForFilters = $owner->skills
             ->whereIn('id', $usedSkillIds)
             ->map(fn($s) => [
                 'id'   => (int) $s->id,
                 'name' => (string) $s->name,
-                'slug' => \Illuminate\Support\Str::slug($s->name), // normalized (case-insensitive)
+                'slug' => \Illuminate\Support\Str::slug($s->name),
             ])
-            ->unique('slug') // avoid dupes like "React" vs "react"
-            ->values()
-            ->all();
-
-
-        // ✅ GET FILTER PREFERENCES (INCLUDING SORT ORDER)
+            ->unique('slug')->values()->all();
+    
+        // ===== Portfolios (respect sort preference) =====
         $filterPreferences = is_array($p?->filter_preferences) ? $p->filter_preferences : [];
         $sortOrder = $filterPreferences['sort_order'] ?? 'position';
-
-        // ✅ PORTFOLIOS - Fetch from DB based on sort order
+    
         $portfoliosQuery = $owner->portfolios();
-
-        // Apply sorting based on user preference
-        if ($sortOrder === 'newest') {
-            $portfoliosQuery->orderBy('created_at', 'desc');
-        } else {
-            // Default: custom order (position from DB)
-            $portfoliosQuery->orderBy('position', 'asc');
-        }
-
+        $sortOrder === 'newest'
+            ? $portfoliosQuery->orderBy('created_at', 'desc')
+            : $portfoliosQuery->orderBy('position', 'asc');
+    
         $portfolios = $portfoliosQuery->get()->map(function ($p) use ($userSkillsForFilters) {
             $meta  = is_array($p->meta) ? $p->meta : [];
             $image = $p->image_url ?: ($p->image_path ? asset('storage/' . ltrim($p->image_path, '/')) : null);
             $skillIds = $meta['skill_ids'] ?? [];
-
+    
             $skillSlugs = collect($userSkillsForFilters)
                 ->filter(fn($s) => in_array($s['id'], $skillIds))
                 ->pluck('slug')
                 ->all();
-
+    
             return [
                 'id'          => $p->id,
                 'title'       => (string) $p->title,
@@ -204,15 +358,16 @@ class ProfileController extends Controller
                 'meta'        => $meta,
                 'skill_slugs' => $skillSlugs,
                 'created_at'  => $p->created_at,
-                'position'    => $p->position, // ✅ Include DB position
+                'position'    => $p->position,
             ];
         })->values()->all();
-
+    
         $categories = array_values(array_unique(array_filter([
             'All',
             ...collect($portfolios)->pluck('category')->filter()->all(),
         ])));
-
+    
+        // ===== Education =====
         $education = $owner->educations->map(function ($e) {
             $from = $e->start_year ?: '—';
             $to   = $e->is_current ? 'Present' : ($e->end_year ?: '—');
@@ -224,7 +379,8 @@ class ProfileController extends Controller
                 'recent'      => (bool) $e->is_current,
             ];
         })->values()->all();
-
+    
+        // ===== Modal data =====
         $modalSkills = $owner->skills->values()->map(function ($s, $i) {
             return [
                 'id'       => (int) $s->id,
@@ -233,15 +389,15 @@ class ProfileController extends Controller
                 'position' => (int) ($s->pivot->position ?? $i),
             ];
         })->all();
-
+    
         $softSkillOptions = SoftSkill::query()
             ->orderBy('name')
             ->get(['slug', 'name', 'icon'])
             ->map(fn($s) => ['value' => $s->slug, 'label' => $s->name, 'icon' => $s->icon ?: 'sparkles'])
             ->values()->all();
-
+    
         $selectedSoft = $owner->softSkills->pluck('slug')->values()->all();
-
+    
         $user->softSkills = $owner->softSkills
             ->sortBy('pivot.position')
             ->map(fn($s) => [
@@ -251,24 +407,23 @@ class ProfileController extends Controller
                 'level'    => (int) ($s->pivot->level ?? 1),
                 'position' => (int) ($s->pivot->position ?? 0),
             ])->values()->all();
-
+    
         $levelLabel = fn(int $lvl) => match (true) {
             $lvl >= 4 => 'Native or Bilingual',
             $lvl === 3 => 'Professional Working',
             $lvl === 2 => 'Limited Working',
             default    => 'Elementary',
         };
-
+    
         $userLanguages = $owner->languages
             ->sortBy('position')
             ->map(fn($l) => [
                 'name'  => (string) $l->name,
                 'level' => $levelLabel((int) $l->level),
             ])->values()->all();
-
+    
         $modalLanguages = $owner->languages
-            ->sortBy('position')
-            ->values()
+            ->sortBy('position')->values()
             ->map(function ($l, $i) {
                 return [
                     'id'       => (int) $l->id,
@@ -277,12 +432,11 @@ class ProfileController extends Controller
                     'position' => (int) ($l->position ?? $i),
                 ];
             })->all();
-
+    
         $user->languages = $userLanguages;
-
+    
         $modalExperiences = $owner->experiences
-            ->sortBy('position')
-            ->values()
+            ->sortBy('position')->values()
             ->map(function ($e, $i) {
                 return [
                     'id'               => (int) $e->id,
@@ -297,30 +451,22 @@ class ProfileController extends Controller
                     'location_city'    => (string) ($e->location_city ?? ''),
                     'location_country' => (string) ($e->location_country ?? ''),
                     'description'      => (string) ($e->description ?? ''),
-                    'skills'           => collect($e->skills ?? [])
-                        ->sortBy('position')
-                        ->map(fn($s) => [
-                            'name'  => (string) $s->name,
-                            'level' => (int) ($s->level ?? 2),
-                        ])->values()->all(),
+                    'skills'           => collect($e->skills ?? [])->sortBy('position')->map(fn($s) => [
+                        'name'  => (string) $s->name,
+                        'level' => (int) ($s->level ?? 2),
+                    ])->values()->all(),
                     'position'         => (int) ($e->position ?? $i),
                 ];
             })->all();
-
+    
         $user->education = $education;
-
-        // ✅ MODAL PORTFOLIOS - Always sorted by position for editing
+    
         $modalPortfolios = $owner->portfolios
-            ->sortBy('position') // ✅ Always use DB position for modal
-            ->values()
+            ->sortBy('position')->values()
             ->map(function ($p, $i) {
                 $meta = is_array($p->meta) ? $p->meta : [];
-                $image_url = $p->image_path
-                    ? Storage::disk($p->image_disk)->url($p->image_path)
-                    : null;
-
+                $image_url = $p->image_path ? \Illuminate\Support\Facades\Storage::disk($p->image_disk)->url($p->image_path) : null;
                 $selectedSkillIds = $meta['skill_ids'] ?? [];
-
                 return [
                     'id'          => (int) $p->id,
                     'title'       => (string) ($p->title ?? ''),
@@ -333,28 +479,41 @@ class ProfileController extends Controller
                     'position'    => (int) ($p->position ?? $i),
                 ];
             })->all();
-
-        // Filter preferences
+    
+        // ===== Visible/hidden skills for filters =====
         if (count($userSkillsForFilters) > 0) {
-            $visibleSkillSlugs = $filterPreferences['visible_skills'] ??
-                collect($userSkillsForFilters)->take(6)->pluck('slug')->all();
-
+            $visibleSkillSlugs = $filterPreferences['visible_skills']
+                ?? collect($userSkillsForFilters)->take(6)->pluck('slug')->all();
+    
             $visibleSkills = collect($userSkillsForFilters)
                 ->filter(fn($s) => in_array($s['slug'], $visibleSkillSlugs))
-                ->values()
-                ->all();
-
+                ->values()->all();
+    
             $hiddenSkills = collect($userSkillsForFilters)
                 ->reject(fn($s) => in_array($s['slug'], $visibleSkillSlugs))
-                ->values()
-                ->all();
+                ->values()->all();
         } else {
             $visibleSkills = [];
-            $hiddenSkills = [];
+            $hiddenSkills  = [];
         }
-
+    
+        // ===== Banner: attach to $user (so Blade can use $user->banner_url etc.) =====
+        $bannerUrl     = ($p && $p->banner) ? Storage::disk('public')->url($p->banner) : null;
+        $bp            = is_array($p?->banner_preference) ? $p->banner_preference : [];
+        $bannerVersion = $p && $p->updated_at ? $p->updated_at->getTimestamp() : time();
+        
+        // Merge onto the $user object that Blade uses
+        $user->banner_url      = $bannerUrl;
+        $user->banner_fit      = $bp['fit']      ?? 'cover';
+        $user->banner_position = $bp['position'] ?? 'center center';
+        $user->banner_zoom     = (int)   ($bp['zoom'] ?? 100);
+        $user->banner_offset_x = (float) ($bp['offset_x'] ?? 0);
+        $user->banner_offset_y = (float) ($bp['offset_y'] ?? 0);
+        $user->banner_version  = $bannerVersion;
+    
+        // ===== Misc =====
         $LIMITS = ['projects' => 3];
-
+    
         return view('tenant.profile.index', [
             'brandName'            => config('app.name', 'SkillLeo'),
             'user'                 => $user,
@@ -371,22 +530,22 @@ class ProfileController extends Controller
             'selectedSoft'         => $selectedSoft,
             'modalLanguages'       => $modalLanguages,
             'modalExperiences'     => $modalExperiences,
-            'modalServices'        => $modalServices,
-            'modalReasons'         => $modalReasons,
+            'modalServices'        => $owner->services->sortBy('position')->pluck('title')->values()->all(),
+            'modalReasons'         => $owner->reasons->sortBy('position')->pluck('text')->values()->all(),
             'modalPortfolios'      => $modalPortfolios,
-            'portfolios'           => $portfolios, // ✅ Already sorted by DB
+            'portfolios'           => $portfolios,
             'userSkillsForFilters' => $userSkillsForFilters,
             'visibleSkills'        => $visibleSkills,
             'hiddenSkills'         => $hiddenSkills,
             'sortOrder'            => $sortOrder,
-            'sortedPortfolios'     => $portfolios, // ✅ Same as portfolios
+            'sortedPortfolios'     => $portfolios,
             'visibleProjects'      => collect($portfolios)->take($LIMITS['projects']),
             'totalProjects'        => count($portfolios),
             'LIMITS'               => $LIMITS,
             'userSkills'           => $owner->skills,
         ]);
     }
-
+    
 
     public function updatePortfolio(Request $request)
     {
@@ -513,7 +672,7 @@ class ProfileController extends Controller
             return back()->with('success', 'Portfolio updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Portfolio update failed: ' . $e->getMessage());
+            Log::error('Portfolio update failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to update portfolio: ' . $e->getMessage());
         }
     }

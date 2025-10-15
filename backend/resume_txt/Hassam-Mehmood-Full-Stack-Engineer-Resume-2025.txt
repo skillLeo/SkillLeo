@@ -1,0 +1,118 @@
+HASSAM MEHMOOD
+SENIOR FULL-STACK DEVELOPER & TECHNICAL ENTREPRENEUR
+Sargodha, Punjab | hassam@skillleo.com | www.linkedin.com/in/hassam571
+SUMMARY
+Elite Full-Stack Developer with 5+ years of comprehensive experience delivering enterprise-level solutions
+across 11+ countries. CEO & Founder of CodefiXXer, leading innovative development projects while
+maintaining hands-on technical excellence. Proven track record of 100+ successful projects with expertise
+spanning from complex SaaS architectures to pixel-perfect frontend experiences.
+Unique Value Proposition: Multi-talented professional combining technical mastery with business acumen -
+serving simultaneously as Developer, Project Manager, Team Leader, and Client Relations Specialist.
+TECHNICAL SKILLS
+PHP Laravel Tailwind CSS GitHub/CI-CD pipeline
+PHP Core Vanilla JS Database Expert
+CodeIgniter React JS Problem Solving/Bug Resolving
+PROFESSIONAL EXPERIENCE
+Codefixxer | CEO & Founder Jan 2024 – 2025
+Revolutionary Leadership Role: Established and scaled a full-service development firm specializing in
+enterprise solutions.
+Key Responsibilities:
+Strategic Vision: Define company direction and technology adoption strategies
+Team Management: Lead 3-4 specialists across frontend, backend, and DevOps
+Client Relations: Direct communication with C-level executives and technical decision-makers
+Technical Architecture: Design scalable solutions for complex business requirements
+Quality Assurance: Maintain 95%+ client satisfaction through rigorous project management
+Notable Achievements:
+Successfully delivered 55+ applications across multiple industries
+Expanded client base to 11+ countries within first year
+Implemented innovative SaaS solutions reducing client operational costs by 40%
+Freelance Full-Stack Developer | Multiple Platforms 2022 – Present
+Elite Freelancer Status: Top-rated seller across multiple platforms with exceptional track record.
+Fiverr: 3 active accounts, former top-rated seller status
+LinkedIn: Direct client acquisition through professional networking
+Project Highlights:
+100+ successfully delivered projects
+Specialization in Laravel SaaS applications and complex database systems
+Consistent 5-star ratings and repeat client relationships
+Virtual University | Laravel Developer Aug 2022 – Feb 2023
+Advanced Development Role: Enhanced multiple Laravel-based educational platforms
+Optimized database queries reducing response times by 40%
+Introduced best practices in code organization and debugging
+Mentored junior developers in Laravel framework mastery
+Mawk Tech, Sargodha | Database Developer Oct 2021 – July 2022
+Enterprise System Development: Built robust Core PHP + MySQL backends for mission-critical applications.
+Project Portfolio:
+E-voting systems with advanced security measures
+E-commerce platforms with complex inventory management
+Database architecture design for scalable applications
+Logix College, Sargodha | Remote Web Developer Dec 2020 – Mar 2021
+Foundation Building Experience: Gained practical experience in collaborative development environments.
+Key Learning:
+Responsive template development with HTML, CSS, JavaScript
+Backend service integration
+Team collaboration and project coordination
+EDUCATIONAL BACKGROUND
+University of Lahore | Bachelor of Computer Science 2021 – 2025
+CGPA: 3.22 | Remarkable Academic Growth Story
+Academic Excellence Narrative:
+Early Challenge: Initial 3 semesters with GPA 2.0-2.5 due to adaptation period
+Dramatic Improvement: Final 4 semesters with consistent 3.3-3.6 GPA
+Specialized Focus: Advanced coursework in web development, database design, system
+architecture
+Project Leadership: Multiple industry-linked projects in PHP, Laravel, MySQL, and APIs
+Key Achievements:
+Competition victories in programming and database development
+Certified trainer for peer education programs
+Active participation in university technical societies
+CORE TECHNICAL EXPERTISE
+Backend Mastery
+PHP (Core): 5+ years - Advanced OOP, design patterns, performance optimization
+Laravel Framework: 3+ years - SaaS architecture, API development, complex database management
+MySQL Database: Expert-level query optimization, schema design, performance tuning
+RESTful APIs: Advanced integration and development capabilities
+Frontend Excellence
+HTML5/CSS3: 5+ years | Tailwind CSS: 4+ years | JavaScript: 5+ years | React.js: 4+ months
+Development Operations
+Git & Version Control | CI/CD Pipeline | Production Management | Domain setup | server
+configuration (live deployment) | Performance Optimization
+Specialized Skills
+AI Tool Integration | Chatbot Integration | Multi-tenant SaaS | Project Management
+And Many More
+WHY CHOOSE ME?
+Multi-Dimensional Expertise
+Rare Combination: Technical excellence merged with business acumen and leadership capabilities
+Developer: Deep technical knowledge across full-stack technologies
+Project Manager: Proven ability to deliver complex projects on time and within budget
+Team Leader: Experience managing and mentoring technical teams
+CEO/Entrepreneur: Strategic thinking and business development skills
+Client Relations: Direct communication with stakeholders at all levels
+Performance Differentiators
+Rapid Delivery: Leveraging AI tools and smart workflows for accelerated development
+Quality Assurance: 95%+ client satisfaction rate across all engagements
+Problem Solving: Expertise in handling complex technical challenges and edge cases
+Adaptability: Quick learning curve for new technologies and frameworks
+Communication: Clear, professional client interaction and project updates
+Global Experience
+Multi-Cultural Projects: Successfully delivered solutions across diverse markets
+Time Zone Management: Experienced in coordinating projects across different regions
+Industry Versatility: Healthcare, Education, Finance, E-commerce, Enterprise solutions
+Scalable Architecture: Designed systems serving users across multiple countries
+SOFT SKILLS
+Leadership & Management | Problem-Solving | Business Development | Project Leading
+ACHIEVEMENTS & CERTIFICATES
+Academic Excellence Journey
+Started university with challenging GPA of 2.0-2.5 in initial semesters, then achieved consistent 3.3-3.6
+GPA in final four semesters, demonstrating exceptional growth mindset and determination. Overall
+CGPA: 3.22 from University of Lahore.
+Certificates
+1st Position: Speed Programming Competition, University of Lahore (Certificate & Shield Award)
+2nd Position: Database Programming Competition, University of Lahore
+Excellence in Training: Certified trainer for junior students in advanced technologies
+REFERENCES & PORTFOLIO
+100+ Projects Delivered: Spanning Core PHP, Laravel, React.js, and full-stack solutions
+Professional References (upon request) | Live Portfolio is available on github.com/codefixxer | Client
+Testimonials on Fiverr with 100% (5 Star) | Project Demonstrations are Available for scheduled technical
+interviews
+Transforming complex business challenges into elegant digital solutions through innovation, dedication,
+and technical excellence.
+READY TO DELIVER EXCEPTIONAL RESULTS FOR YOUR NEXT PROJECT :)

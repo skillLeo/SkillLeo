@@ -1,5 +1,7 @@
 <?php
 
+
+
     namespace App\Models;
 
     use App\Models\Skill;
@@ -22,6 +24,7 @@
     use Illuminate\Database\Eloquent\Relations\HasMany;
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+    use Illuminate\Support\Facades\Storage;
 
     class User extends Authenticatable
     {
@@ -146,14 +149,7 @@
         {
             return $this->hasMany(OAuthIdentity::class);
         }
-
-        // ============================================
-        // ✅ TIMEZONE-AWARE ATTRIBUTES (FIXED - NO DUPLICATES)
-        // ============================================
-
-        /**
-         * Check if user is currently online
-         */
+ 
         public function getIsOnlineAttribute(): bool
         {
             return app(OnlineStatusService::class)->isOnline($this);
@@ -467,5 +463,79 @@
         ->withPivot(['level', 'position'])
         ->orderBy('user_skills.position');
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+    public function getBannerUrlAttribute(): ?string
+    {
+        $path = $this->profile->banner ?? null;
+        if (!$path) return null;
+        if (filter_var($path, FILTER_VALIDATE_URL)) return $path;
+        return Storage::disk('public')->url($path);
+    }
+    
+    public function getBannerFitAttribute(): string
+    {
+        return $this->profile->banner_preference['fit'] ?? 'cover';
+    }
+    
+    public function getBannerPositionAttribute(): string
+    {
+        return $this->profile->banner_preference['position'] ?? 'center center';
+    }
+    
+    public function getBannerZoomAttribute(): int
+    {
+        return (int)($this->profile->banner_preference['zoom'] ?? 100);
+    }
+    
+    public function getBannerOffsetXAttribute(): float
+    {
+        return (float)($this->profile->banner_preference['offset_x'] ?? 0);
+    }
+    
+    public function getBannerOffsetYAttribute(): float
+    {
+        return (float)($this->profile->banner_preference['offset_y'] ?? 0);
+    }
+    
+
+
+
+
+
+
 
     }

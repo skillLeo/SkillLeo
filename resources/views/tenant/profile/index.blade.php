@@ -123,16 +123,289 @@
             {{-- Main Content --}}
             <main class="main-content">
                 {{-- Hero Banner --}}
-                <div class="hero-banner">
-                    <div class="hero-logo">
-                        <span>&lt;&lt;&lt;</span>
-                        <span>{{ $brandName ?? 'Portfolio' }}</span>
-                    </div>
-                    <button class="ask-leo-btn">
-                        <i class="fas fa-sparkles"></i>
-                        Ask Leo Ai
-                    </button>
-                </div>
+           {{-- Hero Banner --}}
+
+           
+
+
+
+
+
+
+
+           
+
+
+
+
+
+
+
+           
+
+{{-- LinkedIn-Style Banner Only (No Profile Section) --}}
+<div class="banner-section" style="position:relative;width:100%;margin-bottom:20px;">
+    <div class="banner-wrapper" style="position:relative;width:100%;height:200px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:0;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+        
+        {{-- @if($user->banner_url ?? null) --}}
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;">
+                <img id="heroBannerImage"
+                src="{{ $user->banner_url }}?v={{ $user->banner_version }}"
+                alt="Banner"
+                style="
+                   width:100%;
+                   height:100%;
+                   object-fit: {{ $user->banner_fit }};
+                   object-position: {{ $user->banner_position }};
+                   transform: scale({{ max($user->banner_zoom,10) / 100 }})
+                             translate({{ $user->banner_offset_x }}px, {{ $user->banner_offset_y }}px);
+                   transform-origin: center center;
+                ">
+           
+            </div>
+        {{-- @else
+            <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.1;background-image:radial-gradient(circle at 20% 50%, white 1px, transparent 1px);background-size:30px 30px;"></div>
+            </div>
+        @endif --}}
+
+        {{-- Overlay Buttons Container --}}
+        <div style="position:absolute;top:16px;right:16px;display:flex;gap:12px;z-index:10;">
+            
+            {{-- AI Ask Leo Button with Beta Badge --}}
+            <button class="ask-leo-ai-btn" 
+                    onclick="openAiAssistant()"
+                    style="
+                        position:relative;
+                        background:rgba(255,255,255,0.95);
+                        backdrop-filter:blur(10px);
+                        border:1px solid rgba(139,92,246,0.3);
+                        border-radius:10px;
+                        padding:10px 18px;
+                        cursor:pointer;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                        font-weight:600;
+                        font-size:14px;
+                        color:#6366f1;
+                        transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow:0 4px 16px rgba(99,102,241,0.2), 0 0 0 1px rgba(139,92,246,0.1) inset;
+                        overflow:visible;
+                    "
+                    onmouseover="this.style.transform='translateY(-2px) scale(1.02)';this.style.boxShadow='0 8px 24px rgba(99,102,241,0.35), 0 0 0 1px rgba(139,92,246,0.2) inset';this.style.borderColor='rgba(139,92,246,0.5)';"
+                    onmouseout="this.style.transform='translateY(0) scale(1)';this.style.boxShadow='0 4px 16px rgba(99,102,241,0.2), 0 0 0 1px rgba(139,92,246,0.1) inset';this.style.borderColor='rgba(139,92,246,0.3)';">
+                
+                {{-- AI Sparkle Icon --}}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="position:relative;">
+                    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" 
+                          fill="url(#sparkleGradient)" 
+                          stroke="url(#sparkleGradient)" 
+                          stroke-width="1.5" 
+                          stroke-linecap="round" 
+                          stroke-linejoin="round">
+                        <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite"/>
+                    </path>
+                    <circle cx="18" cy="6" r="1.5" fill="url(#sparkleGradient)">
+                        <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="6" cy="18" r="1" fill="url(#sparkleGradient)">
+                        <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    <defs>
+                        <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                
+                <span style="background:linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;">
+                    Ask Leo AI
+                </span>
+                
+                {{-- Beta Badge --}}
+                <span style="
+                    position:absolute;
+                    top:-8px;
+                    right:-8px;
+                    background:linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+                    color:white;
+                    font-size:9px;
+                    font-weight:800;
+                    padding:2px 6px;
+                    border-radius:6px;
+                    text-transform:uppercase;
+                    letter-spacing:0.5px;
+                    box-shadow:0 2px 8px rgba(239,68,68,0.4);
+                    animation:pulse-beta 2s infinite;
+                ">BETA</span>
+            </button>
+
+            {{-- Edit Banner Button --}}
+            <button class="edit-banner-btn" 
+                    aria-label="Edit Banner" 
+                    onclick="openModal('editBannerModal')"
+                    style="
+                        background:rgba(255,255,255,0.95);
+                        backdrop-filter:blur(10px);
+                        border:1px solid rgba(0,0,0,0.08);
+                        border-radius:10px;
+                        padding:10px 16px;
+                        cursor:pointer;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;
+                        font-weight:600;
+                        font-size:14px;
+                        color:#374151;
+                        transition:all 0.2s ease;
+                        box-shadow:0 2px 8px rgba(0,0,0,0.1);
+                    "
+                    onmouseover="this.style.background='white';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';this.style.transform='translateY(-1px)';"
+                    onmouseout="this.style.background='rgba(255,255,255,0.95)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';this.style.transform='translateY(0)';">
+                
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                
+                <span class="edit-text">Edit</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @keyframes pulse-beta {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+    }
+    .banner-section{border-radius: var(--radius)
+    ; overflow: hidden
+    }
+
+    .ask-leo-ai-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 10px;
+        padding: 1px;
+        background: linear-gradient(135deg, #8b5cf6, #6366f1, #3b82f6);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .ask-leo-ai-btn:hover::before {
+        opacity: 0.6;
+    }
+
+    @media (max-width: 768px) {
+        .banner-wrapper {
+            height: 150px !important;
+            border-radius: 0 !important;
+        }
+        
+        .edit-banner-btn .edit-text {
+            display: none;
+        }
+        
+        .edit-banner-btn {
+            padding: 10px !important;
+            border-radius: 50% !important;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+        }
+        
+        .ask-leo-ai-btn {
+            padding: 8px 14px !important;
+            font-size: 13px !important;
+        }
+        
+        .ask-leo-ai-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .banner-wrapper {
+            height: 120px !important;
+        }
+    }
+</style>
+
+<script>
+    function openAiAssistant() {
+        // Your AI assistant modal/functionality here
+        console.log('Opening AI Assistant...');
+        // Example: openModal('aiAssistantModal');
+        alert('AI Assistant feature coming soon!');
+    }
+</script>
+
+
+<script>
+    if (data && data.success) {
+  const img = document.getElementById('heroBannerImage');
+  if (img && data.url) {
+    img.src = data.url + '?v=' + Date.now(); // <- force fresh image
+    img.style.objectFit = data.fit || 'cover';
+    img.style.objectPosition = data.position || 'center center';
+    img.style.transform = `scale(${(data.zoom||100)/100}) translate(${data.offset_x||0}px, ${data.offset_y||0}px)`;
+  }
+  closeModal('editBannerModal');
+  return;
+}
+
+</script>
+
+
+           
+
+
+
+
+
+
+
+           
+
+
+
+
+
+
+
+           
+
+
+
+
+
+
+
+           
+
+
+
+
+
 
 
 
@@ -559,7 +832,11 @@
     <x-modals.edits.edit-languages :modal-languages="$modalLanguages" />
     <x-modals.edits.edit-services :services="$modalServices" />
     <x-modals.edits.edit-why-choose :reasons="$modalReasons" />
+    <x-modals.edits.edit-banner
+    :user="$user"
 
+  />
+  
 
 
     {{-- See All Modals --}}
@@ -574,7 +851,15 @@
 
     <x-modals.edits.edit-top-skills :modal-skills="$modalSkills" />
     <x-modals.edits.edit-soft-skills :soft-skill-options="$softSkillOptions" :selected-soft="$selectedSoft" />
-
+<script>
+        // Load existing banner when modal opens
+        window.addEventListener('modal:opened', function(e) {
+      if (e.detail === 'editBannerModal' && initialUrl) {
+        // Small delay to ensure canvas is sized
+        setTimeout(() => loadImage(initialUrl), 100);
+      }
+    });
+</script>
     <script>
         (function() {
             'use strict';
@@ -905,20 +1190,23 @@
 
         // Global modal functions
         function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            }
-        }
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    // 👉 notify listeners that a modal just opened
+    window.dispatchEvent(new CustomEvent('modal:opened', { detail: modalId }));
+  }
+}
 
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-        }
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    window.dispatchEvent(new CustomEvent('modal:closed', { detail: modalId }));
+  }
+}
 
         // Close modal on overlay click
         document.addEventListener('click', function(e) {

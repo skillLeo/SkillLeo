@@ -11,7 +11,7 @@ class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, ?string $role = null): Response
     {
-        if (! Auth::check()) {
+        if (! Auth::check()) {  
             return redirect()->route('auth.login')->with('error', 'Please login to access this page.');
         }
 

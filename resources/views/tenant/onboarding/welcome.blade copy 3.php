@@ -9,7 +9,7 @@
             AI-Powered Setup
         </x-onboarding.badge>
 
-        <h1 class="welcome-title">Build your <div class="gradient-text">Professional Profile</div></h1>
+        <h1 class="welcome-title">Build your <span class="gradient-text">professional profile</span></h1>
         <p class="welcome-subtitle">
             Upload your CV for instant AI setup, or build from scratch. Takes under 5 minutes.
         </p>

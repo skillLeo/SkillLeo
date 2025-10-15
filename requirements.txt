@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pdfplumber
+pypdfium2
+python-docx
+docx2txt
+crewai
+openai
+langchain-openai

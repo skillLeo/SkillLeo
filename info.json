@@ -1,0 +1,63 @@
+{
+  "Name": "MUHAMMAD USMAN KHALIL",
+  "About": "AI ENGINEER / WEB DEVELOPER",
+  "Education": [
+    {
+      "Degree": "Bachelor of Science in Computer Science",
+      "Institution": "University of Lahore (Sgd Campus)",
+      "Year": "Oct 2021 - June 2025",
+      "Major": "AI & ML",
+      "FYP": "Technological Advancements within the current Agriculture Industry"
+    }
+  ],
+  "Skills": [
+    "Machine Learning (tensorflow, Multi agentic AI, n8n)",
+    "Web development (django, pytorch)",
+    "LangChain",
+    "Dialogflow",
+    "PHP",
+    "React",
+    "FastAPI",
+    "Neural Network(keras)",
+    "Data Analyst (Excel, python, Dockor, Github, PowerBI)",
+    "Process Automation"
+  ],
+  "Experience": [
+    {
+      "Title": "Database Intern",
+      "Company": "University Of Lahore (SGD campus)",
+      "Duration": "",
+      "Description": "Developed and implemented an organizational database to oversee student assessments, including quizzes and assignments, which resulted in improved visibility of key performance metrics and enabled easier decision-making in grading at the organizational level."
+    }
+  ],
+  "Projects": [
+    {
+      "Name": "Plant Disease Detection and Treatment (FYP)",
+      "Description": "The project uses a Convolutional Neural Network (CNN) to analyze plant images and determine if they are healthy or diseased. A FastAPI-based backend handles image upload, prediction, and model inference efficiently.",
+      "Technologies": [
+        "CNN",
+        "FastAPI"
+      ]
+    },
+    {
+      "Name": "Liver Cancer Detection and Diagnosis using Deep Learning (Research Project)",
+      "Description": "Developed a binary classification system using EfficientNet-B0, TinyViT, and MobileViTv2 models to detect Hepatocellular Carcinoma (HCC) from DICOM CT scan images converted to JPG format, achieving up to 98%. Deployed the trained models using FastAPI, enabling image upload, inference, and HCC prediction through a user-accessible web API.",
+      "Technologies": [
+        "EfficientNet-B0",
+        "TinyViT",
+        "MobileViTv2",
+        "FastAPI"
+      ]
+    },
+    {
+      "Name": "AI Chatbot for Financial & Stock Market",
+      "Description": "Developed an AI chatbot using Groq, Agno, and DeepSeek for financial and stock-related queries. Integrated real-time stock data using yfinance for accurate insights.",
+      "Technologies": [
+        "Groq",
+        "Agno",
+        "DeepSeek",
+        "yfinance"
+      ]
+    }
+  ]
+}

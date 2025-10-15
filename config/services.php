@@ -25,6 +25,12 @@ return [
 
 ],
 
+'cv_ai' => [
+    'base_url'    => env('CV_AI_BASE_URL', 'http://127.0.0.1:8000'),
+    'upload_path' => env('CV_AI_UPLOAD_PATH', '/upload_resume/'),
+    'timeout'     => (int) env('CV_AI_TIMEOUT', 120),
+],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

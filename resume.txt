@@ -1,0 +1,47 @@
+MUHAMMAD USMAN KHALIL
+AI ENGINEER / WEB DEVELOPER
+Punjab,Pakistan | usman.data002@gmail.com | +923098906870
+Experienced in AI, machine learning, neural networks, and agentic AI using Python, TensorFlow, and Keras.
+Proficient in deploying production-ready API solutions with React, Django, and FastAPI. Skilled in building
+intelligent systems including multi agentic AI chatbots with RAG and voice agents using LangGraph for real-
+time, context-aware interactions. Strong background in full-stack web development using PHP, SQL,
+Django, and React. Experienced with Power BI for data-driven decision-making and adept at data
+visualization to effectively communicate complex insights and drive informed strategies.
+AREA OF EXPERTISE
+Machine Learning (tensorflow, Multi agentic AI, n8n Web development (django,
+pytorch) LangChain, Dialogflow PHP, React, FastAPI )
+Neural Network(keras) Data Analyst (Excel , python , Dockor, Github
+PowerBI) Process Automation
+PROFESSIONAL EXPERIENCE
+University Of Lahore (SGD campus)
+Database Intern
+Developed and implemented an organizational database to oversee student assessments, including quizzes and
+assignments, which resulted in improved visibility of key performance metrics and enabled easier decision-
+making in grading at the organizational level.
+PROJETS
+Plant Disease Detection and Treatment (FYP)
+The project uses a Convolutional Neural Network (CNN) to analyze plant images and determine if they are
+healthy or diseased.
+A FastAPI-based backend handles image upload, prediction , and model inference efficiently
+Liver Cancer Detection and Diagnosis using Deep Learning (Research Project)
+Developed a binary classification system using EfficientNet-B0, TinyViT, and MobileViTv2 models to detect Hepatocellular
+Carcinoma (HCC) from DICOM CT scan images converted to JPG format, achieving up to 98%.
+Deployed the trained models using FastAPI, enabling image upload, inference, and HCC prediction through a user-
+accessible web API.
+AI Chatbot for Financial & Stock Market
+Developed an AI chatbot using Groq, Agno, and DeepSeek for financial and stock-related queries.
+Integrated real-time stock data using yfinance for accurate insights.
+EDUCATION
+Bachelor of Science in Computer Science Oct 2021 - June 2025
+University of Lahore (Sgd Campus)
+Major in AI & ML.
+FYP on "Technological Advancements within the current Agriculture Industry”.
+ADDITIONAL INFORMATION
+Languages: English, Urdu.
+Certifications: Probability & Stat for ML (coursera) , Ethical Hacker Course (Cisco) , Data Analytics & AI
+workshop (atomcamp).
+Awards/Activities: First Position in speed programming competition(2024), Onboarding Project Lead in
+internship.
+LINKS
+www.linkedin.com/in/khalilusman70
+https://github.com/khalilusman

@@ -15,6 +15,8 @@ class UserProfile extends Model
         'city',
         'tagline',
         'bio',
+        'banner',
+        'banner_preference',
         'social_links',
         'filter_preferences',
         'meta',
@@ -22,6 +24,7 @@ class UserProfile extends Model
 
     protected $casts = [
         'social_links' => 'array',
+        'banner_preference' => 'array',
         'meta' => 'array',
     'filter_preferences' => 'array', 
     ];

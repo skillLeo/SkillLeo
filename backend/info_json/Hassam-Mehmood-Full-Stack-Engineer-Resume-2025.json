@@ -1,0 +1,105 @@
+{
+  "Name": "Hassam Mehmood",
+  "About": "Elite Full-Stack Developer with 5+ years of comprehensive experience delivering enterprise-level solutions across 11+ countries. CEO & Founder of CodefiXXer, leading innovative development projects while maintaining hands-on technical excellence. Proven track record of 100+ successful projects with expertise spanning from complex SaaS architectures to pixel-perfect frontend experiences. Unique Value Proposition: Multi-talented professional combining technical mastery with business acumen - serving simultaneously as Developer, Project Manager, Team Leader, and Client Relations Specialist.",
+  "Education": [
+    {
+      "Degree": "Bachelor of Computer Science",
+      "Institution": "University of Lahore",
+      "Year": "2021 – 2025",
+      "CGPA": "3.22"
+    }
+  ],
+  "Skills": [
+    "PHP",
+    "Laravel",
+    "Tailwind CSS",
+    "GitHub/CI-CD pipeline",
+    "PHP Core",
+    "Vanilla JS",
+    "Database Expert",
+    "CodeIgniter",
+    "React JS",
+    "Problem Solving/Bug Resolving"
+  ],
+  "Experience": [
+    {
+      "Title": "CEO & Founder",
+      "Company": "Codefixxer",
+      "Duration": "Jan 2024 – 2025",
+      "Description": [
+        "Revolutionary Leadership Role: Established and scaled a full-service development firm specializing in enterprise solutions.",
+        "Key Responsibilities:",
+        "Strategic Vision: Define company direction and technology adoption strategies",
+        "Team Management: Lead 3-4 specialists across frontend, backend, and DevOps",
+        "Client Relations: Direct communication with C-level executives and technical decision-makers",
+        "Technical Architecture: Design scalable solutions for complex business requirements",
+        "Quality Assurance: Maintain 95%+ client satisfaction through rigorous project management",
+        "Notable Achievements:",
+        "Successfully delivered 55+ applications across multiple industries",
+        "Expanded client base to 11+ countries within first year",
+        "Implemented innovative SaaS solutions reducing client operational costs by 40%"
+      ]
+    },
+    {
+      "Title": "Freelance Full-Stack Developer",
+      "Company": "Multiple Platforms",
+      "Duration": "2022 – Present",
+      "Description": [
+        "Elite Freelancer Status: Top-rated seller across multiple platforms with exceptional track record.",
+        "Fiverr: 3 active accounts, former top-rated seller status",
+        "LinkedIn: Direct client acquisition through professional networking",
+        "Project Highlights:",
+        "100+ successfully delivered projects",
+        "Specialization in Laravel SaaS applications and complex database systems",
+        "Consistent 5-star ratings and repeat client relationships"
+      ]
+    },
+    {
+      "Title": "Laravel Developer",
+      "Company": "Virtual University",
+      "Duration": "Aug 2022 – Feb 2023",
+      "Description": [
+        "Advanced Development Role: Enhanced multiple Laravel-based educational platforms",
+        "Optimized database queries reducing response times by 40%",
+        "Introduced best practices in code organization and debugging",
+        "Mentored junior developers in Laravel framework mastery"
+      ]
+    },
+    {
+      "Title": "Database Developer",
+      "Company": "Mawk Tech, Sargodha",
+      "Duration": "Oct 2021 – July 2022",
+      "Description": [
+        "Enterprise System Development: Built robust Core PHP + MySQL backends for mission-critical applications.",
+        "Project Portfolio:",
+        "E-voting systems with advanced security measures",
+        "E-commerce platforms with complex inventory management",
+        "Database architecture design for scalable applications"
+      ]
+    },
+    {
+      "Title": "Remote Web Developer",
+      "Company": "Logix College, Sargodha",
+      "Duration": "Dec 2020 – Mar 2021",
+      "Description": [
+        "Foundation Building Experience: Gained practical experience in collaborative development environments.",
+        "Key Learning:",
+        "Responsive template development with HTML, CSS, JavaScript",
+        "Backend service integration",
+        "Team collaboration and project coordination"
+      ]
+    }
+  ],
+  "Projects": [
+    {
+      "Name": "E-voting systems",
+      "Description": "Built with advanced security measures.",
+      "Technologies": ["Core PHP", "MySQL"]
+    },
+    {
+      "Name": "E-commerce platforms",
+      "Description": "Developed with complex inventory management.",
+      "Technologies": ["Core PHP", "MySQL"]
+    }
+  ]
+}
