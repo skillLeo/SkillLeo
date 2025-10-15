@@ -1,5 +1,5 @@
 @extends('marketing.layouts.app')
-@section('title', 'Index One')
+@section('title', 'Home')
 @section('content')
 
     <!-- header area -->
