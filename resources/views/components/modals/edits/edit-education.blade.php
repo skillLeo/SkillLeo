@@ -1,146 +1,145 @@
-@props(['modalReviews' => []])
+@props(['modalEducations' => []])
 
-<x-modals.edits.base-modal id="editReviewsModal" title="Client Reviews" size="lg">
-    <form id="reviewsModalForm" method="POST" action="{{ route('tenant.reviews.update') }}">
+<x-modals.edits.base-modal id="editEducationModal" title="Education" size="lg">
+    <form id="educationModalForm" method="POST" action="{{ route('tenant.education.update') }}">
         @csrf
         @method('PUT')
 
-        {{-- Reviews Container --}}
-        <div class="reviews-container" id="reviewsContainer">
+        {{-- Education Container --}}
+        <div class="edu-container" id="eduContainer">
             <div class="empty-state" id="emptyState">
                 <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                 </svg>
-                <p>No reviews added yet</p>
-                <span>Add client testimonials to build trust</span>
+                <p>No education added yet</p>
+                <span>Add your highest qualification first</span>
             </div>
-            <div class="reviews-list" id="reviewsList"></div>
+            <div class="edu-list" id="eduList"></div>
         </div>
 
         {{-- Add Button --}}
-        <button type="button" class="add-btn" id="addReviewBtn">
+        <button type="button" class="add-btn" id="addEduBtn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            Add Review
+            Add Education
         </button>
 
-        <input type="hidden" name="reviews" id="reviewsData">
+        <input type="hidden" name="educations" id="educationData">
     </form>
 
     <x-slot:footer>
-        <button type="button" class="btn-modal btn-cancel" onclick="closeModal('editReviewsModal')">Cancel</button>
-        <button type="submit" form="reviewsModalForm" class="btn-modal btn-save" id="saveReviewsBtn">Save Changes</button>
+        <button type="button" class="btn-modal btn-cancel" onclick="closeModal('editEducationModal')">Cancel</button>
+        <button type="submit" form="educationModalForm" class="btn-modal btn-save" id="saveEducationsBtn">Save Changes</button>
     </x-slot:footer>
 </x-modals.edits.base-modal>
 
 <script>
-const existingReviews = @json($modalReviews ?? []);
+// Load existing educations from server
+const existingEducations = @json($modalEducations ?? []);
+const INST_API = @json(route('api.institutions.search'));
 
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    let reviews = [];
+    let educations = [];
     let editingId = null;
     let counter = 0;
 
-    const CONTENT_MAX = 500;
-    const IMG_MAX_W = 400;
-    const IMG_MAX_H = 400;
-    const IMG_QUALITY = 0.88;
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
 
     const el = {
-        container: document.getElementById('reviewsContainer'),
-        list: document.getElementById('reviewsList'),
+        container: document.getElementById('eduContainer'),
+        list: document.getElementById('eduList'),
         empty: document.getElementById('emptyState'),
-        addBtn: document.getElementById('addReviewBtn'),
-        saveBtn: document.getElementById('saveReviewsBtn'),
-        dataInput: document.getElementById('reviewsData'),
+        addBtn: document.getElementById('addEduBtn'),
+        saveBtn: document.getElementById('saveEducationsBtn'),
+        dataInput: document.getElementById('educationData'),
     };
 
-    const esc = (s) => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const esc = t => {
+        const d = document.createElement('div');
+        d.textContent = t || '';
+        return d.innerHTML;
+    };
+
+    const deb = (f, d) => {
+        let t;
+        return (...a) => {
+            clearTimeout(t);
+            t = setTimeout(() => f(...a), d);
+        };
+    };
 
     // Load existing data
     function loadExisting() {
-        reviews = existingReviews.map((r, i) => ({
-            id: r.id || ++counter,
-            client_name: String(r.client_name || ''),
-            title: String(r.title || ''),
-            location: String(r.location || ''),
-            content: String(r.content || ''),
-            image: r.image_url || r.image_path || r.image || '',
-            image_path: r.image_path || '',
-            image_disk: r.image_disk || 'public',
-            db_id: r.db_id || null
+        educations = existingEducations.map((e, i) => ({
+            id: e.id || ++counter,
+            school: String(e.school || ''),
+            institution_id: e.institution_id || null,
+            degree: String(e.degree || ''),
+            field: String(e.field_of_study || e.field || ''),
+            startYear: e.start_year || '',
+            endYear: e.end_year || '',
+            current: !!e.is_current,
+            db_id: e.id || null
         }));
-        counter = Math.max(counter, ...reviews.map(r => r.id));
+        counter = Math.max(counter, ...educations.map(e => e.id));
     }
 
     function updateSaveButton() {
-        const hasValidReview = reviews.length > 0 && reviews.some(r => r.client_name && r.content);
+        const hasValid = educations.length > 0 && educations.some(e => e.school && e.degree);
         const isEditing = editingId !== null;
-        if (el.saveBtn) {
-            el.saveBtn.disabled = !hasValidReview || isEditing;
-        }
+        if (el.saveBtn) el.saveBtn.disabled = !hasValid || isEditing;
     }
 
     function render() {
-        if (reviews.length === 0) {
+        if (educations.length === 0) {
             el.empty.style.display = 'flex';
             el.list.style.display = 'none';
         } else {
             el.empty.style.display = 'none';
             el.list.style.display = 'flex';
-            el.list.innerHTML = reviews.map(r =>
-                editingId === r.id ? renderEdit(r) : renderDisplay(r)
+            el.list.innerHTML = educations.map(e =>
+                editingId === e.id ? renderEdit(e) : renderDisplay(e)
             ).join('');
+            bindTypeaheads();
         }
-        el.dataInput.value = JSON.stringify(reviews);
+        el.dataInput.value = JSON.stringify(educations);
         updateSaveButton();
     }
 
-    function renderDisplay(r) {
-        const hasImg = !!r.image;
-        const avatarUrl = hasImg 
-            ? r.image 
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.client_name || 'Client')}&size=200&background=667eea&color=fff`;
+    function renderDisplay(e) {
+        const dr = getDR(e);
+        const fieldText = e.field ? ` in ${esc(e.field)}` : '';
 
         return `
-            <div class="review-card" id="review-${r.id}">
-                <div class="review-header">
-                    <div class="review-avatar">
-                        <img src="${avatarUrl}" alt="${esc(r.client_name)}">
+            <div class="edu-card" id="edu-${e.id}">
+                <div class="edu-header">
+                    <div class="edu-content">
+                        <div class="edu-school">${esc(e.school || 'Institution name')}</div>
+                        <div class="edu-degree">${esc(e.degree || 'Degree')}${fieldText}</div>
+                        ${dr ? `<div class="edu-date">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            ${esc(dr)}
+                        </div>` : ''}
                     </div>
-                    
-                    <div class="review-content">
-                        <div class="review-client-info">
-                            <div class="review-name">${esc(r.client_name) || 'Client Name'}</div>
-                            ${r.title ? `<div class="review-title">${esc(r.title)}</div>` : ''}
-                            ${r.location ? `<div class="review-location">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                    <circle cx="12" cy="10" r="3"></circle>
-                                </svg>
-                                ${esc(r.location)}
-                            </div>` : ''}
-                        </div>
-                        
-                        <div class="review-text">
-                            <span class="quote-left">"</span>
-                            ${esc(r.content) || 'Review content...'}
-                            <span class="quote-right">"</span>
-                        </div>
-                    </div>
-                    
-                    <div class="review-actions">
-                        <button type="button" class="action-btn" onclick="editReview(${r.id})" title="Edit">
+                    <div class="edu-actions">
+                        <button type="button" class="action-btn" onclick="editEdu(${e.id})" title="Edit">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                         </button>
-                        <button type="button" class="action-btn delete" onclick="removeReview(${r.id})" title="Delete">
+                        <button type="button" class="action-btn delete" onclick="removeEdu(${e.id})" title="Delete">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -152,76 +151,59 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    function renderEdit(r) {
-        const hasImg = !!r.image;
-        const avatarUrl = hasImg 
-            ? r.image 
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.client_name || 'Client')}&size=200&background=667eea&color=fff`;
-
+    function renderEdit(e) {
         return `
-            <div class="review-card editing" id="review-${r.id}">
-                <div class="review-form">
-                    <div class="review-form-header">
-                        <div class="form-group">
-                            <label class="form-label">Client Photo</label>
-                            <div class="avatar-upload">
-                                <div class="avatar-preview" id="avatar-preview-${r.id}">
-                                    <img src="${avatarUrl}" alt="Client">
-                                </div>
-                                <input type="file" id="avatar-input-${r.id}" accept="image/*" hidden 
-                                       onchange="handleAvatarUpload(${r.id}, this)"/>
-                                <input type="hidden" id="avatar-path-${r.id}" value="${esc(r.image_path || '')}" />
-                                <input type="hidden" id="avatar-disk-${r.id}" value="${esc(r.image_disk || 'public')}" />
-                                <div class="avatar-actions">
-                                    <button type="button" class="avatar-btn" 
-                                            onclick="document.getElementById('avatar-input-${r.id}').click()">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                                            <circle cx="12" cy="13" r="4"></circle>
-                                        </svg>
-                                        ${hasImg ? 'Change' : 'Upload'}
-                                    </button>
-                                    ${hasImg ? `<button type="button" class="avatar-btn remove" onclick="removeAvatar(${r.id})">Remove</button>` : ''}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-fields-main">
-                            <div class="form-group">
-                                <label class="form-label">Client Name <span class="required">*</span></label>
-                                <input type="text" class="form-input" value="${esc(r.client_name)}" 
-                                       placeholder="e.g., John Smith"
-                                       oninput="updateReview(${r.id}, 'client_name', this.value)"/>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Title/Position</label>
-                                    <input type="text" class="form-input" value="${esc(r.title)}" 
-                                           placeholder="e.g., CEO at Company"
-                                           oninput="updateReview(${r.id}, 'title', this.value)"/>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Location</label>
-                                    <input type="text" class="form-input" value="${esc(r.location)}" 
-                                           placeholder="e.g., New York, USA"
-                                           oninput="updateReview(${r.id}, 'location', this.value)"/>
-                                </div>
-                            </div>
+            <div class="edu-card editing" id="edu-${e.id}">
+                <div class="edu-form">
+                    <div class="form-group">
+                        <label class="form-label">Institution <span class="required">*</span></label>
+                        <div class="ta-wrap">
+                            <input type="text" class="form-input js-inst-input" data-edu-id="${e.id}"
+                                   placeholder="e.g., Harvard University" value="${esc(e.school)}"/>
+                            <div class="ta-menu"></div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Review Content <span class="required">*</span></label>
-                        <textarea class="form-textarea" maxlength="${CONTENT_MAX}" rows="5"
-                                  placeholder="Share what the client said about your work..."
-                                  oninput="updateReview(${r.id}, 'content', this.value)">${esc(r.content)}</textarea>
-                        <div class="char-count" id="ct-content-${r.id}">${(r.content||'').length}/${CONTENT_MAX}</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Degree <span class="required">*</span></label>
+                            <input type="text" class="form-input" placeholder="e.g., Bachelor's, Master's"
+                                   value="${esc(e.degree)}" oninput="updateEdu(${e.id}, 'degree', this.value)"/>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Field of Study</label>
+                            <input type="text" class="form-input" placeholder="e.g., Computer Science"
+                                   value="${esc(e.field)}" oninput="updateEdu(${e.id}, 'field', this.value)"/>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Start Year</label>
+                            <select class="form-select" onchange="updateEdu(${e.id}, 'startYear', this.value)">
+                                <option value="">Select year</option>
+                                ${years.map(y => `<option value="${y}" ${e.startYear == y ? 'selected' : ''}>${y}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">End Year</label>
+                            <select class="form-select" ${e.current ? 'disabled' : ''}
+                                    onchange="updateEdu(${e.id}, 'endYear', this.value)">
+                                <option value="">Select year</option>
+                                ${years.map(y => `<option value="${y}" ${e.endYear == y ? 'selected' : ''}>${y}</option>`).join('')}
+                            </select>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="current-${e.id}" ${e.current ? 'checked' : ''}
+                                       onchange="updateEdu(${e.id}, 'current', this.checked)"/>
+                                <label for="current-${e.id}">Currently studying here</label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="form-btn btn-cancel" onclick="cancelEdit(${r.id})">Cancel</button>
-                        <button type="button" class="form-btn btn-save-review" onclick="saveReview(${r.id})">
+                        <button type="button" class="form-btn btn-cancel" onclick="cancelEdit(${e.id})">Cancel</button>
+                        <button type="button" class="form-btn btn-save-edu" onclick="saveEdu(${e.id})">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
@@ -233,122 +215,192 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    function addReview() {
+    function getDR(e) {
+        if (!e.startYear && !e.endYear) return '';
+        const s = e.startYear || '—';
+        const n = e.current ? 'Present' : (e.endYear || '—');
+        return `${s} – ${n}`;
+    }
+
+    function addEducation() {
         const id = ++counter;
-        reviews.unshift({
+        educations.unshift({
             id,
-            client_name: '',
-            title: '',
-            location: '',
-            content: '',
-            image: '',
-            image_path: '',
-            image_disk: 'public',
+            school: '',
+            institution_id: null,
+            degree: '',
+            field: '',
+            startYear: '',
+            endYear: '',
+            current: false,
             db_id: null
         });
         editingId = id;
         render();
     }
 
-    window.editReview = (id) => {
+    window.editEdu = (id) => {
         editingId = id;
         render();
     };
 
-    window.removeReview = (id) => {
-        if (confirm('Remove this review?')) {
-            reviews = reviews.filter(r => r.id !== id);
+    window.removeEdu = (id) => {
+        if (confirm('Remove this education entry?')) {
+            educations = educations.filter(e => e.id !== id);
             if (editingId === id) editingId = null;
             render();
         }
     };
 
     window.cancelEdit = (id) => {
-        const r = reviews.find(x => x.id === id);
-        if (r && !r.client_name && !r.content) {
-            reviews = reviews.filter(x => x.id !== id);
+        const e = educations.find(x => x.id === id);
+        if (e && !e.school && !e.degree) {
+            educations = educations.filter(x => x.id !== id);
         }
         editingId = null;
         render();
     };
 
-    window.saveReview = (id) => {
-        const r = reviews.find(x => x.id === id);
-        if (!r || !r.client_name.trim() || !r.content.trim()) {
-            alert('Please fill in client name and review content.');
+    window.saveEdu = (id) => {
+        const e = educations.find(x => x.id === id);
+        if (!e || !e.school.trim() || !e.degree.trim()) {
+            alert('Please fill institution and degree.');
             return;
         }
+        ['school', 'degree', 'field'].forEach(k => {
+            if (e[k]) e[k] = String(e[k]).trim();
+        });
         editingId = null;
         render();
     };
 
-    window.updateReview = (id, field, value) => {
-        const r = reviews.find(x => x.id === id);
-        if (!r) return;
+    window.updateEdu = (id, f, v) => {
+        const e = educations.find(x => x.id === id);
+        if (!e) return;
 
-        if (field === 'content') {
-            r.content = value.slice(0, CONTENT_MAX);
-            const ct = document.getElementById(`ct-content-${id}`);
-            if (ct) ct.textContent = `${r.content.length}/${CONTENT_MAX}`;
-        } else {
-            r[field] = value;
+        if (f === 'current') {
+            e.current = !!v;
+            if (e.current) e.endYear = '';
+            render();
+            return;
         }
-        updateSaveButton();
+
+        if (['startYear', 'endYear'].includes(f)) {
+            e[f] = v ? Number(v) : '';
+            render();
+            return;
+        }
+
+        e[f] = v;
     };
 
-    // Avatar handling
-    window.handleAvatarUpload = async (id, input) => {
-        const file = input.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
+    // Typeahead functionality
+    function bindTypeaheads() {
+        document.querySelectorAll('.js-inst-input').forEach((input) => {
+            if (input.dataset.taBound === '1') return;
+            input.dataset.taBound = '1';
 
-        try {
-            const dataUrl = await compressImage(file);
-            const r = reviews.find(x => x.id === id);
-            if (r) {
-                r.image = dataUrl;
-                const preview = document.getElementById(`avatar-preview-${id}`);
-                if (preview) {
-                    preview.innerHTML = `<img src="${dataUrl}" alt="Client">`;
+            const eduId = Number(input.dataset.eduId);
+            const wrap = input.closest('.ta-wrap');
+            const menu = wrap.querySelector('.ta-menu');
+
+            let idx = -1;
+            let items = [];
+
+            const renderMenu = (list) => {
+                items = list || [];
+                if (!items.length) {
+                    menu.innerHTML = `<div class="ta-empty">No results found</div>`;
+                    menu.style.display = 'block';
+                    idx = -1;
+                    return;
                 }
-            }
-        } catch (e) {
-            console.error(e);
-        }
-        input.value = '';
-    };
-
-    window.removeAvatar = (id) => {
-        const r = reviews.find(x => x.id === id);
-        if (!r) return;
-        r.image = '';
-        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.client_name || 'Client')}&size=200&background=667eea&color=fff`;
-        const preview = document.getElementById(`avatar-preview-${id}`);
-        if (preview) {
-            preview.innerHTML = `<img src="${avatarUrl}" alt="Client">`;
-        }
-    };
-
-    async function compressImage(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ratio = Math.min(IMG_MAX_W / img.width, IMG_MAX_H / img.height);
-                    canvas.width = Math.max(1, Math.round(img.width * ratio));
-                    canvas.height = Math.max(1, Math.round(img.height * ratio));
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', IMG_QUALITY));
-                };
-                img.src = e.target.result;
+                menu.innerHTML = items.map((x, i) => `
+                    <div class="ta-item ${i === idx ? 'active' : ''}" data-index="${i}">
+                        <img class="ta-logo" src="${x.logo || ''}" onerror="this.style.visibility='hidden'" alt=""/>
+                        <div class="ta-info">
+                            <div class="ta-title">${esc(x.name)}</div>
+                            <div class="ta-sub">${esc([x.city, x.country].filter(Boolean).join(' • '))}</div>
+                        </div>
+                    </div>
+                `).join('');
+                menu.style.display = 'block';
             };
-            reader.readAsDataURL(file);
+
+            const choose = (row) => {
+                if (!row) return;
+                input.value = row.name;
+                updateEdu(eduId, 'school', row.name);
+                const e = educations.find(x => x.id === eduId);
+                if (e) e.institution_id = row.id;
+                menu.style.display = 'none';
+            };
+
+            const doSearch = deb(async (q) => {
+                if (!q || q.length < 2) {
+                    menu.style.display = 'none';
+                    return;
+                }
+                try {
+                    const url = `${INST_API}?q=${encodeURIComponent(q)}&limit=8`;
+                    const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    const json = await res.json();
+                    renderMenu(json.data || []);
+                } catch (e) {
+                    console.warn(e);
+                    menu.style.display = 'none';
+                }
+            }, 250);
+
+            input.addEventListener('input', (e) => {
+                updateEdu(eduId, 'school', e.target.value);
+                const ex = educations.find(x => x.id === eduId);
+                if (ex) ex.institution_id = null;
+                doSearch(e.target.value.trim());
+            });
+
+            input.addEventListener('focus', () => {
+                const v = input.value.trim();
+                if (v.length >= 2) doSearch(v);
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(() => menu.style.display = 'none', 150);
+            });
+
+            input.addEventListener('keydown', (e) => {
+                const open = menu.style.display !== 'none';
+                if (!open) return;
+
+                if (e.key === 'ArrowDown') {
+                    idx = Math.min(idx + 1, items.length - 1);
+                    renderMenu(items);
+                    e.preventDefault();
+                } else if (e.key === 'ArrowUp') {
+                    idx = Math.max(idx - 1, 0);
+                    renderMenu(items);
+                    e.preventDefault();
+                } else if (e.key === 'Enter') {
+                    if (idx >= 0) {
+                        choose(items[idx]);
+                        e.preventDefault();
+                    }
+                } else if (e.key === 'Escape') {
+                    menu.style.display = 'none';
+                }
+            });
+
+            menu.addEventListener('mousedown', (e) => {
+                const item = e.target.closest('.ta-item');
+                if (item) {
+                    const i = Number(item.dataset.index);
+                    choose(items[i]);
+                }
+            });
         });
     }
 
-    el.addBtn.addEventListener('click', addReview);
+    el.addBtn.addEventListener('click', addEducation);
 
     // Initialize
     loadExisting();
@@ -358,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
 /* Container */
-.reviews-container {
+.edu-container {
     min-height: 200px;
     margin-bottom: 20px;
 }
@@ -393,15 +445,15 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 13px;
 }
 
-/* Reviews List */
-.reviews-list {
+/* Education List */
+.edu-list {
     display: none;
     flex-direction: column;
     gap: 12px;
 }
 
-/* Review Card - Display */
-.review-card {
+/* Education Card */
+.edu-card {
     border: 1.5px solid var(--border);
     border-radius: 10px;
     padding: 20px;
@@ -409,97 +461,55 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: all 0.2s ease;
 }
 
-.review-card:hover {
+.edu-card:hover {
     border-color: var(--accent);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.review-card.editing {
+.edu-card.editing {
     border-color: var(--accent);
     background: var(--apc-bg);
 }
 
-.review-header {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+.edu-header {
+    display: flex;
+    justify-content: space-between;
     gap: 16px;
-    align-items: start;
 }
 
-.review-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--apc-bg);
-    flex-shrink: 0;
-}
-
-.review-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.review-content {
+.edu-content {
     flex: 1;
-    min-width: 0;
 }
 
-.review-client-info {
-    margin-bottom: 12px;
-}
-
-.review-name {
+.edu-school {
     font-size: 16px;
     font-weight: 700;
     color: var(--text-heading);
     margin-bottom: 4px;
 }
 
-.review-title {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 4px;
+.edu-degree {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-body);
+    margin-bottom: 8px;
 }
 
-.review-location {
+.edu-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
 }
 
-.review-location svg {
+.edu-date svg {
+    width: 14px;
+    height: 14px;
     opacity: 0.6;
 }
 
-.review-text {
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--text-body);
-    font-style: italic;
-    position: relative;
-}
-
-.quote-left,
-.quote-right {
-    font-size: 24px;
-    color: var(--accent);
-    opacity: 0.3;
-    font-style: normal;
-}
-
-.quote-left {
-    margin-right: 4px;
-}
-
-.quote-right {
-    margin-left: 4px;
-}
-
-.review-actions {
+.edu-actions {
     display: flex;
     gap: 6px;
 }
@@ -519,7 +529,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .action-btn:hover {
-    border-color: var(--accent);
     color: var(--accent);
     transform: translateY(-2px);
 }
@@ -531,80 +540,11 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* Edit Form */
-.review-form {
+.edu-form {
     display: flex;
     flex-direction: column;
     gap: 16px;
-}
-
-.review-form-header {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 20px;
-    align-items: start;
-}
-
-.avatar-upload {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-}
-
-.avatar-preview {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid var(--border);
-    background: var(--apc-bg);
-}
-
-.avatar-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.avatar-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-}
-
-.avatar-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--card);
-    color: var(--text-body);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.avatar-btn:hover {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-}
-
-.avatar-btn.remove:hover {
-    background: #dc2626;
-    border-color: #dc2626;
-}
-
-.form-fields-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    padding-top: 8px;
 }
 
 .form-row {
@@ -627,11 +567,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .required {
     color: #dc2626;
+    margin-left: 2px;
 }
 
 .form-input,
-.form-textarea {
-    padding: 10px 14px;
+.form-select {
+    height: 48px;
+    padding: 0 14px;
     border: 1.5px solid var(--input-border);
     border-radius: 8px;
     font-size: 15px;
@@ -642,21 +584,108 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .form-input:focus,
-.form-textarea:focus {
+.form-select:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
-.form-textarea {
-    resize: vertical;
-    line-height: 1.6;
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 20px;
+    padding-right: 40px;
+    cursor: pointer;
 }
 
-.char-count {
-    text-align: right;
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0 4px 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.checkbox-group label {
+    font-size: 14px;
+    color: var(--text-body);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Typeahead */
+.ta-wrap {
+    position: relative;
+}
+
+.ta-menu {
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+}
+
+.ta-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.ta-item:hover,
+.ta-item.active {
+    background: var(--accent-light);
+}
+
+.ta-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.ta-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.ta-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin-bottom: 2px;
+}
+
+.ta-sub {
     font-size: 12px;
     color: var(--text-muted);
+}
+
+.ta-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
 }
 
 /* Form Actions */
@@ -664,8 +693,6 @@ document.addEventListener('DOMContentLoaded', function() {
     display: flex;
     gap: 10px;
     padding-top: 8px;
-    margin-top: 8px;
-    border-top: 1px solid var(--border);
 }
 
 .form-btn {
@@ -694,12 +721,12 @@ document.addEventListener('DOMContentLoaded', function() {
     background: var(--apc-bg);
 }
 
-.btn-save-review {
+.btn-save-edu {
     background: var(--accent);
     color: white;
 }
 
-.btn-save-review:hover {
+.btn-save-edu:hover {
     background: var(--accent-dark);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
@@ -709,9 +736,9 @@ document.addEventListener('DOMContentLoaded', function() {
 .add-btn {
     width: 100%;
     height: 52px;
+    padding: 0 24px;
     background: var(--card);
     color: var(--text-body);
-    border: 1.5px dashed var(--border);
     border-radius: 10px;
     font-size: 15px;
     font-weight: 600;
@@ -725,33 +752,24 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .add-btn:hover {
-    border-color: var(--accent);
-    border-style: solid;
     background: var(--accent-light);
-    color: var(--accent);
+    color: var(--card);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .review-header {
-        grid-template-columns: 1fr;
-    }
-
-    .review-avatar {
-        margin: 0 auto;
-    }
-
-    .review-actions {
-        width: 100%;
-        justify-content: flex-end;
-    }
-
-    .review-form-header {
-        grid-template-columns: 1fr;
-    }
-
     .form-row {
         grid-template-columns: 1fr;
+    }
+
+    .edu-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .edu-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
 }
 </style>

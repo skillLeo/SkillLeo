@@ -1643,7 +1643,7 @@
             {
                 title: 'Blockchain Development',
                 icon: 'fa-coins',
-                desc: 'Web3, NFT & cryptocurrency projects',
+                desc: 'Web3 projects',
                 badge: 'trending',
                 category: 'tech'
             },

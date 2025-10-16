@@ -14,6 +14,19 @@
     <x-timezone-detector />
 
     <style>
+        @keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: currentColor;
+    animation: spin 0.6s linear infinite;
+}
         /* Theme-based logo visibility */
 .logo-light {
     display: block;

@@ -15,116 +15,58 @@
     @csrf
 
     <div class="form-group">
-        <label class="form-label">Choose how to set your location</label>
-        <div class="method-buttons">
-            <button type="button" class="method-btn active" data-method="manual" aria-pressed="true">
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                Select Manually
-            </button>
-            <button type="button" class="method-btn" data-method="gps" aria-pressed="false">
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                Use GPS
-            </button>
-        </div>
-    </div>
-
-    <div id="manualSection">
-        <x-onboarding.select
-            name="country"
-            id="country"
-            label="Country"
-            placeholder="Select your country"
-            required
-            :options="[]"
-        />
-
-        <div id="stateGroup" style="display:none;">
-            <x-onboarding.select
-                name="state"
-                id="state"
-                label="State/Province"
-                placeholder="Select your state"
+        <label class="form-label" for="locationInput">City, State, or Country</label>
+        <div class="autocomplete-wrapper">
+            <input 
+                type="text" 
+                id="locationInput" 
+                class="form-control location-input"
+                placeholder="Start typing (e.g., Sargodha, Punjab, Pakistan)"
+                autocomplete="off"
                 required
             />
+            <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+            <div class="selected-location" id="selectedLocation" style="display:none;">
+                <div class="selected-content">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span id="selectedText"></span>
+                </div>
+                <button type="button" class="clear-btn" id="clearBtn" aria-label="Clear selection">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
+    </div>
 
-        <div id="cityGroup" style="display:none;">
-            <x-onboarding.select
-                name="city"
-                id="city"
-                label="City"
-                placeholder="Select your city"
-                required
+    <!-- Single follow-up input (dynamic label based on context) -->
+    <div class="form-group follow-up-group" id="followUpSection" style="display:none;">
+        <label class="form-label" id="followUpLabel">
+            <span class="follow-up-icon">↳</span>
+            <span id="followUpText">Complete your location</span>
+        </label>
+        <div class="autocomplete-wrapper">
+            <input 
+                type="text" 
+                id="followUpInput" 
+                class="form-control location-input"
+                placeholder="Type to search..."
+                autocomplete="off"
             />
+            <div class="autocomplete-dropdown" id="followUpDropdown"></div>
         </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
+        <p class="follow-up-hint" id="followUpHint"></p>
     </div>
 
-    <div class="gps-section" id="gpsSection">
-        <p>Click the button below to automatically detect your location</p>
-        <button type="button" class="btn btn-primary" id="detectBtn">Detect My Location</button>
-        <div class="detected-location" id="detectedLocation" role="status" aria-live="polite">
-            <strong>Location Detected:</strong> <span id="detectedText"></span>
-        </div>
-    </div>
+    <!-- Hidden fields -->
+    <input type="hidden" name="city" id="cityField">
+    <input type="hidden" name="state" id="stateField">
+    <input type="hidden" name="country" id="countryField">
+    <input type="hidden" name="timezone" id="timezoneField">
+    <input type="hidden" name="source" value="search">
 
     <x-onboarding.form-footer 
         skipUrl="{{ route('tenant.onboarding.education') }}"
@@ -136,18 +78,202 @@
 
 @push('styles')
 <style>
-.method-buttons{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-top:var(--space-sm)}
-.method-btn{padding:var(--space-md);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition-base);font-family:var(--font-sans);font-size:var(--fs-body);font-weight:var(--fw-medium);color:var(--text-body);display:flex;align-items:center;justify-content:center;gap:var(--space-sm)}
-.method-btn.active{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
-.method-btn:hover{border-color:var(--accent)}
-.gps-section{padding:var(--space-xl);background:var(--apc-bg);border-radius:var(--radius);text-align:center;margin-bottom:var(--space-lg);display:none}
-.gps-section.show{display:block}
-.gps-section p{color:var(--text-body);margin-bottom:var(--space-md)}
-.detected-location{margin-top:var(--space-md);padding:var(--space-sm) var(--space-md);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:var(--radius);color:var(--success);font-size:var(--fs-subtle);display:none}
-.detected-location.show{display:block}
-@media (max-width:640px){.method-buttons{grid-template-columns:1fr}}
-/* subtle success border on selects */
-select.success{border-color:var(--success);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+.autocomplete-wrapper {
+    position: relative;
+}
+
+.location-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--text-body);
+    transition: all var(--transition-base);
+}
+
+.location-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.location-input.has-selection {
+    display: none;
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.autocomplete-dropdown.show {
+    display: block;
+}
+
+.autocomplete-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background var(--transition-base);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background: var(--accent-light);
+}
+
+.autocomplete-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--text-subtle);
+}
+
+.autocomplete-icon.city {
+    color: var(--accent);
+}
+
+.autocomplete-icon.state {
+    color: #8b5cf6;
+}
+
+.autocomplete-icon.country {
+    color: #f59e0b;
+}
+
+.autocomplete-text {
+    flex: 1;
+}
+
+.autocomplete-primary {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-body);
+    margin-bottom: 2px;
+}
+
+.autocomplete-secondary {
+    font-size: 13px;
+    color: var(--text-subtle);
+}
+
+.autocomplete-loading,
+.autocomplete-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 14px;
+}
+
+.selected-location {
+    padding: 12px 16px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.selected-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.clear-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text-subtle);
+    transition: color var(--transition-base);
+    display: flex;
+    align-items: center;
+}
+
+.clear-btn:hover {
+    color: var(--accent);
+}
+
+/* Follow-up section */
+.follow-up-group {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px dashed var(--border);
+    animation: slideDown 0.3s ease-out;
+}
+
+.follow-up-icon {
+    display: inline-block;
+    margin-right: 6px;
+    color: var(--accent);
+    font-size: 18px;
+}
+
+.follow-up-hint {
+    margin-top: var(--space-sm);
+    font-size: 13px;
+    color: var(--text-subtle);
+    font-style: italic;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar styling */
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-subtle);
+}
+
+@media (max-width: 640px) {
+    .autocomplete-dropdown {
+        max-height: 240px;
+    }
+}
 </style>
 @endpush
 
@@ -156,267 +282,367 @@ select.success{border-color:var(--success);box-shadow:0 0 0 3px rgba(16,185,129,
 (() => {
   "use strict";
 
-  // ---------- DOM ----------
+  // DOM Elements
   const form = document.getElementById('locationForm');
-  const countrySelect = document.getElementById('country');
-  const stateSelect   = document.getElementById('state');
-  const citySelect    = document.getElementById('city');
-  const stateGroup    = document.getElementById('stateGroup');
-  const cityGroup     = document.getElementById('cityGroup');
+  const mainInput = document.getElementById('locationInput');
+  const followUpInput = document.getElementById('followUpInput');
+  
+  const mainDropdown = document.getElementById('autocompleteDropdown');
+  const followUpDropdown = document.getElementById('followUpDropdown');
+  
+  const selectedDiv = document.getElementById('selectedLocation');
+  const selectedText = document.getElementById('selectedText');
+  const clearBtn = document.getElementById('clearBtn');
+  
+  const followUpSection = document.getElementById('followUpSection');
+  const followUpText = document.getElementById('followUpText');
+  const followUpHint = document.getElementById('followUpHint');
+  
+  const cityField = document.getElementById('cityField');
+  const stateField = document.getElementById('stateField');
+  const countryField = document.getElementById('countryField');
+  const timezoneField = document.getElementById('timezoneField');
+  
+  const continueBtn = document.getElementById('continueBtn');
 
-  const methodBtns    = document.querySelectorAll('.method-btn');
-  const manualSection = document.getElementById('manualSection');
-  const gpsSection    = document.getElementById('gpsSection');
-  const detectBtn     = document.getElementById('detectBtn');
-  const detectedWrap  = document.getElementById('detectedLocation');
-  const detectedText  = document.getElementById('detectedText');
+  // State management
+  let debounceTimers = {};
+  let flowState = {
+    stage: 'initial', // 'initial', 'need_city', 'need_state_or_city', 'complete'
+    selectedCountry: null,
+    selectedState: null,
+    selectedCity: null,
+  };
+  let activeIndexes = { main: -1, followUp: -1 };
 
-  const continueBtn   = document.getElementById('continueBtn');
-  const btnText       = document.getElementById('btnText');
-  const headerProgress= document.getElementById('headerProgress');
-  const stepText      = document.getElementById('stepText');
-
-  // hidden fields (created if missing)
-  const tzInput  = ensureHidden('timezone');
-  const latInput = ensureHidden('coords[lat]');
-  const lngInput = ensureHidden('coords[lng]');
-  const srcInput = ensureHidden('source');
-
-  // ---------- API endpoints ----------
-  const API = {
-    countries: () => fetchJSON(`/api/location/countries`), // [{name, iso2?}]
-    states:    (countryName) => fetchJSON(`/api/location/states?country=${encodeURIComponent(countryName)}`), // [{name}]
-    cities:    (countryName, stateName) => fetchJSON(`/api/location/cities?country=${encodeURIComponent(countryName)}&state=${encodeURIComponent(stateName)}`), // [{name}]
+  // Icons
+  const icons = {
+    city: '<svg class="autocomplete-icon city" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+    state: '<svg class="autocomplete-icon state" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+    country: '<svg class="autocomplete-icon country" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'
   };
 
-  // ---------- Utils ----------
-  async function fetchJSON(url) {
-    const r = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
-    if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
-    return r.json();
-  }
-
-  const resetSelect = (sel, ph) => { sel.innerHTML = `<option value="">${ph}</option>`; sel.disabled = true; sel.classList.remove('success'); };
-  const setSuccess  = (el,on)=> el?.classList?.toggle('success',!!on);
-  const show        = el => el.style.display = 'block';
-  const hide        = el => el.style.display = 'none';
-  const tz          = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; } };
-  const norm        = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-
-  function ensureHidden(name) {
-    let el = form.querySelector(`input[name="${name}"]`);
-    if (!el) {
-      el = document.createElement('input');
-      el.type = 'hidden'; el.name = name;
-      form.appendChild(el);
-    }
-    return el;
-  }
-
-  function selectByText(selectEl, target) {
-    if (!target) return false;
-    const needle = norm(target);
-    const options = Array.from(selectEl.options);
-    let hit = options.find(o => norm(o.textContent) === needle);
-    if (!hit) hit = options.find(o => norm(o.textContent).includes(needle) || needle.includes(norm(o.textContent)));
-    if (!hit) return false;
-    selectEl.value = hit.value;
-    return true;
-  }
-
-  function updateProgress(step) {
-    const TOTAL = 8;
-    if (headerProgress) headerProgress.style.width = ((step/TOTAL)*100)+'%';
-    if (stepText) stepText.textContent = `Step ${step} of ${TOTAL}`;
-  }
-
-  function validate() {
-    const ok = !!(countrySelect.value && stateSelect.value && citySelect.value);
-    if (continueBtn) continueBtn.disabled = !ok;
-    return ok;
-  }
-
-  function setMethod(method) {
-    methodBtns.forEach(b=>{
-      const act = b.dataset.method === method;
-      b.classList.toggle('active', act);
-      b.setAttribute('aria-pressed', act ? 'true':'false');
-    });
-    if (method === 'manual') {
-      manualSection.style.display='block';
-      gpsSection.classList.remove('show');
-      detectedWrap.classList.remove('show');
-      srcInput.value = 'manual';
-    } else {
-      manualSection.style.display='none';
-      gpsSection.classList.add('show');
-      srcInput.value = 'nominatim';
-    }
-  }
-
-  // ---------- Populate helpers ----------
-  function applyOptions(select, items, ph) {
-    resetSelect(select, ph);
-    items.forEach(({ name }) => {
-      const o = document.createElement('option');
-      o.value = name; o.textContent = name;
-      select.appendChild(o);
-    });
-    select.disabled = items.length === 0;
-  }
-
-  async function loadCountries() {
-    resetSelect(countrySelect, 'Loading countries...');
-    const list = await API.countries();
-    const popular = new Set(['Pakistan','United States','United Kingdom','Canada','India']);
-    const top = list.filter(x => popular.has(x.name));
-    const rest = list.filter(x => !popular.has(x.name)).sort((a,b)=> a.name.localeCompare(b.name));
-    applyOptions(countrySelect, [...top, ...rest], 'Select your country');
-  }
-
-  async function onCountryChange() {
-    const country = countrySelect.value || '';
-    setSuccess(countrySelect, !!country);
-
-    resetSelect(stateSelect, 'Select your state');
-    resetSelect(citySelect,  'Select your city');
-    hide(cityGroup);
-
-    if (!country) { stateGroup.style.display='none'; validate(); return; }
-
-    stateGroup.style.display='block';
-    stateSelect.innerHTML = `<option value="">Loading states...</option>`;
-    const rows = await API.states(country);
-    applyOptions(stateSelect, rows, 'Select your state');
-    validate();
-  }
-
-  async function onStateChange() {
-    const country = countrySelect.value || '';
-    const state = stateSelect.value || '';
-    setSuccess(stateSelect, !!state);
-
-    resetSelect(citySelect, 'Select your city');
-    hide(cityGroup);
-    if (!country || !state) { validate(); return; }
-
-    cityGroup.style.display='block';
-    citySelect.innerHTML = `<option value="">Loading cities...</option>`;
-    const rows = await API.cities(country, state);
-    applyOptions(citySelect, rows, 'Select your city');
-    validate();
-  }
-
-  function onCityChange() {
-    setSuccess(citySelect, !!citySelect.value);
-    validate();
-  }
-
-  // ---------- Reverse geocode (English) ----------
-  async function reverseEnglish(lat, lng) {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1&accept-language=en`;
-    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-    if (!res.ok) throw new Error('Reverse geocode failed');
-    const data = await res.json();
-    const a = data.address || {};
-    const english = {
-      country: a.country || '',
-      country_code: (a.country_code || '').toUpperCase(),
-      state: a.state || a.region || a.province || a.state_district || '',
-      city: a.city || a.town || a.village || a.municipality || a.county || ''
-    };
-    return { english, raw: data };
-  }
-
-  // ---------- GPS flow ----------
-  async function detectLocation() {
-    if (!navigator.geolocation) return alert('Geolocation not supported');
-
-    detectBtn.disabled = true;
-    detectBtn.innerHTML = '<div class="loading-spinner"></div> Detecting...';
+  // ================== API FUNCTIONS ==================
+  
+  async function searchLocation(query, filters = {}) {
+    if (query.length < 2) return [];
+    
     try {
-      const pos = await new Promise((res, rej) =>
-        navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 })
-      );
-      const { latitude: lat, longitude: lng } = pos.coords || {};
-
-      const { english, raw } = await reverseEnglish(lat, lng);
-
-      // expose & cache
-      window.__gps_en = { coords:{lat,lng}, country:{name:english.country, iso2:english.country_code}, state:{name:english.state}, city:{name:english.city}, source:'nominatim', raw };
-      try { localStorage.setItem('gps_detected_en', JSON.stringify(window.__gps_en)); } catch {}
-
-      // UI feedback
-      setMethod('gps');
-      detectedText.textContent = `${english.city}, ${english.state}, ${english.country}`;
-      detectedWrap.classList.add('show');
-
-      // set hidden inputs
-      tzInput.value  = tz();
-      latInput.value = lat;
-      lngInput.value = lng;
-
-      // populate selects to match English names
-      await loadCountries();
-      if (selectByText(countrySelect, english.country)) {
-        setSuccess(countrySelect, true);
-        await onCountryChange();
-      }
-      if (selectByText(stateSelect, english.state)) {
-        setSuccess(stateSelect, true);
-        await onStateChange();
-      }
-      if (selectByText(citySelect, english.city)) {
-        setSuccess(citySelect, true);
-        onCityChange();
-      }
-
-      validate();
-      detectBtn.innerHTML = '✓ Location Detected';
-      setTimeout(()=> detectBtn.textContent = 'Detect My Location', 1600);
-
-    } catch (err) {
-      console.error(err);
-      alert('Unable to detect location. Please select manually.');
-      detectBtn.textContent = 'Detect My Location';
-    } finally {
-      detectBtn.disabled = false;
+      let url = `/api/location/search?q=${encodeURIComponent(query)}`;
+      if (filters.country) url += `&country=${encodeURIComponent(filters.country)}`;
+      if (filters.state) url += `&state=${encodeURIComponent(filters.state)}`;
+      
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      
+      if (!response.ok) throw new Error('Search failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Search error:', error);
+      return [];
     }
   }
 
-  // ---------- Submit ----------
-  form.addEventListener('submit', (e)=>{
-    if (!validate()) { e.preventDefault(); return; }
-    tzInput.value = tzInput.value || tz();      // set timezone if empty
-    if (btnText) btnText.innerHTML = '<div class="loading-spinner"></div>';
+  // ================== RENDER DROPDOWN ==================
+  
+  function renderDropdown(dropdown, results, inputType = 'main') {
+    if (!results || results.length === 0) {
+      dropdown.innerHTML = '<div class="autocomplete-empty">No locations found</div>';
+      dropdown.classList.add('show');
+      return;
+    }
+
+    const html = results.map((item, index) => `
+      <div class="autocomplete-item" data-index="${index}">
+        ${icons[item.type]}
+        <div class="autocomplete-text">
+          <div class="autocomplete-primary">${escapeHtml(item.display)}</div>
+          ${item.type === 'city' ? `<div class="autocomplete-secondary">${escapeHtml(item.country)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    dropdown.innerHTML = html;
+    dropdown.classList.add('show');
+    activeIndexes[inputType] = -1;
+
+    dropdown.querySelectorAll('.autocomplete-item').forEach((item, index) => {
+      item.addEventListener('click', () => handleSelection(results[index], inputType));
+    });
+  }
+
+  // ================== SELECTION HANDLERS ==================
+  
+  function handleSelection(location, inputType) {
+    if (inputType === 'main') {
+      handleMainSelection(location);
+    } else {
+      handleFollowUpSelection(location);
+    }
+  }
+
+  function handleMainSelection(location) {
+    if (location.type === 'city') {
+      // Case 1: CITY selected → COMPLETE!
+      completeLocation(location.city, location.state, location.country);
+      
+    } else if (location.type === 'state') {
+      // Case 2: STATE selected → Need CITY only
+      flowState.stage = 'need_city';
+      flowState.selectedCountry = location.country;
+      flowState.selectedState = location.state;
+      
+      selectedText.textContent = `${location.state}, ${location.country}`;
+      mainInput.classList.add('has-selection');
+      selectedDiv.style.display = 'flex';
+      mainDropdown.classList.remove('show');
+      
+      showFollowUp('city', location.country, location.state);
+      
+    } else if (location.type === 'country') {
+      // Case 3: COUNTRY selected → Need STATE or CITY
+      flowState.stage = 'need_state_or_city';
+      flowState.selectedCountry = location.country;
+      
+      selectedText.textContent = location.country;
+      mainInput.classList.add('has-selection');
+      selectedDiv.style.display = 'flex';
+      mainDropdown.classList.remove('show');
+      
+      showFollowUp('state_or_city', location.country);
+    }
+  }
+
+  function handleFollowUpSelection(location) {
+    if (flowState.stage === 'need_city') {
+      // Must be a city
+      if (location.type === 'city') {
+        completeLocation(location.city, flowState.selectedState, flowState.selectedCountry);
+      }
+      
+    } else if (flowState.stage === 'need_state_or_city') {
+      if (location.type === 'city') {
+        // User typed city directly → COMPLETE!
+        completeLocation(location.city, location.state, flowState.selectedCountry);
+        
+      } else if (location.type === 'state') {
+        // User selected state → Now need CITY
+        flowState.stage = 'need_city';
+        flowState.selectedState = location.state;
+        
+        // Update the follow-up to now ask for city only
+        followUpInput.value = '';
+        showFollowUp('city', flowState.selectedCountry, location.state);
+      }
+      
+    } else if (flowState.stage === 'need_city_after_state') {
+      // Must be a city
+      if (location.type === 'city') {
+        completeLocation(location.city, flowState.selectedState, flowState.selectedCountry);
+      }
+    }
+  }
+
+  // ================== UI FLOW CONTROL ==================
+  
+  function showFollowUp(mode, country, state = null) {
+    followUpSection.style.display = 'block';
+    followUpDropdown.classList.remove('show');
+    
+    if (mode === 'city') {
+      // Only need city
+      followUpText.textContent = 'Now select your city';
+      followUpInput.placeholder = 'Type your city name';
+      followUpHint.textContent = `Select a city in ${state}, ${country}`;
+      followUpInput.dataset.mode = 'city';
+      followUpInput.dataset.country = country;
+      followUpInput.dataset.state = state;
+      
+    } else if (mode === 'state_or_city') {
+      // Need state or city
+      followUpText.textContent = 'Select your state or city';
+      followUpInput.placeholder = 'Type state name or city name';
+      followUpHint.textContent = `You can type a state (e.g., Punjab) or directly type a city (e.g., Sargodha)`;
+      followUpInput.dataset.mode = 'state_or_city';
+      followUpInput.dataset.country = country;
+      followUpInput.dataset.state = '';
+    }
+    
+    setTimeout(() => followUpInput.focus(), 100);
+  }
+
+  function completeLocation(city, state, country) {
+    flowState.stage = 'complete';
+    flowState.selectedCity = city;
+    flowState.selectedState = state;
+    flowState.selectedCountry = country;
+    
+    cityField.value = city;
+    stateField.value = state;
+    countryField.value = country;
+    timezoneField.value = getTimezone();
+    
+    selectedText.textContent = `${city}, ${state}, ${country}`;
+    mainInput.classList.add('has-selection');
+    selectedDiv.style.display = 'flex';
+    
+    mainDropdown.classList.remove('show');
+    followUpDropdown.classList.remove('show');
+    followUpSection.style.display = 'none';
+    
+    if (continueBtn) continueBtn.disabled = false;
+  }
+
+  function clearAll() {
+    flowState = {
+      stage: 'initial',
+      selectedCountry: null,
+      selectedState: null,
+      selectedCity: null,
+    };
+    
+    cityField.value = '';
+    stateField.value = '';
+    countryField.value = '';
+    
+    mainInput.classList.remove('has-selection');
+    selectedDiv.style.display = 'none';
+    mainInput.value = '';
+    
+    followUpSection.style.display = 'none';
+    followUpInput.value = '';
+    
+    mainInput.focus();
     if (continueBtn) continueBtn.disabled = true;
-    if (headerProgress && stepText) {
-      const NEXT = 3;
-      headerProgress.style.width = ((NEXT/8)*100)+'%';
-      stepText.textContent = `Step ${NEXT} of 8`;
+  }
+
+  // ================== INPUT SETUP ==================
+  
+  function setupInput(input, dropdown, inputType) {
+    input.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      
+      clearTimeout(debounceTimers[inputType]);
+      
+      if (query.length < 2) {
+        dropdown.classList.remove('show');
+        return;
+      }
+      
+      dropdown.innerHTML = '<div class="autocomplete-loading">Searching...</div>';
+      dropdown.classList.add('show');
+      
+      debounceTimers[inputType] = setTimeout(async () => {
+        let results;
+        
+        if (inputType === 'followUp') {
+          const mode = input.dataset.mode;
+          const country = input.dataset.country;
+          const state = input.dataset.state;
+          
+          if (mode === 'city') {
+            // Only cities
+            results = await searchLocation(query, { country, state });
+            results = results.filter(r => r.type === 'city');
+          } else {
+            // States or cities
+            results = await searchLocation(query, { country });
+            results = results.filter(r => r.type === 'state' || r.type === 'city');
+          }
+        } else {
+          // Main input - all types
+          results = await searchLocation(query);
+        }
+        
+        renderDropdown(dropdown, results, inputType);
+      }, 300);
+    });
+
+    setupKeyboardNav(input, dropdown, inputType);
+  }
+
+  function setupKeyboardNav(input, dropdown, inputType) {
+    input.addEventListener('keydown', (e) => {
+      const items = dropdown.querySelectorAll('.autocomplete-item');
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndexes[inputType] = Math.min(activeIndexes[inputType] + 1, items.length - 1);
+        updateActiveItem(items, inputType);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndexes[inputType] = Math.max(activeIndexes[inputType] - 1, -1);
+        updateActiveItem(items, inputType);
+      } else if (e.key === 'Enter' && activeIndexes[inputType] >= 0) {
+        e.preventDefault();
+        items[activeIndexes[inputType]]?.click();
+      } else if (e.key === 'Escape') {
+        dropdown.classList.remove('show');
+      }
+    });
+  }
+
+  function updateActiveItem(items, inputType) {
+    items.forEach((item, index) => {
+      item.classList.toggle('active', index === activeIndexes[inputType]);
+    });
+    
+    if (activeIndexes[inputType] >= 0 && items[activeIndexes[inputType]]) {
+      items[activeIndexes[inputType]].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // ================== FORM SUBMIT ==================
+  
+  form.addEventListener('submit', (e) => {
+    if (flowState.stage !== 'complete') {
+      e.preventDefault();
+      alert('Please complete your location by selecting a city');
+      return;
+    }
+    
+    if (continueBtn) {
+      continueBtn.disabled = true;
+      const btnText = continueBtn.querySelector('#btnText');
+      if (btnText) btnText.innerHTML = '<div class="loading-spinner"></div>';
     }
   });
 
-  // ---------- Events ----------
-  methodBtns.forEach(btn => btn.addEventListener('click', ()=> setMethod(btn.dataset.method)));
-  if (detectBtn) detectBtn.addEventListener('click', detectLocation);
-  countrySelect.addEventListener('change', onCountryChange);
-  stateSelect.addEventListener('change', onStateChange);
-  citySelect.addEventListener('change', onCityChange);
+  // ================== UTILITIES ==================
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-  // ---------- Boot ----------
-  (async ()=>{
+  function getTimezone() {
     try {
-      updateProgress(2);
-      setMethod('manual');
-      resetSelect(stateSelect, 'Select your state');
-      resetSelect(citySelect,  'Select your city');
-      tzInput.value = tz();
-      await loadCountries();
-    } catch (e) {
-      console.error(e);
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
     }
-  })();
+  }
+
+  // ================== EVENT LISTENERS ==================
+  
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-wrapper')) {
+      mainDropdown.classList.remove('show');
+      followUpDropdown.classList.remove('show');
+    }
+  });
+
+  clearBtn.addEventListener('click', clearAll);
+
+  // ================== INITIALIZE ==================
+  
+  setupInput(mainInput, mainDropdown, 'main');
+  setupInput(followUpInput, followUpDropdown, 'followUp');
+  
+  timezoneField.value = getTimezone();
+  if (continueBtn) continueBtn.disabled = true;
 })();
 </script>
 @endpush

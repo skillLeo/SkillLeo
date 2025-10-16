@@ -4,9 +4,12 @@
 namespace App\Http\Controllers\Tenant;
 
 use Carbon\Carbon;
+use App\Models\City;
 use App\Models\User;
-use App\Models\Skill;
 
+use App\Models\Skill;
+use App\Models\State;
+use App\Models\Country;
 use App\Models\Education;
 use App\Models\Portfolio;
 use App\Models\Experience;
@@ -18,6 +21,7 @@ use Illuminate\Validation\Rule;
 use App\Models\PortfolioProject;
 use App\Services\TimezoneService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
@@ -131,59 +135,474 @@ class OnboardingController extends Controller
 
 
 
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public function storeLocation(Request $request)
     {
         $user = $request->user();
     
-        // Validate and normalize inputs
-        $data = $request->validate([
-            'country'        => ['required', 'string', 'max:120'],
-            'state'          => ['required', 'string', 'max:120'],
-            'city'           => ['required', 'string', 'max:120'],
-            'timezone'       => ['nullable', 'string', 'timezone'],
-            'coords.lat'     => ['nullable', 'numeric'],
-            'coords.lng'     => ['nullable', 'numeric'],
-            'source'         => ['nullable', 'in:manual,nominatim,gps,auto'],
+        // ============ VALIDATION ============
+        $validated = $request->validate([
+            'country'   => ['required', 'string', 'max:120'],
+            'state'     => ['required', 'string', 'max:120'],
+            'city'      => ['required', 'string', 'max:120'],
+            'timezone'  => ['nullable', 'string', 'max:100'],
+            'source'    => ['nullable', 'in:search,manual,nominatim,gps,auto'],
+        ], [
+            'country.required' => 'Please select your country',
+            'state.required'   => 'Please select your state/province',
+            'city.required'    => 'Please select your city',
         ]);
     
-        // Tidy/case – keep readable names
-        $country = Str::of($data['country'])->trim()->substr(0, 120)->value();
-        $state   = Str::of($data['state'])->trim()->substr(0, 120)->value();
-        $city    = Str::of($data['city'])->trim()->substr(0, 120)->value();
+        try {
+            DB::beginTransaction();
     
-        // 🔥 Auto-detect timezone from location if not provided
-        $timezone = $data['timezone'] 
-            ?? TimezoneService::detectFromLocation($country, $state, $city);
+            // ============ NORMALIZE & PREPARE DATA ============
+            $country = Str::of($validated['country'])->trim()->title()->substr(0, 120)->toString();
+            $state   = Str::of($validated['state'])->trim()->title()->substr(0, 120)->toString();
+            $city    = Str::of($validated['city'])->trim()->title()->substr(0, 120)->toString();
     
-        // Update user profile with location data
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'country' => $country,
-                'state'   => $state,
-                'city'    => $city,
-                'meta'    => array_merge($user->profile?->meta ?? [], [
-                    'coords' => [
-                        'lat' => Arr::get($data, 'coords.lat'),
-                        'lng' => Arr::get($data, 'coords.lng'),
-                    ],
-                    'source' => $request->input('source', 'manual'),
-                    'timezone_detected' => $timezone,
-                    'location_updated_at' => now()->toIso8601String(),
-                ]),
-            ]
-        );
+            // Detect timezone intelligently
+            $timezone = $this->detectTimezone(
+                $validated['timezone'] ?? null,
+                $country,
+                $state,
+                $city
+            );
     
-        // 🔥 Update user's timezone
-        $user->update([
-            'timezone' => $timezone,
-            'is_profile_complete' => 'skills',
-        ]);
+            // ============ VERIFY LOCATION EXISTS IN DATABASE ============
+            $locationData = $this->verifyAndGetLocation($country, $state, $city);
     
-        return redirect()
-            ->route('tenant.onboarding.skills')
-            ->with('status', 'Location saved. Let\'s add your skills.');
+            // ============ PREPARE META DATA ============
+            $existingMeta = $user->profile?->meta ?? [];
+    
+            $locationMeta = [
+                'location' => [
+                    'country_id' => $locationData['country_id'] ?? null,
+                    'state_id'   => $locationData['state_id'] ?? null,
+                    'city_id'    => $locationData['city_id'] ?? null,
+                    'verified'   => $locationData['verified'] ?? false,
+                    'source'     => $validated['source'] ?? 'search',
+                    'updated_at' => now()->toIso8601String(),
+                ],
+                'timezone_detected' => $timezone,
+                'timezone_source'   => $validated['timezone'] ? 'user' : 'auto',
+            ];
+    
+            // Merge with existing meta
+            $mergedMeta = array_replace_recursive($existingMeta, $locationMeta);
+    
+            // ============ UPDATE USER PROFILE ============
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'country' => $country,
+                    'state'   => $state,
+                    'city'    => $city,
+                    'meta'    => $mergedMeta,
+                ]
+            );
+    
+            // ============ UPDATE USER (timezone + progress) ============
+            // set is_profile_complete => 'education' here
+            $user->forceFill([
+                'timezone'           => $timezone,
+                'is_profile_complete' => 'education',
+            ])->save();
+    
+            // ============ LOG SUCCESS ============
+            Log::info('Location stored successfully', [
+                'user_id'  => $user->id,
+                'location' => "{$city}, {$state}, {$country}",
+                'timezone' => $timezone,
+                'step'     => 'education',
+            ]);
+    
+            DB::commit();
+    
+            // ============ SUCCESS RESPONSE ============
+            return redirect()
+                ->route('tenant.onboarding.education')
+                ->with('success', '📍 Location saved successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+    
+            Log::error('Location storage failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+    
+            return back()
+                ->withInput()
+                ->withErrors(['location' => 'Failed to save location. Please try again.']);
+        }
     }
+    
+
+    /**
+     * Verify location exists in database and get IDs
+     * 
+     * @param string $countryName
+     * @param string $stateName
+     * @param string $cityName
+     * @return array
+     */
+    private function verifyAndGetLocation(string $countryName, string $stateName, string $cityName): array
+    {
+        $data = [
+            'country_id' => null,
+            'state_id'   => null,
+            'city_id'    => null,
+            'verified'   => false,
+        ];
+
+        try {
+            // Find country (case-insensitive)
+            $country = Country::whereRaw('LOWER(name) = ?', [Str::lower($countryName)])->first();
+            
+            if (!$country) {
+                // Country not found - location not fully verified
+                Log::warning('Country not found in database', ['country' => $countryName]);
+                return $data;
+            }
+            
+            $data['country_id'] = $country->id;
+
+            // Find state
+            $state = State::where('country_id', $country->id)
+                ->whereRaw('LOWER(name) = ?', [Str::lower($stateName)])
+                ->first();
+            
+            if (!$state) {
+                Log::warning('State not found in database', [
+                    'country' => $countryName,
+                    'state' => $stateName
+                ]);
+                return $data;
+            }
+            
+            $data['state_id'] = $state->id;
+
+            // Find city
+            $city = City::where('state_id', $state->id)
+                ->whereRaw('LOWER(name) = ?', [Str::lower($cityName)])
+                ->first();
+            
+            if (!$city) {
+                Log::warning('City not found in database', [
+                    'country' => $countryName,
+                    'state' => $stateName,
+                    'city' => $cityName
+                ]);
+                return $data;
+            }
+            
+            $data['city_id'] = $city->id;
+            $data['verified'] = true;
+
+            return $data;
+
+        } catch (\Exception $e) {
+            Log::error('Location verification failed', [
+                'error' => $e->getMessage(),
+                'location' => "{$cityName}, {$stateName}, {$countryName}"
+            ]);
+            
+            return $data;
+        }
+    }
+
+    /**
+     * Detect timezone from location or user input
+     * 
+     * @param string|null $userTimezone
+     * @param string $country
+     * @param string $state
+     * @param string $city
+     * @return string
+     */
+    private function detectTimezone(?string $userTimezone, string $country, string $state, string $city): string
+    {
+        // If user provided timezone, validate and use it
+        if ($userTimezone && $this->isValidTimezone($userTimezone)) {
+            return $userTimezone;
+        }
+
+        // Try to detect timezone from location
+        try {
+            // Common timezone mappings by country
+            $timezoneMap = $this->getTimezoneMap();
+            
+            $countryLower = Str::lower($country);
+            
+            // Check if country has specific timezone
+            if (isset($timezoneMap[$countryLower])) {
+                $countryTimezone = $timezoneMap[$countryLower];
+                
+                // If it's an array (multiple timezones), try to match by state/city
+                if (is_array($countryTimezone)) {
+                    $stateLower = Str::lower($state);
+                    $cityLower = Str::lower($city);
+                    
+                    // Try state match
+                    foreach ($countryTimezone as $pattern => $tz) {
+                        if (Str::contains($stateLower, Str::lower($pattern)) || 
+                            Str::contains($cityLower, Str::lower($pattern))) {
+                            return $tz;
+                        }
+                    }
+                    
+                    // Return first timezone as default
+                    return reset($countryTimezone);
+                }
+                
+                return $countryTimezone;
+            }
+
+            // Fallback to UTC
+            return 'UTC';
+
+        } catch (\Exception $e) {
+            Log::warning('Timezone detection failed, using UTC', [
+                'error' => $e->getMessage(),
+                'location' => "{$city}, {$state}, {$country}"
+            ]);
+            
+            return 'UTC';
+        }
+    }
+
+    /**
+     * Check if timezone is valid
+     * 
+     * @param string $timezone
+     * @return bool
+     */
+    private function isValidTimezone(string $timezone): bool
+    {
+        try {
+            new \DateTimeZone($timezone);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get comprehensive timezone mapping
+     * 
+     * @return array
+     */
+    private function getTimezoneMap(): array
+    {
+        return [
+            // Pakistan
+            'pakistan' => 'Asia/Karachi',
+            
+            // United States (multiple timezones)
+            'united states' => [
+                'eastern' => 'America/New_York',
+                'central' => 'America/Chicago',
+                'mountain' => 'America/Denver',
+                'pacific' => 'America/Los_Angeles',
+                'alaska' => 'America/Anchorage',
+                'hawaii' => 'Pacific/Honolulu',
+            ],
+            
+            // United Kingdom
+            'united kingdom' => 'Europe/London',
+            'england' => 'Europe/London',
+            'scotland' => 'Europe/London',
+            'wales' => 'Europe/London',
+            
+            // Canada (multiple timezones)
+            'canada' => [
+                'newfoundland' => 'America/St_Johns',
+                'atlantic' => 'America/Halifax',
+                'eastern' => 'America/Toronto',
+                'central' => 'America/Winnipeg',
+                'mountain' => 'America/Edmonton',
+                'pacific' => 'America/Vancouver',
+            ],
+            
+            // India
+            'india' => 'Asia/Kolkata',
+            
+            // Australia (multiple timezones)
+            'australia' => [
+                'western' => 'Australia/Perth',
+                'central' => 'Australia/Adelaide',
+                'eastern' => 'Australia/Sydney',
+            ],
+            
+            // European Countries
+            'germany' => 'Europe/Berlin',
+            'france' => 'Europe/Paris',
+            'spain' => 'Europe/Madrid',
+            'italy' => 'Europe/Rome',
+            'netherlands' => 'Europe/Amsterdam',
+            'belgium' => 'Europe/Brussels',
+            'switzerland' => 'Europe/Zurich',
+            'austria' => 'Europe/Vienna',
+            'poland' => 'Europe/Warsaw',
+            'sweden' => 'Europe/Stockholm',
+            'norway' => 'Europe/Oslo',
+            'denmark' => 'Europe/Copenhagen',
+            'finland' => 'Europe/Helsinki',
+            
+            // Middle East
+            'united arab emirates' => 'Asia/Dubai',
+            'saudi arabia' => 'Asia/Riyadh',
+            'turkey' => 'Europe/Istanbul',
+            'israel' => 'Asia/Jerusalem',
+            
+            // Asia
+            'china' => 'Asia/Shanghai',
+            'japan' => 'Asia/Tokyo',
+            'south korea' => 'Asia/Seoul',
+            'singapore' => 'Asia/Singapore',
+            'malaysia' => 'Asia/Kuala_Lumpur',
+            'thailand' => 'Asia/Bangkok',
+            'vietnam' => 'Asia/Ho_Chi_Minh',
+            'indonesia' => 'Asia/Jakarta',
+            'philippines' => 'Asia/Manila',
+            'bangladesh' => 'Asia/Dhaka',
+            
+            // South America
+            'brazil' => 'America/Sao_Paulo',
+            'argentina' => 'America/Argentina/Buenos_Aires',
+            'chile' => 'America/Santiago',
+            'colombia' => 'America/Bogota',
+            'peru' => 'America/Lima',
+            
+            // Africa
+            'south africa' => 'Africa/Johannesburg',
+            'nigeria' => 'Africa/Lagos',
+            'kenya' => 'Africa/Nairobi',
+            'egypt' => 'Africa/Cairo',
+            
+            // New Zealand
+            'new zealand' => 'Pacific/Auckland',
+        ];
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

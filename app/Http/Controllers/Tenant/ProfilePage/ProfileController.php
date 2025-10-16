@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant\ProfilePage;
 
 use Carbon\Carbon;
+use App\Models\City;
 use App\Models\User;
 use App\Models\Skill;
+use App\Models\State;
 use App\Models\Review;
+use App\Models\Country;
 use App\Models\Education;
 use App\Models\Portfolio;
 use App\Models\SoftSkill;
@@ -31,12 +34,12 @@ use App\Http\Controllers\Controller;
 use App\ViewModels\ProfileViewModel;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+
+
 use App\Services\Profile\ProfileService;
 use App\Services\Auth\OnlineStatusService;
-use App\Http\Requests\Tenant\UpdateProfileRequest;
-
-
 use Intervention\Image\Laravel\Facades\Image;
+use App\Http\Requests\Tenant\UpdateProfileRequest;
 
 
 
@@ -868,154 +871,213 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Validate input
-        $data = $request->validate([
+        // ============ VALIDATION ============
+        $validated = $request->validate([
             'first_name' => 'required|string|max:120',
             'last_name' => 'nullable|string|max:120',
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'headline' => 'nullable|string|max:120',
             'about' => 'nullable|string|max:2000',
-            'location' => 'nullable|string|max:160',
             'phone' => 'nullable|string|max:40',
-            'linkedin' => 'nullable|url',
-            'twitter' => 'nullable|url',
-            'facebook' => 'nullable|url',
-            'instagram' => 'nullable|url',
+            
+            // Location fields (from autocomplete)
+            'city' => 'nullable|string|max:120',
+            'state' => 'nullable|string|max:120',
+            'country' => 'nullable|string|max:120',
+            
+            // Social links
+            'linkedin' => 'nullable|url|max:255',
+            'twitter' => 'nullable|url|max:255',
+            'facebook' => 'nullable|url|max:255',
+            'instagram' => 'nullable|url|max:255',
+            
+            // Avatar
             'avatar' => 'nullable|image|max:5120', // 5MB
         ]);
 
-        // Start database transaction
         DB::beginTransaction();
 
         try {
-            // Update user first name, last name and email
-            $user->name = $data['first_name'];
-            $user->last_name = $data['last_name'] ?? null;
-            $user->email = $data['email'];
-            $user->save();
+            // ============ UPDATE USER BASIC INFO ============
+            $user->name = $validated['first_name'];
+            $user->last_name = $validated['last_name'] ?? null;
+            $user->email = $validated['email'];
 
-            // Handle avatar upload
+            // ============ HANDLE AVATAR UPLOAD ============
             if ($request->hasFile('avatar')) {
+                // Delete old avatar if exists
+                if ($user->avatar_url && !filter_var($user->avatar_url, FILTER_VALIDATE_URL)) {
+                    $oldPath = str_replace('/storage/', '', parse_url($user->avatar_url, PHP_URL_PATH));
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                // Upload new avatar
                 $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
                 $user->avatar_url = Storage::disk('public')->url($path);
-                $user->save();
             }
 
-            // Prepare social links
+            $user->save();
+
+            // ============ NORMALIZE LOCATION DATA ============
+            $city = $validated['city'] ? Str::of($validated['city'])->trim()->title()->substr(0, 120)->toString() : null;
+            $state = $validated['state'] ? Str::of($validated['state'])->trim()->title()->substr(0, 120)->toString() : null;
+            $country = $validated['country'] ? Str::of($validated['country'])->trim()->title()->substr(0, 120)->toString() : null;
+
+            // ============ VERIFY LOCATION IN DATABASE ============
+            $locationData = $this->verifyLocation($country, $state, $city);
+
+            // ============ PREPARE SOCIAL LINKS ============
             $socialLinks = [];
-            if (!empty($data['linkedin'])) {
-                $socialLinks['linkedin'] = $data['linkedin'];
-            }
-            if (!empty($data['twitter'])) {
-                $socialLinks['twitter'] = $data['twitter'];
-            }
-            if (!empty($data['facebook'])) {
-                $socialLinks['facebook'] = $data['facebook'];
-            }
-            if (!empty($data['instagram'])) {
-                $socialLinks['instagram'] = $data['instagram'];
+            foreach (['linkedin', 'twitter', 'facebook', 'instagram'] as $platform) {
+                if (!empty($validated[$platform])) {
+                    $socialLinks[$platform] = $validated[$platform];
+                }
             }
 
-            // Split location into city and country
-            $city = null;
-            $country = null;
-            if (!empty($data['location'])) {
-                $parts = explode(',', $data['location'], 2);
-                $city = trim($parts[0]);
-                $country = isset($parts[1]) ? trim($parts[1]) : null;
-            }
-
-            // Update or create profile
-            $profile = UserProfile::where('user_id', $user->id)->first();
-
-            if ($profile) {
-                // Update existing profile
-                $profile->phone = $data['phone'] ?? null;
-                $profile->tagline = $data['headline'] ?? null;
-                $profile->bio = $data['about'] ?? null;
-                $profile->city = $city;
-                $profile->country = $country;
-                $profile->social_links = $socialLinks;
-                $profile->save();
+            // ============ PREPARE META DATA ============
+            $existingMeta = $user->profile?->meta ?? [];
+            
+            if ($country && $state && $city) {
+                $locationMeta = [
+                    'location' => [
+                        'country_id' => $locationData['country_id'] ?? null,
+                        'state_id' => $locationData['state_id'] ?? null,
+                        'city_id' => $locationData['city_id'] ?? null,
+                        'verified' => $locationData['verified'] ?? false,
+                        'source' => 'profile_edit',
+                        'updated_at' => now()->toIso8601String(),
+                    ],
+                ];
+                $mergedMeta = array_replace_recursive($existingMeta, $locationMeta);
             } else {
-                // Create new profile
-                UserProfile::create([
-                    'user_id' => $user->id,
-                    'phone' => $data['phone'] ?? null,
-                    'tagline' => $data['headline'] ?? null,
-                    'bio' => $data['about'] ?? null,
+                $mergedMeta = $existingMeta;
+            }
+
+            // ============ UPDATE OR CREATE PROFILE ============
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'phone' => $validated['phone'] ?? null,
+                    'tagline' => $validated['headline'] ?? null,
+                    'bio' => $validated['about'] ?? null,
                     'city' => $city,
+                    'state' => $state,
                     'country' => $country,
                     'social_links' => $socialLinks,
-                ]);
-            }
+                    'meta' => $mergedMeta,
+                ]
+            );
 
-            // Commit transaction
+            // ============ LOG SUCCESS ============
+            Log::info('Profile updated successfully', [
+                'user_id' => $user->id,
+                'location' => $city && $state && $country ? "{$city}, {$state}, {$country}" : 'Not set',
+            ]);
+
             DB::commit();
 
-            // Return response
+            // ============ RETURN RESPONSE ============
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Profile updated successfully',
                     'user' => [
-                        'name' => $user->name . ' ' . $user->last_name,
+                        'name' => $user->full_name,
                         'avatar_url' => $user->avatar_url,
+                        'location' => $user->location,
                     ],
                 ]);
             }
 
             return back()->with('success', 'Profile updated successfully');
+
         } catch (\Exception $e) {
-            // Rollback on error
             DB::rollBack();
+
+            Log::error('Profile update failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update profile',
+                    'message' => 'Failed to update profile. Please try again.',
                 ], 500);
             }
 
-            return back()->with('error', 'Failed to update profile');
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to update profile. Please try again.');
         }
     }
 
-
-    // Helper: Get full name
-    private function getFullName($firstName, $lastName)
+    /**
+     * Verify location exists in database and get IDs
+     * 
+     * @param string|null $countryName
+     * @param string|null $stateName
+     * @param string|null $cityName
+     * @return array
+     */
+    private function verifyLocation(?string $countryName, ?string $stateName, ?string $cityName): array
     {
-        $first = trim($firstName ?? '');
-        $last = trim($lastName ?? '');
+        $data = [
+            'country_id' => null,
+            'state_id' => null,
+            'city_id' => null,
+            'verified' => false,
+        ];
 
-        $fullName = trim($first . ' ' . $last);
+        if (!$countryName || !$stateName || !$cityName) {
+            return $data;
+        }
 
-        return $fullName ?: 'User';
+        try {
+            // Find country (case-insensitive)
+            $country = Country::whereRaw('LOWER(name) = ?', [Str::lower($countryName)])->first();
+            
+            if (!$country) {
+                return $data;
+            }
+            
+            $data['country_id'] = $country->id;
+
+            // Find state
+            $state = State::where('country_id', $country->id)
+                ->whereRaw('LOWER(name) = ?', [Str::lower($stateName)])
+                ->first();
+            
+            if (!$state) {
+                return $data;
+            }
+            
+            $data['state_id'] = $state->id;
+
+            // Find city
+            $city = City::where('state_id', $state->id)
+                ->whereRaw('LOWER(name) = ?', [Str::lower($cityName)])
+                ->first();
+            
+            if (!$city) {
+                return $data;
+            }
+            
+            $data['city_id'] = $city->id;
+            $data['verified'] = true;
+
+            return $data;
+
+        } catch (\Exception $e) {
+            Log::error('Location verification failed', [
+                'error' => $e->getMessage(),
+                'location' => "{$cityName}, {$stateName}, {$countryName}"
+            ]);
+            
+            return $data;
+        }
     }
-
-
-    // Helper: Get location string
-    private function getLocation($profile)
-    {
-        if (!$profile) {
-            return null;
-        }
-
-        $parts = [];
-
-        if ($profile->city) {
-            $parts[] = $profile->city;
-        }
-        if ($profile->state) {
-            $parts[] = $profile->state;
-        }
-        if ($profile->country) {
-            $parts[] = $profile->country;
-        }
-
-        return !empty($parts) ? implode(', ', $parts) : null;
-    }
-
 
 
 

@@ -826,7 +826,8 @@
 
     <x-modals.edits.edit-profile :user="$user" />
     <x-modals.edits.edit-experience :modal-experiences="$modalExperiences" />
-    <x-modals.edits.edit-education :user-educations="$userEducations" :institutions-search-url="route('api.institutions.search')" />
+    <x-modals.edits.edit-education :modal-educations="$userEducations" :user-educations="$userEducations" :institutions-search-url="route('api.institutions.search')" />
+
     <x-modals.edits.edit-skills :modal-skills="$modalSkills" :soft-skill-options="$softSkillOptions" :selected-soft="$selectedSoft" />
     <x-modals.edits.edit-portfolio :modal-portfolios="$modalPortfolios" :userSkills="$userSkills" />
     <x-modals.edits.edit-languages :modal-languages="$modalLanguages" />

@@ -16,14 +16,7 @@
         justify-content: space-around;
     }
 
-    /* .left-sidebar,
-    .main-content,
-    .right-sidebar {
-        position: sticky;
-        top: var(--sticky-offset);
-        align-self: start;
-        height: max-content;
-    } */
+
 }
 
  
@@ -63,10 +56,11 @@
         grid-template-columns: 68% 30%;
         justify-content: space-around;
     }
-
-    .portfolio-grid {
+ 
+  
+    .banner-section{
+        display: none;
     }
-
     .hero-mobile {
         display: block;
     }
@@ -121,6 +115,7 @@
    TABLET - 768px+
    =================================== */
 @media (min-width: 768px) {
+ 
     body {
         padding-top: var(--nav-height-desktop);
     }
@@ -221,6 +216,14 @@
     .card,
     .hero-mobile {
         border-radius: 0 !important;
+
+    }
+    .banner-section{
+        display: none;
+    }
+    .hero-mobile {
+        margin-top: 22px;
+
     }
 
     .review-cards {

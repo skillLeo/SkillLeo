@@ -41,10 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
-
 Route::prefix('location')->group(function () {
-    Route::get('countries', [LocationApiController::class, 'countries']);       // ?q=pak → optional search
-    Route::get('states',    [LocationApiController::class, 'states']);          // ?country=Pakistan
-    Route::get('cities',    [LocationApiController::class, 'cities']);          // ?country=Pakistan&state=Sindh
-    Route::get('reverse',   [LocationApiController::class, 'reverse']);         // ?lat=..&lng=..
+    Route::get('search', [LocationApiController::class, 'search']);
+    Route::get('details', [LocationApiController::class, 'getLocation']);
 });

@@ -55,7 +55,7 @@
 
             <div class="form-group">
                 <label class="form-label">About</label>
-                <textarea name="about" class="form-textarea" rows="6" maxlength="2000" placeholder="Tell us about yourself...">{{ $user->about ?? $user->bio ?? '' }}</textarea>
+                <textarea name="about" class="form-textarea" rows="6" maxlength="2000" placeholder="Tell us about yourself...">{{ $user->bio ?? '' }}</textarea>
                 <div class="char-count"><span id="aboutCount">0</span> / 2000</div>
             </div>
         </div>
@@ -64,9 +64,39 @@
         <div class="modal-section">
             <h3 class="section-title">Location & Contact</h3>
             
+            {{-- Location Autocomplete --}}
             <div class="form-group">
                 <label class="form-label">Location</label>
-                <input type="text" name="location" class="form-input" value="{{ $user->location ?? '' }}" placeholder="City, Country">
+                <div class="location-autocomplete-wrapper">
+                    <input 
+                        type="text" 
+                        id="locationSearchInput" 
+                        class="form-input location-search-input"
+                        placeholder="Start typing your city (e.g., Sargodha, Punjab, Pakistan)"
+                        value="{{ $user->location ?? '' }}"
+                        autocomplete="off"
+                    />
+                    <div class="location-dropdown" id="locationDropdown"></div>
+                    
+                    <div class="location-selected" id="locationSelected" style="display:none;">
+                        <div class="location-selected-content">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                            <span id="locationSelectedText"></span>
+                        </div>
+                        <button type="button" class="location-clear-btn" onclick="clearLocationSelection()">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                {{-- Hidden fields for form submission --}}
+                <input type="hidden" name="city" id="cityHiddenField" value="{{ $user->city ?? '' }}">
+                <input type="hidden" name="state" id="stateHiddenField" value="{{ $user->state ?? '' }}">
+                <input type="hidden" name="country" id="countryHiddenField" value="{{ $user->country ?? '' }}">
             </div>
 
             <div class="form-group">
@@ -84,6 +114,10 @@
         <div class="modal-section">
             <h3 class="section-title">Social Links</h3>
             
+            @php
+                $socialLinks = $user->profile->social_links ?? [];
+            @endphp
+
             <div class="form-group">
                 <label class="form-label"><i class="fa-brands fa-linkedin"></i> LinkedIn</label>
                 <input type="url" name="linkedin" class="form-input" value="{{ $user->linkedin ?? '' }}" placeholder="https://linkedin.com/in/yourprofile">
@@ -277,6 +311,143 @@
     margin-top: 4px;
 }
 
+/* Location Autocomplete Styles */
+.location-autocomplete-wrapper {
+    position: relative;
+}
+
+.location-search-input.has-selection {
+    display: none;
+}
+
+.location-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 10000;
+    display: none;
+}
+
+.location-dropdown.show {
+    display: block;
+}
+
+.location-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.location-item:last-child {
+    border-bottom: none;
+}
+
+.location-item:hover,
+.location-item.active {
+    background: var(--accent-light);
+}
+
+.location-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.location-icon.city {
+    color: var(--accent);
+}
+
+.location-icon.state {
+    color: #8b5cf6;
+}
+
+.location-icon.country {
+    color: #f59e0b;
+}
+
+.location-text {
+    flex: 1;
+}
+
+.location-primary {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-body);
+}
+
+.location-secondary {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.location-loading,
+.location-empty {
+    padding: 14px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.location-selected {
+    padding: 10px 14px;
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.location-selected-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.location-clear-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.location-clear-btn:hover {
+    color: var(--accent);
+}
+
+.location-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.location-dropdown::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+.location-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
 @media (max-width: 640px) {
     .photo-upload-wrap {
         flex-direction: column;
@@ -286,10 +457,177 @@
     .form-row {
         grid-template-columns: 1fr;
     }
+
+    .location-dropdown {
+        max-height: 200px;
+    }
 }
 </style>
 
 <script>
+// ============ Location Autocomplete Logic ============
+(function() {
+    const searchInput = document.getElementById('locationSearchInput');
+    const dropdown = document.getElementById('locationDropdown');
+    const selectedDiv = document.getElementById('locationSelected');
+    const selectedText = document.getElementById('locationSelectedText');
+    
+    const cityField = document.getElementById('cityHiddenField');
+    const stateField = document.getElementById('stateHiddenField');
+    const countryField = document.getElementById('countryHiddenField');
+    
+    let debounceTimer;
+    let activeIndex = -1;
+    let currentResults = [];
+
+    const icons = {
+        city: '<svg class="location-icon city" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+        state: '<svg class="location-icon state" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+        country: '<svg class="location-icon country" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'
+    };
+
+    async function searchLocations(query) {
+        if (query.length < 2) return [];
+        
+        try {
+            const response = await fetch(`/api/location/search?q=${encodeURIComponent(query)}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (!response.ok) throw new Error('Search failed');
+            return await response.json();
+        } catch (error) {
+            console.error('Location search error:', error);
+            return [];
+        }
+    }
+
+    function renderDropdown(results) {
+        currentResults = results;
+        
+        if (!results || results.length === 0) {
+            dropdown.innerHTML = '<div class="location-empty">No locations found</div>';
+            dropdown.classList.add('show');
+            return;
+        }
+
+        const html = results.map((item, index) => `
+            <div class="location-item" data-index="${index}">
+                ${icons[item.type]}
+                <div class="location-text">
+                    <div class="location-primary">${escapeHtml(item.display)}</div>
+                    ${item.type === 'city' ? `<div class="location-secondary">${escapeHtml(item.country)}</div>` : ''}
+                </div>
+            </div>
+        `).join('');
+
+        dropdown.innerHTML = html;
+        dropdown.classList.add('show');
+        activeIndex = -1;
+
+        dropdown.querySelectorAll('.location-item').forEach((item, index) => {
+            item.addEventListener('click', () => selectLocation(results[index]));
+        });
+    }
+
+    function selectLocation(location) {
+        // Only accept complete city locations
+        if (location.type !== 'city') {
+            alert('Please select a complete city location');
+            return;
+        }
+
+        cityField.value = location.city || '';
+        stateField.value = location.state || '';
+        countryField.value = location.country || '';
+        
+        selectedText.textContent = location.full_display;
+        searchInput.classList.add('has-selection');
+        selectedDiv.style.display = 'flex';
+        dropdown.classList.remove('show');
+    }
+
+    window.clearLocationSelection = function() {
+        cityField.value = '';
+        stateField.value = '';
+        countryField.value = '';
+        
+        searchInput.classList.remove('has-selection');
+        selectedDiv.style.display = 'none';
+        searchInput.value = '';
+        searchInput.focus();
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        
+        clearTimeout(debounceTimer);
+        
+        if (query.length < 2) {
+            dropdown.classList.remove('show');
+            return;
+        }
+        
+        dropdown.innerHTML = '<div class="location-loading">Searching...</div>';
+        dropdown.classList.add('show');
+        
+        debounceTimer = setTimeout(async () => {
+            const results = await searchLocations(query);
+            renderDropdown(results);
+        }, 300);
+    });
+
+    searchInput.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.location-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+            updateActiveItem(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, -1);
+            updateActiveItem(items);
+        } else if (e.key === 'Enter' && activeIndex >= 0) {
+            e.preventDefault();
+            items[activeIndex]?.click();
+        } else if (e.key === 'Escape') {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    function updateActiveItem(items) {
+        items.forEach((item, index) => {
+            item.classList.toggle('active', index === activeIndex);
+        });
+        
+        if (activeIndex >= 0 && items[activeIndex]) {
+            items[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.location-autocomplete-wrapper')) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize: If location exists, show selected state
+    if (cityField.value && stateField.value && countryField.value) {
+        selectedText.textContent = `${cityField.value}, ${stateField.value}, ${countryField.value}`;
+        searchInput.classList.add('has-selection');
+        selectedDiv.style.display = 'flex';
+    }
+})();
+
+// ============ Other Existing Functions ============
+
 // Avatar preview
 document.getElementById('avatarInput')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -327,4 +665,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (headline) document.getElementById('headlineCount').textContent = headline.value.length;
     if (about) document.getElementById('aboutCount').textContent = about.value.length;
 });
-</script> 
+</script>

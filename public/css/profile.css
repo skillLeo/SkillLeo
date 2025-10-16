@@ -1987,13 +1987,10 @@ section {
 }
 
 .generate-profile-btn:hover {
-    transform: translateY(-2px);
     box-shadow: 0 8px 28px rgba(91, 134, 229, 0.35);
 }
 
-.generate-profile-btn:active {
-    transform: translateY(0);
-}
+
 
 /* ===================================
    HERO MERGED (DESKTOP)

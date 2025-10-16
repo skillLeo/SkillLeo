@@ -247,7 +247,7 @@
     }
 
     .empty-state {
-        display: flex;
+        display: none;
         flex-direction: column;
         align-items: center;
         justify-content: center;
@@ -277,10 +277,9 @@
         align-items: center;
         padding: 12px 14px;
         background: var(--card);
+        border-radius: 8px;
         transition: all 0.2s ease;
     }
-
-   
 
     .skill-content {
         display: flex;
@@ -464,9 +463,8 @@
         };
 
         // ======== STATE ========
-        // Use existing skills from the DB as starting state
         let skills = (window.initialSkills || []).map((s, i) => ({
-            id: s.id ?? null, // may be null for newly added
+            id: s.id ?? null,
             name: String(s.name || '').trim(),
             level: clampLevel(parseInt(s.level || 2)),
             position: Number.isFinite(s.position) ? s.position : i
@@ -483,8 +481,10 @@
         const emptyState = document.getElementById('emptyState');
         const skillsDataInput = document.getElementById('skillsData');
         const saveBtn = document.getElementById('saveSkillsBtn');
+        
+        // Soft skills elements - specific to this modal only
         const softSkillCountEl = document.getElementById('softSkillCount');
-        const softCheckboxes = document.querySelectorAll('.soft-skill-checkbox');
+        const softCheckboxes = document.querySelectorAll('#editSkillsModal .soft-skill-checkbox');
 
         // ======== HELPERS ========
         function clampLevel(lvl) {
@@ -498,7 +498,6 @@
         }
 
         function serializePayload() {
-            // ensure position reflects current order
             return skills.map((s, idx) => ({
                 id: s.id ?? null,
                 name: s.name,
@@ -509,11 +508,12 @@
 
         // ======== RENDER ========
         function render() {
-            // progress + buttons
+            // Update progress
             skillCountEl.textContent = skills.length;
             const progress = Math.min((skills.length / MAX_SKILLS) * 100, 100);
             progressBar.style.width = progress + '%';
 
+            // Update status
             if (skills.length < MIN_SKILLS) {
                 progressStatus.textContent = `Minimum ${MIN_SKILLS} required`;
                 progressStatus.classList.remove('success');
@@ -524,7 +524,7 @@
                 saveBtn.disabled = false;
             }
 
-            // empty vs list
+            // Toggle empty state vs list
             if (skills.length === 0) {
                 emptyState.style.display = 'flex';
                 listEl.style.display = 'none';
@@ -533,25 +533,25 @@
                 listEl.style.display = 'grid';
 
                 listEl.innerHTML = skills.map((skill, idx) => `
-            <div class="skill-item" data-idx="${idx}" data-id="${skill.id ?? ''}">
-              <div class="skill-content">
-                <span class="skill-name">${escapeHtml(skill.name)}</span>
-                <span class="skill-level-badge level-${skill.level}">${levelLabels[skill.level]}</span>
-              </div>
-              <div class="skill-actions">
-                <button type="button" class="skill-level-btn" data-action="cycle" title="Change level">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                  </svg>
-                </button>
-                <button type="button" class="remove-btn" data-action="remove" title="Remove skill">×</button>
-              </div>
-            </div>
-          `).join('');
+                    <div class="skill-item" data-idx="${idx}" data-id="${skill.id ?? ''}">
+                        <div class="skill-content">
+                            <span class="skill-name">${escapeHtml(skill.name)}</span>
+                            <span class="skill-level-badge level-${skill.level}">${levelLabels[skill.level]}</span>
+                        </div>
+                        <div class="skill-actions">
+                            <button type="button" class="skill-level-btn" data-action="cycle" title="Change level">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                            </button>
+                            <button type="button" class="remove-btn" data-action="remove" title="Remove skill">×</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
-            // hidden payload to submit
+            // Update hidden payload
             skillsDataInput.value = JSON.stringify(serializePayload());
         }
 
@@ -613,10 +613,11 @@
             if (action === 'remove') removeSkill(idx);
         });
 
-        // Pre-check soft skills & enforce max 6
+        // ======== SOFT SKILLS ========
         function updateSoftCount() {
             const count = Array.from(softCheckboxes).filter(cb => cb.checked).length;
             softSkillCountEl.textContent = count;
+            
             softCheckboxes.forEach(cb => {
                 if (!cb.checked && count >= MAX_SOFT) {
                     cb.disabled = true;
@@ -635,6 +636,7 @@
             }
             cb.addEventListener('change', updateSoftCount);
         });
+        
         updateSoftCount();
 
         // ======== INITIAL RENDER ========
