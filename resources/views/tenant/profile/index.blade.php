@@ -31,7 +31,10 @@
 @extends('layouts.app')
 
 @section('title', $user->name . ' |  SkillLeo')
+@push('styles')
+<link href="{{ asset('css/profile.css') }}" rel="stylesheet">
 
+@endpush
 @section('content')
 
 
@@ -812,6 +815,18 @@
                         <x-ui.see-all text="See all Services" onclick="showAllServices()" />
                     @endif
                 </section>
+
+
+
+                <div class="upgrade-card sticky-on-scroll" id="upgradeCardRight">
+                    <h6>Go Pro — Unlock Everything</h6>
+                    <div class="icon"><i class="fas fa-rocket"></i></div>
+                    <p style="margin:10px 0 16px">
+                        Advanced analytics, AI helpers & priority support.
+                    </p>
+                    <button class="btn-upgrade" type="button">Upgrade Now</button>
+                </div>
+
 
 
             </aside>

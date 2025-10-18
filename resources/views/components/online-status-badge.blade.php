@@ -74,6 +74,10 @@
                 <img 
                     src="{{ $user->avatar }}" 
                     alt="{{ $user->name }}"
+                    referrerpolicy="no-referrer"
+                    crossorigin="anonymous"
+                    onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+                
                     class="w-full h-full object-cover"
                     loading="lazy"
                 >

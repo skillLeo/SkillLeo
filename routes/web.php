@@ -27,6 +27,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Tenant\CvUploadController;
 
 use App\Http\Controllers\Tenant\ProfilePage\ProfileController;
+use App\Http\Controllers\Tenant\Dashboard\DashboardController;
 
 
 
@@ -83,7 +84,7 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
      
         Route::get('/', [ProfileController::class, 'index'])->name('profile');
-        Route::get('times', [ProfileController::class, 'times'])->name('times');
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('index');
 
 
 

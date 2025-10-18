@@ -2121,11 +2121,19 @@
     <div class="nav-inner">
         <!-- MOBILE: TOP ROW -->
         <div class="nav-row nav-row--top">
-            <img class="mobile-avatar" src="{{$user->avatar}}" alt="User" id="avatarMobile">
+            <img class="mobile-avatar" src="{{$user->avatar}}" alt="User" id="avatarMobile"
+            referrerpolicy="no-referrer"
+            crossorigin="anonymous"
+            onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+        
+            >
             <a class="brand" href="#">
                 <img class="brand-logo" src="{{asset('assets/images/logos/croped/logo_light.png')}}" alt="Brand"
                     data-theme-src-light="{{asset('assets/images/logos/croped/logo_light.png')}}"
-                    data-theme-src-dark="{{asset('assets/images/logos/croped/logo_dark.png')}}">
+                    data-theme-src-dark="{{asset('assets/images/logos/croped/logo_dark.png')}}"
+                    
+                    
+                    >
             </a>
             <button class="share-btn">
                 <i class="fa-solid fa-share-nodes"></i><span>Share</span>
@@ -2221,7 +2229,11 @@
             
                 <a href="#" class="nav-item nav-item-profile" id="profileBtn">
                     <div class="profile-avatar-wrapper">
-                        <img class="nav-avatar" src="{{ $user->avatar }}" alt="{{ $user->name }}">
+                        <img class="nav-avatar" src="{{ $user->avatar }}" alt="{{ $user->name }}"
+                        referrerpolicy="no-referrer"
+                        crossorigin="anonymous"
+                        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+                    >
                     </div>
                     <span class="nav-item-text">Me <i class="fa-solid fa-caret-down"></i></span>
                 </a>
@@ -2547,7 +2559,11 @@
 <!-- Profile Dropdown -->
 <div class="profile-dropdown" id="profileDropdown">
     <div class="profile-card">
-        <img class="profile-avatar-mini" src="{{ $user->avatar }}" alt="{{ $user->name }}">
+        <img class="profile-avatar-mini" src="{{ $user->avatar }}" alt="{{ $user->name }}"
+        referrerpolicy="no-referrer"
+        crossorigin="anonymous"
+        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+        >
         <div class="profile-info">
             <div class="profile-name">{{ $user->name }}</div>
             <div class="profile-bio">{{ $user->headline }}</div>

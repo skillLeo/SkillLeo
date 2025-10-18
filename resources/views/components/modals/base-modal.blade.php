@@ -119,7 +119,7 @@
 
 /* Scrollbar */
 .modal-body-v2::-webkit-scrollbar {
-    width: 8px;
+    width: 4px;
 }
 
 .modal-body-v2::-webkit-scrollbar-track {

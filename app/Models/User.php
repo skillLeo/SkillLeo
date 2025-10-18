@@ -2,8 +2,12 @@
 
 
 
-    namespace App\Models;
 
+    namespace App\Models;
+ 
+    use Illuminate\Support\Str;
+  
+    
     use App\Models\Skill;
     use App\Models\Education;
     use App\Models\Portfolio;
@@ -313,15 +317,33 @@
                 ->where('provider', $provider)
                 ->exists();
         }
-
-        public function getAvatarUrlAttribute($value): string
+        public function getAvatarUrlAttribute(): string
         {
-            if ($value) {
-                return $value;
+            // Check both 'avatar_url' and 'avatar' columns
+            $raw = trim((string) ($this->attributes['avatar_url'] ?? $this->attributes['avatar'] ?? ''));
+        
+            // Fallback if nothing saved
+            if ($raw === '') {
+                return asset('images/avatar-fallback.png');
             }
-
-            $name = urlencode($this->name ?: 'User');
-            return "https://ui-avatars.com/api/?name={$name}&size=200&background=random";
+        
+            // If already an absolute URL (Google/LinkedIn/OAuth providers)
+            if (preg_match('~^https?://~i', $raw)) {
+                return $raw;
+            }
+        
+            // If the db holds "storage/..." (public/storage symlinked)
+            if (Str::startsWith($raw, ['storage/', '/storage/'])) {
+                return asset(ltrim($raw, '/'));
+            }
+        
+            // Otherwise treat it as a path on the public disk (e.g. "avatars/3/file.jpg")
+            if (Storage::disk('public')->exists($raw)) {
+                return Storage::disk('public')->url($raw);
+            }
+        
+            // As a last resort, try asset()
+            return asset(ltrim($raw, '/'));
         }
 
         // ============================================

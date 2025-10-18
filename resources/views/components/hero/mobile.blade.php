@@ -52,7 +52,12 @@
         {{-- Avatar Positioned at Bottom Left of Banner --}}
         <div class="hm-avatar">
             @if ($user->avatar)
-                <img src="{{ $user->avatar }}" alt="{{ $user->name }}">
+                <img src="{{ $user->avatar }}" alt="{{ $user->name }}"
+                referrerpolicy="no-referrer"
+                crossorigin="anonymous"
+                onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+            
+                >
             @else
                 <i class="fa-solid fa-camera"></i>
             @endif

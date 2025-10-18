@@ -5499,7 +5499,7 @@ input:focus, input:focus-visible {
 
 /* Hide Scroll bar Css For Custom Modal End */
 .scroll-sm::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 .scroll-sm::-webkit-scrollbar-track {

@@ -10,7 +10,12 @@
             <div class="photo-upload-wrap">
                 <div class="photo-preview-large" id="photoPreviewLarge">
                     @if(($user->avatar ?? false) || ($user->avatar_url ?? false))
-                        <img src="{{ $user->avatar ?? $user->avatar_url }}" alt="{{ $user->name ?? 'User' }}">
+                        <img src="{{ $user->avatar ?? $user->avatar_url }}" alt="{{ $user->name ?? 'User' }}"
+                        referrerpolicy="no-referrer"
+                        crossorigin="anonymous"
+                        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+                    
+                        >
                     @else
                         <i class="fa-solid fa-user" style="font-size: 40px; color: var(--text-muted);"></i>
                     @endif

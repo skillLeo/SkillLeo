@@ -1,6 +1,4 @@
-/* ===================================
-   ROOT VARIABLES
-   =================================== */
+/* public/css/profile.css */
     :root {
         --bg: #f3f2ee;
         --card: #fff;
@@ -296,15 +294,12 @@ html {
     font-size: 100%;
 }
 
-body,
-* {
+body{
     font-family: "Inter", -apple-system, system-ui, BlinkMacSystemFont,
         "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
-
-body {
+ 
     background: linear-gradient(180deg,
             rgba(19, 81, 216, 0.04) 0%,
             rgba(19, 81, 216, 0.02) 150px,
@@ -319,10 +314,8 @@ body {
 
     padding-top: var(--nav-height-mobile);
 
-}
-/* Add this to your main CSS file (around line 100-150 in your first CSS document) */
 
-body {
+ 
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
@@ -547,7 +540,6 @@ body {
      =================================== */
 .main-container {
     padding: 20px;
-    /* JavaScript will add padding-top dynamically */
 }
 
 .content-wrapper {
@@ -579,6 +571,7 @@ body {
 
 .right-sidebar {
     grid-area: right;
+
 }
 
 /* ===================================
@@ -3533,3 +3526,140 @@ section {
         font-size: var(--fs-micro);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Upgrade Card */
+.upgrade-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: var(--radius);
+    padding: 25px;
+    text-align: center;
+    color: var(--text-white);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    margin-bottom: var(    --mb-sections    );
+}
+
+.upgrade-card h6 {
+    font-size: var(--fs-title);
+    font-weight: var(--fw-semibold);
+    margin-bottom: var(    --mb-sections    );
+}
+
+.upgrade-card .icon {
+    font-size: 48px;
+    margin: 15px 0;
+    opacity: 0.9;
+}
+
+.btn-upgrade {
+    background: var(--card);
+    color: #667eea;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 20px;
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-upgrade:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.content-area {
+    flex: 1;
+    padding: 0 10px;
+    overflow: visible;
+}
+
+
+/* use a single source of truth for the offset */
+:root { --sticky-offset: 20px; }
+
+/* grid + sticky gotcha: ensure the right column doesn't stretch */
+.right-sidebar { align-self: start; }
+
+/* force the right sidebar upgrade card to stick at 20px */
+.right-sidebar .sticky-on-scroll {
+  position: sticky;
+  top: var(--sticky-offset) !important;  /* beats the old 100px */
+  z-index: 5;
+}
+
+/* optional: disable sticky on small screens */
+@media (max-width: 1200px) {
+  .right-sidebar .sticky-on-scroll { position: static !important; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 1) single source of truth */
+:root { --sticky-offset: 20px; }
+
+/* 2) make sure no ancestor blocks sticky on the profile layout */
+.main-container,
+.content-wrapper,
+.right-sidebar {
+  overflow: visible !important;       /* defeat overflow:hidden/auto ancestors */
+}
+
+/* 3) grid/flex gotcha: don't let the right column stretch */
+.right-sidebar {
+  align-self: start;                   /* works for grid */
+  align-self: flex-start;              /* works for flex */
+}
+
+/* 4) the actual sticky */
+.right-sidebar .sticky-on-scroll {
+  position: sticky;
+  top: var(--sticky-offset) !important;  /* win over any old rule */
+  z-index: 5;
+}
+
+/* 5) optional: disable sticky on small screens */
+@media (max-width: 1200px) {
+  .right-sidebar .sticky-on-scroll { position: static !important; }
+}
+/* REMOVE or relax this if present anywhere */
+.sticky-on-scroll { top: 100px !important; }

@@ -93,6 +93,66 @@ class TimezoneService
     }
 
     /**
+     * Store/detect viewer's timezone in session
+     * This method detects and stores the user's timezone
+     * 
+     * @param string|null $timezone
+     * @return string
+     */
+    public static function storeViewerTimezone(?string $timezone = null): string
+    {
+        try {
+            // If timezone provided and valid, use it
+            if ($timezone && self::isValid($timezone)) {
+                // Store in session for guest users
+                if (!auth()->check()) {
+                    session(['viewer_timezone' => $timezone]);
+                }
+                return $timezone;
+            }
+
+            // Try to get from authenticated user
+            $user = auth()->user();
+            if ($user && $user->timezone && self::isValid($user->timezone)) {
+                return $user->timezone;
+            }
+
+            // Try to get from session
+            $sessionTimezone = session('viewer_timezone');
+            if ($sessionTimezone && self::isValid($sessionTimezone)) {
+                return $sessionTimezone;
+            }
+
+            // Fallback to config default or UTC
+            $defaultTimezone = config('app.timezone', 'UTC');
+            session(['viewer_timezone' => $defaultTimezone]);
+            
+            return $defaultTimezone;
+        } catch (\Exception $e) {
+            Log::warning('Failed to store viewer timezone', [
+                'error' => $e->getMessage()
+            ]);
+            return 'UTC';
+        }
+    }
+
+    /**
+     * Detect timezone from browser/client
+     * Should be called with JavaScript detected timezone
+     * 
+     * @param string $clientTimezone
+     * @return string
+     */
+    public static function detectClientTimezone(string $clientTimezone): string
+    {
+        if (self::isValid($clientTimezone)) {
+            return self::storeViewerTimezone($clientTimezone);
+        }
+        
+        return self::storeViewerTimezone();
+    }
+
+    /**
      * Get online status text based on last seen time
      * 
      * @param \Carbon\Carbon|null $lastSeenAt

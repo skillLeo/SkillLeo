@@ -234,7 +234,7 @@ class OnboardingController extends Controller
             // set is_profile_complete => 'education' here
             $user->forceFill([
                 'timezone'           => $timezone,
-                'is_profile_complete' => 'education',
+                'is_profile_complete' => 'skills',
             ])->save();
     
             // ============ LOG SUCCESS ============
@@ -242,14 +242,14 @@ class OnboardingController extends Controller
                 'user_id'  => $user->id,
                 'location' => "{$city}, {$state}, {$country}",
                 'timezone' => $timezone,
-                'step'     => 'education',
+                'step'     => 'skills',
             ]);
     
             DB::commit();
     
             // ============ SUCCESS RESPONSE ============
             return redirect()
-                ->route('tenant.onboarding.education')
+                ->route('tenant.onboarding.skills')
                 ->with('success', '📍 Location saved successfully!');
         } catch (\Exception $e) {
             DB::rollBack();

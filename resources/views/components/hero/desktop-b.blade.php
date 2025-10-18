@@ -16,7 +16,13 @@
         <div class="photo-ring">
         <div class="photo-circle">
             @if($user->avatar)
-                <img src="{{ $user->avatar }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                <img src="{{ $user->avatar }}" alt="{{ $user->name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
+                
+                referrerpolicy="no-referrer"
+                crossorigin="anonymous"
+                onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+            
+                >
             @else
                 <x-ui.icon name="user" size="lg" color="secondary" class="mb-2" />
                 Upload your<br>profile photo
