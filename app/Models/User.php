@@ -1,9 +1,5 @@
 <?php
-
-
-
-
-    namespace App\Models;
+ namespace App\Models;
  
     use Illuminate\Support\Str;
   
@@ -29,7 +25,9 @@
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     use Illuminate\Support\Facades\Storage;
-
+ 
+ 
+    
     class User extends Authenticatable
     {
         use HasApiTokens, Notifiable;
@@ -520,23 +518,35 @@
 
 
  
-    public function getBannerUrlAttribute(): ?string
-    {
-        $path = $this->profile->banner ?? null;
-        if (!$path) return null;
-        if (filter_var($path, FILTER_VALIDATE_URL)) return $path;
-        return Storage::disk('public')->url($path);
+/**
+ * Get banner URL with fallback to gradient
+ */
+public function getBannerUrlAttribute(): ?string
+{
+    $path = $this->profile->banner ?? null;
+    
+    if (!$path) {
+        return null; // Will use CSS gradient fallback
     }
     
-    public function getBannerFitAttribute(): string
-    {
-        return $this->profile->banner_preference['fit'] ?? 'cover';
+    // If already a full URL (OAuth providers)
+    if (filter_var($path, FILTER_VALIDATE_URL)) {
+        return $path;
     }
     
-    public function getBannerPositionAttribute(): string
-    {
-        return $this->profile->banner_preference['position'] ?? 'center center';
-    }
+    // Local storage path
+    return Storage::disk('public')->url($path);
+}
+
+public function getBannerFitAttribute(): string
+{
+    return $this->profile->banner_preference['fit'] ?? 'cover';
+}
+
+public function getBannerPositionAttribute(): string
+{
+    return $this->profile->banner_preference['position'] ?? 'center center';
+}
     
     public function getBannerZoomAttribute(): int
     {

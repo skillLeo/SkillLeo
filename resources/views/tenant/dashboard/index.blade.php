@@ -3,354 +3,107 @@
 @section('title', $user->name . ' | SkillLeo')
 
 @section('content')
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
             --bg: #f3f2ee;
             --card: #fff;
             --ink: #1a1a1a;
-            --muted: #000000af;
-            --muted2: #999;
             --border: #e5e5e5;
             --accent: #1351d8;
             --accent-dark: #0d3393;
             --accent-light: #1351d818;
-            --radius: 10px;
-            --apc-g1: #a855f7;
-            --apc-g2: #2dd4ea;
-            --apc-bg: #f5f6f8;
-            --fw-regular: 400;
+            --space-xs: 8px;
+            --space-sm: 12px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
             --fw-medium: 500;
             --fw-semibold: 600;
             --fw-bold: 700;
-            --fw-extrabold: 800;
-            --lh-compact: 1.2;
-            --lh-tight: 1.3;
-            --lh-normal: 1.5;
-            --lh-relaxed: 1.65;
             --fs-display: clamp(1.75rem, 1.2vw + 1rem, 2.25rem);
-            --fs-h1: clamp(1.375rem, 0.8vw + 1rem, 1.75rem);
             --fs-h2: 1.25rem;
-            --fs-h3: 1.125rem;
             --fs-title: 1rem;
             --fs-body: 0.875rem;
             --fs-subtle: 0.8125rem;
             --fs-micro: 0.75rem;
-            --ic-xxs: 0.625rem;
-            --ic-xs: 0.75rem;
-            --ic-sm: 0.875rem;
-            --ic-md: 1rem;
-            --ic-lg: 1.125rem;
-            --mb-sections: 9px;
-            --sticky-offset: 72px;
-            --gradient-border: linear-gradient(135deg, #667eea 0%, #764ba2 35%, #f093fb 70%, #4facfe 100%);
-            --gradient-button: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
-            --text-primary: #1a1a1a;
+            --sidebar-width: 280px;
+            --right-sidebar-width: 320px;
+            --text-white: #ffffff;
             --text-heading: #1a1a1a;
             --text-body: #000000af;
             --text-muted: #667085;
-            --text-subtle: #98a2b3;
-            --text-disabled: #c0c0c0;
-            --text-link: #0b63ff;
-            --text-accent: #1351d8;
-            --nav-bg: #fff;
-            --nav-border: #e6e8eb;
-            --nav-text: #000000af;
             --nav-icon: #444;
-            --input-bg: #fff;
-            --input-border: #e6e8eb;
-            --input-text: #000000af;
-            --input-placeholder: #9aa1a9;
-            --card-title: #1a1a1a;
-            --card-subtitle: #667085;
-            --card-desc: #475569;
-            --card-meta: #98a2b3;
             --btn-text-primary: #fff;
-            --btn-text-secondary: #000000af;
-            --tag-text: #000000af;
-            --tag-bg: #fff;
-            --tag-border: #1a1a1a;
-            --badge-bg: #111;
-            --badge-text: #fff;
-            --section-title: #1e293b;
-            --section-text: #323130;
+
+            --mb-sections: 9px;
+            --sticky-offset: 72px;
+
+            --gradient-border: linear-gradient(135deg,
+                    #667eea 0%,
+                    #764ba2 35%,
+                    #f093fb 70%,
+                    #4facfe 100%);
+            --gradient-button: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
+
+
             --nav-height-mobile: 107px;
             --nav-height-desktop: 64px;
-            --text-white: #ffffff;
-            --sidebar-width: 280px;
-            --right-sidebar-width: 320px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+
+
+
+
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: "Inter", -apple-system, system-ui, BlinkMacSystemFont,
+                "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+
+            background: linear-gradient(180deg,
+                    rgba(19, 81, 216, 0.04) 0%,
+                    rgba(19, 81, 216, 0.02) 150px,
+                    rgba(255, 255, 255, 0) 300px);
             background-color: var(--bg);
-            overflow: hidden;
-            height: 100vh;
-        }
-
-        /* Main Layout - Fixed Height with Single Scroll */
-        .main-container {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-            max-width: 1400px;
-            margin: auto;
-        }
-
-        /* Sidebar Styles - Sticky with Internal Scroll */
-        .sidebar {
-            width: var(--sidebar-width);
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .sidebar-content {
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 20px 15px;
-            flex: 1;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-
-        .sidebar-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .sidebar-content::-webkit-scrollbar-thumb {
-            background-color: var(--border);
-            border-radius: 3px;
-        }
-
-        .sidebar-content::-webkit-scrollbar-thumb:hover {
-            background-color: var(--muted2);
-        }
-
-        /* Profile Card */
-        .profile-card1 {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            text-align: center;
-            margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        }
-
-        .profile-card1 .avatar-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: var(--mb-sections);
-        }
-
-        .profile-card1 .avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .profile-card1 .status-badge {
-            position: absolute;
-            bottom: 0;
-            right: -5px;
-            background: #d4edda;
-            color: #28a745;
-            font-size: var(--fs-micro);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: var(--fw-semibold);
-        }
-
-        .profile-card1 h6 {
-            margin: 10px 0 5px;
-            font-weight: var(--fw-semibold);
-            font-size: var(--fs-title);
-            color: var(--text-heading);
-        }
-
-        .profile-card1 .skills {
-            font-size: var(--fs-micro);
-            color: var(--text-muted);
-            font-style: italic;
-            margin: 10px 0;
-            line-height: var(--lh-tight);
-        }
-
-        .profile-card1 .location {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            font-size: var(--fs-subtle);
-            color: var(--text-muted);
-            margin: 10px 0;
-        }
-
-        .btn-view-profile {
-            background: var(--accent);
-            color: var(--btn-text-primary);
-            border: none;
-            padding: 6px 20px;
-            border-radius: 20px;
-            font-size: var(--fs-subtle);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: var(--fw-medium);
-        }
-
-        .btn-view-profile:hover {
-            background: var(--accent-dark);
-            transform: translateY(-1px);
-        }
-
-        /* Navigation Menu */
-        .nav-section {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 10px;
-            margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-        }
-
-        .nav-section-title {
-            font-size: var(--fs-micro);
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin: 10px 10px 5px;
-            font-weight: var(--fw-semibold);
-            letter-spacing: 0.5px;
-        }
-
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .nav-menu li {
-            margin-bottom: 2px;
-        }
-
-        .nav-menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            text-decoration: none;
+            background-attachment: fixed;
+            min-height: 100vh;
             color: var(--text-body);
             font-size: var(--fs-body);
-            transition: all 0.2s ease;
+            line-height: var(--lh-normal);
             font-weight: var(--fw-regular);
+
+            padding-top: var(--nav-height-desktop);
+
+
+
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
 
-        .nav-menu a:hover {
-            background: var(--accent-light);
-            color: var(--accent);
-        }
 
-        .nav-menu a.active {
-            background: var(--accent-light);
-            color: var(--accent);
-            font-weight: var(--fw-medium);
-        }
 
-        .nav-menu i {
-            width: 20px;
-            text-align: center;
-            color: var(--nav-icon);
-        }
+        /* ============================================
+                       CONTENT AREA - PROFESSIONAL SPACING
+                       ============================================ */
 
-        /* Upgrade Card */
-        .upgrade-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: var(--radius);
-            padding: 25px;
-            text-align: center;
-            color: var(--text-white);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            margin-bottom: var(--mb-sections);
-        }
-
-        .upgrade-card h6 {
-            font-size: var(--fs-title);
-            font-weight: var(--fw-semibold);
-            margin-bottom: var(--mb-sections);
-        }
-
-        .upgrade-card .icon {
-            font-size: 48px;
-            margin: 15px 0;
-            opacity: 0.9;
-        }
-
-        .btn-upgrade {
-            background: var(--card);
-            color: #667eea;
-            border: none;
-            padding: 8px 24px;
-            border-radius: 20px;
-            font-size: var(--fs-body);
-            font-weight: var(--fw-semibold);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-upgrade:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        /* UNIFIED SCROLL WRAPPER - Main + Right Sidebar */
-        .unified-scroll-wrapper {
-            flex: 1;
-            display: flex;
-            overflow-y: auto;
-            overflow-x: hidden;
-            height: 100vh;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-
-        .unified-scroll-wrapper::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .unified-scroll-wrapper::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .unified-scroll-wrapper::-webkit-scrollbar-thumb {
-            background-color: var(--border);
-            border-radius: 4px;
-        }
-
-        .unified-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-            background-color: var(--muted2);
-        }
-
-        /* Content Area - NO Individual Scroll */
         .content-area {
             flex: 1;
-            padding: 25px;
+            padding: var(--space-md);
             min-height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         .page-title {
@@ -358,28 +111,54 @@
             font-weight: var(--fw-bold);
             margin-bottom: var(--mb-sections);
             color: var(--text-heading);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
         }
 
-        /* Stats Grid */
+        /* ============================================
+                       STATS GRID - LINKEDIN STYLE
+                       ============================================ */
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--mb-sections);
             margin-bottom: var(--mb-sections);
+            ;
         }
 
         .stat-card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 15px;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: transform var(--transition-base);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleY(1);
         }
 
         .stat-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+            border-color: var(--accent);
         }
 
         .stat-header {
@@ -390,7 +169,7 @@
         }
 
         .stat-label {
-            font-size: var(--fs-micro);
+            font-size: 11px;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -398,22 +177,23 @@
         }
 
         .stat-value {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: var(--fw-bold);
-            margin: 5px 0;
+            margin: var(--space-xs) 0;
             color: var(--text-heading);
+            line-height: 1;
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: var(--bg);
-            border-radius: var(--radius);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-muted);
-            font-size: 18px;
+            color: var(--accent);
+            font-size: 20px;
         }
 
         .stat-change {
@@ -425,23 +205,32 @@
         }
 
         .stat-change .positive {
-            color: #28a745;
+            color: #10b981;
             font-weight: var(--fw-semibold);
         }
 
         .stat-change .negative {
-            color: #dc3545;
+            color: #ef4444;
             font-weight: var(--fw-semibold);
         }
 
-        /* Chart Container */
+        /* ============================================
+                       CHART CONTAINER - PROFESSIONAL
+                       ============================================ */
+
         .chart-container {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
+            border-radius: 16px;
+            padding: var(--space-xl);
             margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            ;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition-base);
+        }
+
+        .chart-container:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .chart-header {
@@ -450,52 +239,56 @@
             align-items: center;
             margin-bottom: var(--mb-sections);
             flex-wrap: wrap;
-            gap: 10px;
+            gap: var(--space-md);
         }
 
         .chart-title {
-            font-size: var(--fs-h3);
+            font-size: var(--fs-h2);
             font-weight: var(--fw-semibold);
-            color: var(--card-title);
+            color: var(--text-heading);
         }
 
         .chart-subtitle {
             font-size: var(--fs-subtle);
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         .time-filters {
             display: flex;
-            gap: 8px;
+            gap: var(--space-xs);
+            background: var(--bg);
+            padding: 4px;
+            border-radius: 8px;
         }
 
         .time-filter {
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 6px;
             font-size: var(--fs-subtle);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-fast);
             background: transparent;
-            border: 1px solid var(--border);
+            border: none;
             font-weight: var(--fw-medium);
             color: var(--text-body);
         }
 
         .time-filter:hover {
-            background: var(--bg);
+            background: var(--card);
+            transform: translateY(-1px);
         }
 
         .time-filter.active {
             background: var(--accent);
             color: var(--btn-text-primary);
-            border-color: var(--accent);
+            box-shadow: var(--shadow-sm);
         }
 
         .chart-area {
-            height: 220px;
+            height: 240px;
             background: var(--bg);
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -506,8 +299,8 @@
         .chart-legend {
             display: flex;
             justify-content: flex-end;
-            gap: 20px;
-            margin-top: 15px;
+            gap: var(--space-lg);
+            margin-top: var(--space-lg);
         }
 
         .legend-item {
@@ -515,37 +308,51 @@
             align-items: center;
             gap: 8px;
             font-size: var(--fs-subtle);
+            color: var(--text-body);
         }
 
         .legend-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
+            box-shadow: var(--shadow-xs);
         }
 
-        /* Row Cards */
+        /* ============================================
+                       ROW CARDS - CONVERSION & ORDERS
+                       ============================================ */
+
         .row-cards {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: var(--mb-sections);
+            ;
             margin-bottom: var(--mb-sections);
+            ;
         }
 
         .funnel-card,
         .orders-card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 25px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            border-radius: 16px;
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-base);
+        }
+
+        .funnel-card:hover,
+        .orders-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
         .card-title {
             font-size: var(--fs-h2);
             font-weight: var(--fw-semibold);
             text-align: center;
-            margin-bottom: 5px;
-            color: var(--card-title);
+            margin-bottom: var(--mb-sections);
+            color: var(--text-heading);
         }
 
         .card-subtitle {
@@ -558,38 +365,64 @@
         .funnel-item {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: var(--space-md);
             margin-bottom: var(--mb-sections);
         }
 
         .funnel-label {
-            min-width: 120px;
-            font-size: var(--fs-subtle);
+            min-width: 130px;
+            font-size: var(--fs-body);
             color: var(--text-body);
+            font-weight: var(--fw-medium);
         }
 
         .funnel-bar-container {
             flex: 1;
-            height: 32px;
+            height: 38px;
             background: var(--accent-light);
-            border-radius: 6px;
+            border-radius: 8px;
             position: relative;
             overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .funnel-bar {
             height: 100%;
-            background: var(--accent);
-            border-radius: 6px;
-            transition: width 0.5s ease;
+            background: linear-gradient(90deg, var(--accent) 0%, #0d3393 100%);
+            border-radius: 8px;
+            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .funnel-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+
+            50%,
+            100% {
+                left: 100%;
+            }
         }
 
         .funnel-percent {
             position: absolute;
-            right: 10px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: var(--fs-subtle);
+            font-size: var(--fs-body);
             font-weight: var(--fw-semibold);
             color: var(--ink);
         }
@@ -598,7 +431,7 @@
             text-align: center;
             font-size: var(--fs-subtle);
             color: var(--text-muted);
-            margin-top: 15px;
+            margin-top: var(--space-lg);
         }
 
         /* Pie Chart */
@@ -606,13 +439,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 30px;
-            margin: 20px 0;
+            gap: var(--space-xl);
+            margin: var(--space-xl) 0;
         }
 
         .pie-chart {
-            width: 180px;
-            height: 180px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
             background: conic-gradient(var(--accent) 0deg 72deg,
                     #4a90e2 72deg 190.8deg,
@@ -622,21 +455,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: var(--shadow-md);
         }
 
         .pie-chart-inner {
-            width: 110px;
-            height: 110px;
+            width: 130px;
+            height: 130px;
             background: var(--card);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
         }
 
         .pie-chart-value {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: var(--fw-bold);
             color: var(--text-heading);
         }
@@ -649,46 +484,53 @@
         .pie-legend {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: var(--space-md);
         }
 
         .pie-legend-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .pie-legend-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            box-shadow: var(--shadow-xs);
         }
 
         .pie-legend-text {
-            font-size: var(--fs-subtle);
+            font-size: var(--fs-body);
+            font-weight: var(--fw-medium);
         }
 
         .pie-legend-count {
-            font-size: var(--fs-micro);
+            font-size: var(--fs-subtle);
             color: var(--text-muted);
             display: block;
+            margin-top: 2px;
         }
 
-        /* Due Soon Section */
+        /* ============================================
+                       DUE SOON SECTION - FACEBOOK STYLE
+                       ============================================ */
+
         .due-soon-section {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
+            border-radius: 16px;
+            padding: var(--space-xl);
             margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            ;
+            box-shadow: var(--shadow-sm);
         }
 
         .due-soon-title {
             font-size: var(--fs-h2);
             font-weight: var(--fw-semibold);
-            margin-bottom: 5px;
-            color: var(--card-title);
+            margin-bottom: var(--mb-sections);
+            color: var(--text-heading);
         }
 
         .due-soon-subtitle {
@@ -701,8 +543,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
+            padding: var(--space-lg) 0;
             border-bottom: 1px solid var(--border);
+            transition: all var(--transition-fast);
+        }
+
+        .due-item:hover {
+            background: var(--bg);
+            padding-left: var(--space-md);
+            padding-right: var(--space-md);
+            border-radius: 8px;
+            margin-left: calc(var(--space-md) * -1);
+            margin-right: calc(var(--space-md) * -1);
         }
 
         .due-item:last-child {
@@ -712,7 +564,7 @@
         .due-item-content h6 {
             font-size: var(--fs-title);
             font-weight: var(--fw-medium);
-            margin-bottom: 5px;
+            margin-bottom: var(--mb-sections);
             color: var(--text-heading);
         }
 
@@ -722,7 +574,7 @@
         }
 
         .due-item-meta .overdue {
-            color: #dc3545;
+            color: #ef4444;
             font-weight: var(--fw-semibold);
         }
 
@@ -731,55 +583,71 @@
             color: var(--accent);
             cursor: pointer;
             font-weight: var(--fw-medium);
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all var(--transition-fast);
         }
 
         .due-item-action:hover {
-            text-decoration: underline;
+            background: var(--accent-light);
         }
 
-        /* Activity Feed */
+        /* ============================================
+                       ACTIVITY SECTION - ATLASSIAN STYLE
+                       ============================================ */
+
         .activity-section {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
+            border-radius: 16px;
+            padding: var(--space-xl);
             margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            ;
+            box-shadow: var(--shadow-sm);
         }
 
         .activity-title {
             font-size: var(--fs-h2);
             font-weight: var(--fw-semibold);
             margin-bottom: var(--mb-sections);
-            color: var(--card-title);
+            color: var(--text-heading);
         }
 
         .activity-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: var(--space-lg);
         }
 
         .activity-item {
             display: flex;
-            gap: 15px;
-            padding: 15px;
+            gap: var(--space-md);
+            padding: var(--space-lg);
             background: var(--bg);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            transition: all 0.2s ease;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all var(--transition-base);
+            cursor: pointer;
         }
 
         .activity-item:hover {
             background: var(--card);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-md);
+            border-color: var(--border);
+            transform: translateY(-2px);
         }
 
         .activity-avatar {
-            width: 45px;
-            height: 45px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-base);
+        }
+
+        .activity-item:hover .activity-avatar {
+            transform: scale(1.1);
         }
 
         .activity-content {
@@ -790,7 +658,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 5px;
+            margin-bottom: var(--mb-sections);
         }
 
         .activity-name {
@@ -807,7 +675,7 @@
         .activity-desc {
             font-size: var(--fs-subtle);
             color: var(--text-body);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .activity-meta {
@@ -815,145 +683,148 @@
             color: var(--text-muted);
         }
 
-        /* Right Sidebar - NO Individual Scroll */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* ============================================
+                       RIGHT SIDEBAR - PROFESSIONAL
+                       ============================================ */
+
         .right-sidebar {
             width: var(--right-sidebar-width);
             flex-shrink: 0;
-            padding: 20px 15px;
+            padding: var(--space-2xl) var(--space-md);
             min-height: 100vh;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform var(--transition-slow);
         }
 
         .right-card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
+            border-radius: 12px;
+            padding: var(--space-lg);
             margin-bottom: var(--mb-sections);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-base);
+        }
+
+        .right-card:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .right-card h6 {
             font-size: var(--fs-title);
             font-weight: var(--fw-semibold);
             margin-bottom: var(--mb-sections);
-            color: var(--card-title);
+            color: var(--text-heading);
         }
 
         .tutorial-placeholder {
             width: 100%;
-            height: 150px;
+            height: 160px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-white);
             font-size: var(--fs-body);
-        }
-
-        .ai-profile-creator {
-            text-align: center;
-        }
-
-        .ai-profile-creator p {
-            font-size: var(--fs-subtle);
-            color: var(--text-muted);
-            margin: 10px 0;
-        }
-
-        .gradient-border-button {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-            margin: 15px 0 10px;
-        }
-
-        .gradient-border-button button {
-            background: var(--card);
-            border: 2px solid transparent;
-            background-clip: padding-box;
-            border-radius: 8px;
-            padding: 10px;
-            width: 100%;
-            font-size: var(--fs-subtle);
-            color: var(--text-body);
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-base);
             cursor: pointer;
-            position: relative;
-            font-weight: var(--fw-medium);
         }
 
-        .gradient-border-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            z-index: -1;
-            margin: -2px;
-            border-radius: 8px;
-            background: var(--gradient-button);
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 15px 0;
-        }
-
-        .divider-line {
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        .divider-text {
-            padding: 0 10px;
-            font-size: var(--fs-subtle);
-            color: var(--text-muted);
-        }
-
-        .textarea-gradient-border {
-            position: relative;
-            padding: 2px;
-            background: var(--gradient-button);
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        .textarea-gradient-border textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            resize: none;
-            font-size: var(--fs-subtle);
-            background: var(--card);
-            color: var(--text-body);
-        }
-
-        .textarea-gradient-border textarea:focus {
-            outline: none;
-        }
-
-        .gradient-button {
-            background: var(--gradient-button);
-            color: var(--btn-text-primary);
-            border: none;
-            padding: 8px 24px;
-            border-radius: 25px;
-            font-size: var(--fs-subtle);
-            font-weight: var(--fw-semibold);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin: 10px 0;
-        }
-
-        .gradient-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(91, 134, 229, 0.3);
+        .tutorial-placeholder:hover {
+            transform: scale(1.02);
         }
 
         .refiner-card {
@@ -980,18 +851,19 @@
             background: linear-gradient(var(--card), var(--card)) padding-box,
                 linear-gradient(90deg, #667eea, #764ba2) border-box;
             color: #667eea;
-            transition: all 0.2s ease;
+            transition: all var(--transition-base);
         }
 
         .refine-button:hover {
             transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .pinned-section {
             position: relative;
             border: 2px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px 15px 15px;
+            border-radius: 10px;
+            padding: var(--space-lg) var(--space-md) var(--space-md);
         }
 
         .pinned-title {
@@ -1010,9 +882,14 @@
             top: -12px;
             right: 15px;
             background: var(--card);
-            padding: 0 5px;
+            padding: 0 6px;
             color: var(--accent);
             cursor: pointer;
+            transition: transform var(--transition-fast);
+        }
+
+        .pinned-edit:hover {
+            transform: scale(1.1);
         }
 
         .pinned-links ul {
@@ -1022,98 +899,140 @@
         }
 
         .pinned-links li {
-            padding: 8px 0;
+            padding: var(--space-sm) 0;
             font-size: var(--fs-body);
             color: var(--text-body);
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition: all var(--transition-fast);
+            border-radius: 6px;
+            padding-left: var(--space-xs);
         }
 
         .pinned-links li:hover {
             color: var(--accent);
+            background: var(--accent-light);
+            padding-left: var(--space-sm);
         }
 
-        /* Toggle Buttons */
+
+
+        @keyframes stickyEnhanced {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+
+            50% {
+                transform: translateY(5px) scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1.02);
+            }
+        }
+
+
+        @keyframes stickyPulseEnhanced {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+                filter: blur(2px);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.08);
+                filter: blur(4px);
+            }
+        }
+
+
         .sidebar-toggle {
-            position: fixed;
-            bottom: 20px;
             left: 20px;
-            z-index: 1001;
-            background: var(--accent);
-            color: var(--btn-text-primary);
-            border: none;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(19, 81, 216, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .sidebar-toggle:hover {
-            transform: scale(1.05);
         }
 
         .right-sidebar-toggle {
-            position: fixed;
-            bottom: 20px;
             right: 20px;
-            z-index: 1001;
-            background: var(--accent);
-            color: var(--btn-text-primary);
-            border: none;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(19, 81, 216, 0.4);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
         }
 
-        .right-sidebar-toggle:hover {
-            transform: scale(1.05);
-        }
 
-        /* Overlay */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
 
-        .sidebar-overlay.active {
-            display: block;
-            opacity: 1;
-        }
 
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .right-sidebar {
-                position: fixed;
-                right: 0;
-                top: 0;
-                height: 100vh;
-                overflow-y: auto;
-                background: var(--bg);
-                transform: translateX(100%);
-                z-index: 1000;
-                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
             }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card,
+        .chart-container,
+        .funnel-card,
+        .orders-card,
+        .due-soon-section,
+        .activity-section,
+        .right-card {
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+
+        .stat-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .stat-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .stat-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .stat-card:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        /* ============================================
+                       RESPONSIVE DESIGN
+                       ============================================ */
+
+        @media (max-width: 1400px) {
+            .content-area {
+                padding: var(--space-md);
+            }
+        }
+
+        @media (max-width: 1280px) {
+            .content-area {
+                padding: var(--space-lg);
+            }
+
+            .row-cards {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: var(--mb-sections);
+            }
+
+
 
             .right-sidebar.active {
                 transform: translateX(0);
@@ -1122,29 +1041,18 @@
             .right-sidebar-toggle {
                 display: flex;
             }
-
-            /* Unified wrapper takes full width when right sidebar is hidden */
-            .unified-scroll-wrapper {
-                width: 100%;
-            }
-        }
-
-        @media (max-width: 1200px) {
-            .row-cards {
-                grid-template-columns: 1fr;
-            }
         }
 
         @media (max-width: 992px) {
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                background: var(--bg);
-                transform: translateX(-100%);
-                z-index: 1000;
-                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            .content-area {
+                padding: var(--space-md);
             }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+
 
             .sidebar.active {
                 transform: translateX(0);
@@ -1153,36 +1061,29 @@
             .sidebar-toggle {
                 display: flex;
             }
-
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            }
-
-            .content-area {
-                padding: 20px;
-            }
         }
 
         @media (max-width: 768px) {
             .content-area {
-                padding: 15px;
+                padding: var(--space-sm);
             }
 
             .page-title {
-                font-size: var(--fs-h1);
+                font-size: var(--fs-h2);
+                margin-bottom: var(--mb-sections);
             }
 
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                gap: var(--mb-sections);
             }
 
-            .stat-value {
-                font-size: 20px;
-            }
-
-            .chart-header {
-                flex-direction: column;
-                align-items: flex-start;
+            .chart-container,
+            .funnel-card,
+            .orders-card,
+            .due-soon-section,
+            .activity-section {
+                padding: var(--space-lg);
+                margin-bottom: var(--mb-sections);
             }
 
             .activity-grid {
@@ -1201,61 +1102,529 @@
 
             .pie-chart-container {
                 flex-direction: column;
-                gap: 20px;
-            }
-
-            .funnel-label {
-                min-width: 100px;
-                font-size: var(--fs-subtle);
+                gap: var(--space-lg);
             }
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+        /* ============================================
+                       ACCESSIBILITY
+                       ============================================ */
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
 
-        .stat-card,
-        .chart-container,
-        .funnel-card,
-        .orders-card,
-        .due-soon-section,
-        .activity-section {
-            animation: fadeIn 0.5s ease-out;
+        .time-filter:focus,
+        .due-item-action:focus,
+        button:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
-        /* Smooth Scroll */
-        .unified-scroll-wrapper,
+
+
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            max-width: 1920px;
+            margin: 0 auto;
+            /* display: block; */
+
+
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-base);
+            /* background: var(--bg); */
+            overflow-y: auto;
+            /* Enable scrolling */
+            overflow-x: hidden;
+            /* Prevent horizontal scroll */
+        }
+
         .sidebar-content {
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 var(--space-sm);
+            flex: 1;
+            padding-top: 50px;
+
+            scrollbar-width: 2px;
+            scrollbar-height: 10px;
+            scrollbar-color: black
+                /* scrollbar-color: rgba(0, 0, 0, 0.2) transparent; */
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 2px;
+            height: 10px !important;
+            scrollbar-color: black
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            border-radius: 3px;
+            height: 10px !important;
+
+        }
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* ============================================
+   PROFILE CARD - LINKEDIN/ATLASSIAN STYLE
+   ============================================ */
+
+.profile-card1 {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
+    margin-bottom: var(--mb-sections);
+    overflow: hidden;
+}
+
+/* Cover Background */
+.profile-cover {
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+}
+
+/* Avatar Container */
+.profile-avatar-wrapper1 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: -32px;
+    padding: 0 var(--space-lg);
+}
+
+.profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 4px solid var(--card);
+    background: var(--card);
+    position: relative;
+}
+
+.profile-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    border: 2px solid var(--card);
+    border-radius: 50%;
+}
+
+/* Profile Info */
+.profile-info {
+    text-align: center;
+    padding: var(--space-md) var(--space-lg);
+}
+
+.profile-name {
+    font-size: 1rem;
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+}
+
+.profile-headline {
+    font-size: var(--fs-subtle);
+    color: var(--text-muted);
+    margin: 0 0 var(--space-sm) 0;
+    line-height: 1.4;
+}
+
+.profile-location {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: var(--fs-subtle);
+    color: var(--text-muted);
+    margin-bottom: var(--space-md);
+}
+
+.profile-location i {
+    font-size: 12px;
+}
+
+/* Divider */
+.profile-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 var(--space-lg) var(--space-md);
+}
+
+/* Stats Row */
+.profile-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    padding: 0 var(--space-lg) var(--space-md);
+}
+
+.profile-stat {
+    text-align: center;
+}
+
+.profile-stat-value {
+    font-size: 1.125rem;
+    font-weight: var(--fw-semibold);
+    color: var(--text-heading);
+    display: block;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.profile-stat-label {
+    font-size: var(--fs-micro);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* Action Button */
+.profile-action {
+    /* padding: 0 var(--space-lg) var(--space-lg); */
+    display: flex;align-items: center; justify-content: center
+}
+.profile-action a{
+    /* padding: 0 var(--space-lg) var(--space-lg); */
+    display: flex;align-items: center; justify-content: center
+}
+
+.btn-view-profile {
+    width: 100%;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: var(--fs-body);
+    cursor: pointer;
+    font-weight: var(--fw-medium);
+    transition: all 0.15s ease;
+}
+
+.btn-view-profile:hover {
+    background: var(--bg);
+    border-color: var(--accent);
+}
+
+.btn-view-profile:active {
+    transform: scale(0.98);
+}
+
+        .nav-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: var(--space-sm);
+            margin-bottom: var(--mb-sections);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-body);
+            transition: all var(--transition-base);
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .upgrade-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: var(--space-xl);
+            text-align: center;
+            color: var(--text-white);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: var(--mb-sections);
+        }
+
+        .btn-upgrade {
+            background: var(--card);
+            color: #667eea;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: var(--fw-semibold);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        /* UNIFIED SCROLL WRAPPER */
+        .unified-scroll-wrapper {
+            flex: 1;
+            display: flex;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: 100vh;
             scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .unified-scroll-wrapper::-webkit-scrollbar {
+            width: 10px;
+
+        }
+
+        .unified-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+
+
+        .page-title {
+            font-size: var(--fs-h2);
+            font-weight: var(--fw-bold);
+            margin-bottom: var(--mb-sections);
+            ;
+            color: var(--text-heading);
+        }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--mb-sections);
+            margin-bottom: var(--mb-sections);
+            ;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: transform var(--transition-base);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: var(--fw-bold);
+            color: var(--text-heading);
+        }
+
+        /* RIGHT SIDEBAR */
+        .right-sidebar {
+            width: var(--right-sidebar-width);
+            flex-shrink: 0;
+            padding: var(--space-2xl) var(--space-md);
+            min-height: 100vh;
+            transition: transform var(--transition-base);
+        }
+
+        .right-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            margin-bottom: var(--mb-sections);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* STICKY SCROLL */
+        .sticky-on-scroll {
+            position: relative;
+            transition: all var(--transition-base);
+        }
+
+        .sticky-on-scroll.is-sticky {
+            position: fixed !important;
+            top: 100px !important;
+            z-index: 999;
+            box-shadow: var(--shadow-2xl);
+            transform: scale(1.02);
+        }
+
+        .sticky-placeholder {
+            display: none;
+            visibility: hidden;
+        }
+
+        /* TOGGLE BUTTONS */
+        .sidebar-toggle,
+        .right-sidebar-toggle {
+            position: fixed;
+            bottom: 20px;
+            z-index: 1001;
+            background: var(--accent);
+            color: var(--btn-text-primary);
+            border: none;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow-xl);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-toggle {
+            left: 20px;
+        }
+
+        .right-sidebar-toggle {
+            right: 20px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .right-sidebar {
+                position: fixed;
+                right: 0;
+                top: 50px;
+                height: 100vh;
+                overflow-y: auto;
+                background: var(--bg);
+                transform: translateX(100%);
+                z-index: 1;
+            }
+
+            .right-sidebar.active {
+                transform: translateX(0);
+            }
+
+            .right-sidebar-toggle {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 50px;
+                background: var(--bg);
+                transform: translateX(-100%);
+                z-index: 1;
+                height: calc(100vh - 50px);
+                /* Set proper height for scrolling */
+                max-height: calc(100vh - 50px);
+                /* Ensure it doesn't exceed viewport */
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: flex;
+            }
         }
     </style>
+
+    <x-navigation.top-nav :user="$user" :username="$username" />
 
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Toggle Buttons -->
-    <button class="sidebar-toggle" id="sidebarToggle">
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
         <i class="fas fa-bars"></i>
     </button>
 
-    <button class="right-sidebar-toggle" id="rightSidebarToggle">
+    <button class="right-sidebar-toggle" id="rightSidebarToggle" aria-label="Toggle right sidebar">
         <i class="fas fa-sliders-h"></i>
     </button>
 
-
-
-
-    <x-navigation.top-nav :user="$user"  :username="$username"/>
-
+    <!-- Navigation Component -->
 
     <!-- Main Container -->
     <div class="main-container">
@@ -1264,21 +1633,72 @@
             <div class="sidebar-content">
                 <!-- Profile Card -->
                 <div class="profile-card1">
-                    <div class="avatar-container">
-                        <img src="https://ui-avatars.com/api/?name=Hassam+Mehmood&background=0072d2&color=fff"
-                            alt="Avatar" class="avatar">
-                        <span class="status-badge">Available</span>
+                    <!-- Cover Photo / Banner -->
+                    <div class="profile-cover" 
+                         @if($user->banner_url)
+                         style="background-image: url('{{ $user->banner_url }}'); 
+                                background-size: {{ $user->banner_fit }}; 
+                                background-position: {{ $user->banner_position }};"
+                         @endif>
                     </div>
-                    <h6>Hassam Mehmood</h6>
-                    <div class="skills">PHP · Laravel · React Js · Node Js · Express Js · Mongo DB · Tailwind CSS</div>
-                    <div class="location">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Sargodha, Pakistan</span>
+                    
+                    <!-- Avatar -->
+                    <div class="profile-avatar-wrapper1">
+                        <div class="profile-avatar">
+                            <img src="{{ $user->avatar_url }}" 
+                                 alt="{{ $user->name }}" 
+                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"
+                                 referrerpolicy="no-referrer"
+                                 crossorigin="anonymous"
+                                 onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+                                 
+                                 >
+                            
+                            @if($user->is_online)
+                                <span class="profile-status" title="Online"></span>
+                            @endif
+                        </div>
                     </div>
-                    <button class="btn-view-profile">View public profile</button>
+                    
+                    <!-- Profile Info -->
+                    <div class="profile-info">
+                        <h6 class="profile-name">{{ $user->name }}</h6>
+                        
+                        @if($user->headline)
+                            <p class="profile-headline">{{ $user->headline }}</p>
+                        @endif
+                        
+                        @if($user->location)
+                            <div class="profile-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ $user->location }}</span>
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <!-- Divider -->
+                    <div class="profile-divider"></div>
+                    
+                    <!-- Stats -->
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <span class="profile-stat-value">{{ $owner->connections_count ?? 0 }}</span>
+                            <span class="profile-stat-label">Clicks</span>
+                        </div>
+                        <div class="profile-stat">
+                            <span class="profile-stat-value">{{ $owner->profile_views_count ?? 0 }}</span>
+                            <span class="profile-stat-label">Profile Views</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <div class="profile-action">
+                        <a href="{{ route('tenant.profile', $owner->username) }}" class="btn-view-profile">
+                            View public profile
+                        </a>
+                    </div>
                 </div>
-
-
+                <!-- Manage Profile -->
                 <div class="nav-section">
                     <div class="nav-section-title">Manage Profile</div>
                     <ul class="nav-menu">
@@ -1290,7 +1710,7 @@
                     </ul>
                 </div>
 
-                <!-- Manage Projects/Orders Section -->
+                <!-- Manage Projects -->
                 <div class="nav-section">
                     <div class="nav-section-title">Manage Projects</div>
                     <ul class="nav-menu">
@@ -1301,7 +1721,7 @@
                     </ul>
                 </div>
 
-                <!-- Legal Docs Management Section -->
+                <!-- Legal & Finance -->
                 <div class="nav-section">
                     <div class="nav-section-title">Legal & Finance</div>
                     <ul class="nav-menu">
@@ -1311,7 +1731,7 @@
                     </ul>
                 </div>
 
-                <!-- Auth Section -->
+                <!-- Account -->
                 <div class="nav-section">
                     <div class="nav-section-title">Account</div>
                     <ul class="nav-menu">
@@ -1327,14 +1747,14 @@
                     <div class="icon">
                         <i class="fas fa-rocket"></i>
                     </div>
-                    <p style="font-size: 12px; margin-bottom: var(--mb-sections); opacity: 0.9;">Unlock premium features for
-                        smooth workflow</p>
+                    <p style="font-size: 12px; margin-bottom: 16px; opacity: 0.9;">Unlock premium features for smooth
+                        workflow</p>
                     <button class="btn-upgrade">See plans</button>
                 </div>
             </div>
         </aside>
 
-        <!-- UNIFIED SCROLL WRAPPER: Main Content + Right Sidebar -->
+        <!-- Unified Scroll Wrapper: Main Content + Right Sidebar -->
         <div class="unified-scroll-wrapper">
             <!-- Main Content Area -->
             <main class="content-area">
@@ -1346,7 +1766,7 @@
                         <div class="stat-header">
                             <div>
                                 <div class="stat-label">Visitors</div>
-                                <div class="stat-value">12,450</div>
+                                <div class="stat-value">12450</div>
                             </div>
                             <div class="stat-icon">
                                 <i class="fas fa-users"></i>
@@ -1363,7 +1783,7 @@
                         <div class="stat-header">
                             <div>
                                 <div class="stat-label">Impressions</div>
-                                <div class="stat-value">28,960</div>
+                                <div class="stat-value">28960</div>
                             </div>
                             <div class="stat-icon">
                                 <i class="fas fa-eye"></i>
@@ -1380,7 +1800,7 @@
                         <div class="stat-header">
                             <div>
                                 <div class="stat-label">CTA Clicks</div>
-                                <div class="stat-value">1,280</div>
+                                <div class="stat-value">1280</div>
                             </div>
                             <div class="stat-icon">
                                 <i class="fas fa-mouse-pointer"></i>
@@ -1412,7 +1832,7 @@
                         <div class="stat-header">
                             <div>
                                 <div class="stat-label">Revenue</div>
-                                <div class="stat-value">$24,600</div>
+                                <div class="stat-value">24600</div>
                             </div>
                             <div class="stat-icon">
                                 <i class="fas fa-dollar-sign"></i>
@@ -1449,9 +1869,9 @@
                             <div class="chart-subtitle">Visitors vs Impressions</div>
                         </div>
                         <div class="time-filters">
-                            <div class="time-filter">7d</div>
-                            <div class="time-filter active">30d</div>
-                            <div class="time-filter">90d</div>
+                            <button class="time-filter">7d</button>
+                            <button class="time-filter active">30d</button>
+                            <button class="time-filter">90d</button>
                         </div>
                     </div>
                     <div class="chart-area">
@@ -1681,298 +2101,201 @@
                 </div>
             </main>
 
-            <style>
-                .sticky-on-scroll {
-                    position: sticky !important;
-                    top: 100px !important;
-                    z-index: 100;
-                    box-sizing: border-box;
-                }
-
-
-                @media (min-width: 1201px) {
-                    .right-sidebar-content {
-                        overflow: visible !important;
-                    }
-                }
-            </style>
-            <!-- Right Sidebar - Part of Unified Scroll -->
+            <!-- Right Sidebar -->
             <aside class="right-sidebar" id="rightSidebar">
-                <div class="right-sidebar-content">
-                    <!-- Tutorial Video -->
-                    <div class="right-card">
-                        <h6>Tutorial Video</h6>
-                        <div class="tutorial-placeholder">
-                            <i class="fas fa-play-circle" style="font-size: 48px;"></i>
-                        </div>
-                    </div>
-
-
-
-                    <!-- AI Message Refiner -->
-                    <div class="right-card refiner-card">
-                        <h6>AI Message Refiner</h6>
-                        <button class="refine-button">
-                            Refine <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-
-                    <!-- Pinned Links -->
-                    <div class="right-card">
-                        <div class="pinned-section pinned-links">
-                            <span class="pinned-title">Pinned links</span>
-                            <i class="fas fa-pen pinned-edit"></i>
-                            <ul>
-                                <li>Proposal template</li>
-                                <li>Contract (e-sign)</li>
-                                <li>Invoice template</li>
-                                <li>Brand assets</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Help & Learn -->
-                    <div class="right-card">
-                        <div class="pinned-section pinned-links">
-                            <span class="pinned-title">Help & learn</span>
-                            <i class="fas fa-pen pinned-edit"></i>
-                            <ul>
-                                <li>How orders work</li>
-                                <li>Connect Stripe</li>
-                                <li>About milestones</li>
-                                <li>Keyboard shortcuts</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Upgrade (sticks at 20px when it reaches the top) -->
-                    <div class="upgrade-card sticky-on-scroll" id="upgradeCardRight">
-                        <h6>Go Pro — Unlock Everything</h6>
-                        <div class="icon"><i class="fas fa-rocket"></i></div>
-                        <p style="margin:10px 0 16px">
-                            Advanced analytics, AI helpers & priority support.
-                        </p>
-                        <button class="btn-upgrade" type="button">Upgrade Now</button>
+                <!-- Tutorial Video -->
+                <div class="right-card">
+                    <h6>Tutorial Video</h6>
+                    <div class="tutorial-placeholder">
+                        <i class="fas fa-play-circle" style="font-size: 56px;"></i>
                     </div>
                 </div>
-            </aside>
 
+                <!-- AI Message Refiner -->
+                <div class="right-card refiner-card">
+                    <h6>AI Message Refiner</h6>
+                    <button class="refine-button">
+                        Refine <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Pinned Links -->
+                <div class="right-card">
+                    <div class="pinned-section pinned-links">
+                        <span class="pinned-title">Pinned links</span>
+                        <i class="fas fa-pen pinned-edit"></i>
+                        <ul>
+                            <li>Proposal template</li>
+                            <li>Contract (e-sign)</li>
+                            <li>Invoice template</li>
+                            <li>Brand assets</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Help & Learn -->
+                <div class="right-card">
+                    <div class="pinned-section pinned-links">
+                        <span class="pinned-title">Help & learn</span>
+                        <i class="fas fa-pen pinned-edit"></i>
+                        <ul>
+                            <li>How orders work</li>
+                            <li>Connect Stripe</li>
+                            <li>About milestones</li>
+                            <li>Keyboard shortcuts</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sticky Upgrade Card -->
+                <div class="upgrade-card sticky-on-scroll" id="upgradeCardRight">
+                    <h6>Go Pro — Unlock Everything</h6>
+                    <div class="icon"><i class="fas fa-rocket"></i></div>
+                    <p style="margin:10px 0 16px; position: relative; z-index: 1;">
+                        Advanced analytics, AI helpers & priority support.
+                    </p>
+                    <button class="btn-upgrade" type="button">Upgrade Now</button>
+                </div>
+            </aside>
         </div>
     </div>
 
     <style>
-        /* ============================================
-       STICKY SCROLL PROFESSIONAL STYLES
-       ============================================ */
-
-        /* Base sticky element */
+        /* keep size identical when sticky */
         .sticky-on-scroll {
-            position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
         }
 
-        /* When element becomes sticky */
         .sticky-on-scroll.is-sticky {
-            position: fixed !important;
-            top: 100px !important;
-            z-index: 999;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-            transform: scale(1.02);
+            /* was: transform: scale(1.02);  <-- remove this to avoid growth */
+            transform: none;
         }
-
-        /* Placeholder to prevent layout shift */
-        .sticky-placeholder {
-            display: none;
-            visibility: hidden;
-        }
-
-        /* Smooth transitions */
-        .sticky-on-scroll.is-sticky {
-            animation: stickySlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes stickySlideIn {
-            from {
-                opacity: 0.8;
-                transform: translateY(-10px) scale(0.98);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1.02);
-            }
-        }
-
-        /* ============================================
-       RESPONSIVE BEHAVIOR
-       ============================================ */
-
-        /* Disable sticky on mobile for better UX */
-        @media (max-width: 1200px) {
-            .sticky-on-scroll.is-sticky {
-                position: relative !important;
-                top: auto !important;
-                transform: none !important;
-                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            }
-        }
-
-        /* ============================================
-       ENHANCED STICKY STYLES (OPTIONAL)
-       ============================================ */
-
-        /* Add pulse animation when sticky */
-        .sticky-on-scroll.is-sticky::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: calc(var(--radius) + 2px);
-            z-index: -1;
-            opacity: 0.3;
-            animation: stickyPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes stickyPulse {
-
-            0%,
-            100% {
-                opacity: 0.3;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(1.05);
-            }
-        }
-
-        /* ============================================
-       SCROLL CONTAINER OPTIMIZATION
-       ============================================ */
-
-        /* Ensure smooth scrolling */
-        .unified-scroll-wrapper {
-            scroll-behavior: smooth;
-            position: relative;
-        }
-
-        /* Hardware acceleration for better performance */
-        .sticky-on-scroll,
-        .sticky-on-scroll.is-sticky {
-            will-change: transform, position;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-        }
-
-        /* ============================================
-       ACCESSIBILITY
-       ============================================ */
-
-        /* Respect reduced motion preferences */
-        @media (prefers-reduced-motion: reduce) {
-
-            .sticky-on-scroll,
-            .sticky-on-scroll.is-sticky {
-                transition: none;
-                animation: none;
-            }
-
-            .sticky-on-scroll.is-sticky::before {
-                animation: none;
-            }
-        }
-
-        /* ============================================
-       RIGHT SIDEBAR SPECIFIC ADJUSTMENTS
-       ============================================ */
-
-        /* Ensure right sidebar content flows properly */
-        .right-sidebar-content {
-            position: relative;
-        }
-
-        /* Fix for right sidebar when sticky card is active */
-        @media (min-width: 1201px) {
-            .right-sidebar {
-                position: relative;
-            }
-
-            .right-sidebar-content {
-                overflow: visible !important;
-            }
-        }
-
-        /* ============================================
-       DEBUGGING (Remove in production)
-       ============================================ */
-
-        /* Uncomment to visualize sticky trigger points */
-        /*
-    .sticky-sentinel {
-        background: rgba(255, 0, 0, 0.2) !important;
-        height: 2px !important;
-    }
-
-    .sticky-placeholder {
-        background: rgba(0, 255, 0, 0.2) !important;
-        border: 2px dashed green !important;
-    }
-    */
     </style>
 
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
- 
+        'use strict';
+
+        // DASHBOARD CONTROLLER
+        class DashboardController {
+            constructor() {
+                this.sidebar = document.getElementById('sidebar');
+                this.rightSidebar = document.getElementById('rightSidebar');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.rightSidebarToggle = document.getElementById('rightSidebarToggle');
+                this.overlay = document.getElementById('sidebarOverlay');
+                this.init();
+            }
+
+            init() {
+                this.setupToggles();
+                this.setupOverlay();
+                this.setupClickOutside();
+                this.setupEscape();
+                this.setupResize();
+                console.log('✅ Dashboard Initialized');
+            }
+
+            setupToggles() {
+                this.sidebarToggle?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.sidebar?.classList.toggle('active');
+                    this.overlay?.classList.toggle('active');
+                    this.rightSidebar?.classList.remove('active');
+                });
+
+                this.rightSidebarToggle?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.rightSidebar?.classList.toggle('active');
+                    this.overlay?.classList.toggle('active');
+                    this.sidebar?.classList.remove('active');
+                });
+            }
+
+            setupOverlay() {
+                this.overlay?.addEventListener('click', () => this.closeAll());
+            }
+
+            setupClickOutside() {
+                document.addEventListener('click', (e) => {
+                    const clickedOutside = !this.sidebar?.contains(e.target) &&
+                        !this.rightSidebar?.contains(e.target) &&
+                        !this.sidebarToggle?.contains(e.target) &&
+                        !this.rightSidebarToggle?.contains(e.target);
+
+                    if (clickedOutside) {
+                        if (window.innerWidth <= 992 && this.sidebar?.classList.contains('active')) {
+                            this.closeAll();
+                        }
+                        if (window.innerWidth <= 1200 && this.rightSidebar?.classList.contains('active')) {
+                            this.closeAll();
+                        }
+                    }
+                });
+
+                this.sidebar?.addEventListener('click', (e) => e.stopPropagation());
+                this.rightSidebar?.addEventListener('click', (e) => e.stopPropagation());
+            }
+
+            setupEscape() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') this.closeAll();
+                });
+            }
+
+            setupResize() {
+                let timer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => {
+                        if (window.innerWidth > 992) {
+                            this.sidebar?.classList.remove('active');
+                            this.overlay?.classList.remove('active');
+                        }
+                        if (window.innerWidth > 1200) {
+                            this.rightSidebar?.classList.remove('active');
+                            this.overlay?.classList.remove('active');
+                        }
+                    }, 250);
+                });
+            }
+
+            closeAll() {
+                this.sidebar?.classList.remove('active');
+                this.rightSidebar?.classList.remove('active');
+                this.overlay?.classList.remove('active');
+            }
+        }
+
+        // STICKY SCROLL HANDLER
         class StickyScrollHandler {
-            constructor(elementSelector, options = {}) {
-                this.element = document.querySelector(elementSelector);
-                this.scrollContainer = document.querySelector('.unified-scroll-wrapper');
-
-                // Configuration
-                this.config = {
-                    stickyOffset: options.stickyOffset || 100, // Distance from top when sticky
-                    threshold: options.threshold || 0,
-                    rootMargin: options.rootMargin || '0px'
-                };
-
-                // State
+            constructor(selector, options = {}) {
+                this.element = document.querySelector(selector);
+                this.container = document.querySelector('.unified-scroll-wrapper');
+                this.offset = options.offset || 100;
                 this.isSticky = false;
-                this.originalPosition = null;
+                this.originalPos = null;
                 this.placeholder = null;
 
-                if (this.element && this.scrollContainer) {
+                if (this.element && this.container) {
                     this.init();
                 }
             }
 
             init() {
-                // Store original position
-                this.storeOriginalPosition();
-
-                // Create placeholder to prevent layout shift
+                this.storePosition();
                 this.createPlaceholder();
-
-                // Setup scroll listener
-                this.setupScrollListener();
-
-                // Setup resize observer
-                this.setupResizeObserver();
-
-                // Initial check
-                this.checkPosition();
+                this.setupScroll();
+                this.setupResize();
+                this.check();
+                console.log('✅ Sticky Scroll Initialized');
             }
 
-            storeOriginalPosition() {
+            storePosition() {
                 const rect = this.element.getBoundingClientRect();
-                const scrollTop = this.scrollContainer.scrollTop;
-
-                this.originalPosition = {
+                const scrollTop = this.container.scrollTop;
+                this.originalPos = {
                     top: rect.top + scrollTop,
                     width: rect.width,
                     height: rect.height
@@ -1986,389 +2309,100 @@
                 this.element.parentNode.insertBefore(this.placeholder, this.element);
             }
 
-            setupScrollListener() {
+            setupScroll() {
                 let ticking = false;
-
-                this.scrollContainer.addEventListener('scroll', () => {
+                this.container.addEventListener('scroll', () => {
                     if (!ticking) {
-                        window.requestAnimationFrame(() => {
-                            this.checkPosition();
+                        requestAnimationFrame(() => {
+                            this.check();
                             ticking = false;
                         });
                         ticking = true;
                     }
+                }, {
+                    passive: true
                 });
             }
 
-            setupResizeObserver() {
-                const resizeObserver = new ResizeObserver(() => {
-                    if (!this.isSticky) {
-                        this.storeOriginalPosition();
-                    }
-                });
+            // setupResize() {
+            //     if (window.ResizeObserver) {
+            //         new ResizeObserver(() => {
+            //             if (!this.isSticky) this.storePosition();
+            //             this.updatePosition();
+            //         }).observe(this.element);
+            //     }
+            // }
 
-                resizeObserver.observe(this.element);
-            }
+            check() {
+                const scrollTop = this.container.scrollTop;
+                const trigger = this.originalPos.top - this.offset;
 
-            checkPosition() {
-                const scrollTop = this.scrollContainer.scrollTop;
-                const containerRect = this.scrollContainer.getBoundingClientRect();
-                const triggerPoint = this.originalPosition.top - this.config.stickyOffset;
-
-                if (scrollTop >= triggerPoint && !this.isSticky) {
+                if (scrollTop >= trigger && !this.isSticky) {
                     this.makeSticky();
-                } else if (scrollTop < triggerPoint && this.isSticky) {
+                } else if (scrollTop < trigger && this.isSticky) {
                     this.removeSticky();
                 }
 
-                // Update sticky position while scrolling
-                if (this.isSticky) {
-                    this.updateStickyPosition();
-                }
+                // if (this.isSticky) this.updatePosition();
             }
 
             makeSticky() {
                 this.isSticky = true;
-
-                // Show placeholder to prevent layout shift
                 this.placeholder.style.display = 'block';
-                this.placeholder.style.height = `${this.originalPosition.height}px`;
-                this.placeholder.style.width = `${this.originalPosition.width}px`;
+                this.placeholder.style.height = this.originalPos.height + 'px';
+                this.placeholder.style.width = this.originalPos.width + 'px';
 
-                // Apply sticky styles
                 this.element.style.position = 'fixed';
-                this.element.style.top = `${this.config.stickyOffset}px`;
-                this.element.style.width = `${this.originalPosition.width}px`;
+                this.element.style.top = this.offset + 'px';
+                this.element.style.width = this.originalPos.width + 'px';
                 this.element.style.zIndex = '999';
-                this.element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-
-                // Add sticky class for additional styling
                 this.element.classList.add('is-sticky');
             }
 
             removeSticky() {
                 this.isSticky = false;
-
-                // Hide placeholder
                 this.placeholder.style.display = 'none';
 
-                // Remove sticky styles
                 this.element.style.position = '';
                 this.element.style.top = '';
                 this.element.style.width = '';
                 this.element.style.zIndex = '';
-
-                // Remove sticky class
+                this.element.style.left = '';
                 this.element.classList.remove('is-sticky');
             }
 
-            updateStickyPosition() {
-                const rightSidebarRect = this.element.closest('.right-sidebar').getBoundingClientRect();
-                this.element.style.left = `${rightSidebarRect.left}px`;
-            }
-
-            destroy() {
-                this.removeSticky();
-                if (this.placeholder && this.placeholder.parentNode) {
-                    this.placeholder.parentNode.removeChild(this.placeholder);
+            updatePosition() {
+                if (!this.isSticky) return;
+                const sidebar = this.element.closest('.right-sidebar');
+                if (sidebar) {
+                    const rect = sidebar.getBoundingClientRect();
+                    this.element.style.left = rect.left + 'px';
                 }
             }
         }
 
-        // ============================================
-        // INITIALIZE ON DOM READY
-        // ============================================
+        // INITIALIZE
+        document.addEventListener('DOMContentLoaded', () => {
+            new DashboardController();
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize sticky scroll handler
-            const stickyHandler = new StickyScrollHandler('#upgradeCardRight', {
-                stickyOffset: 100, // Distance from top when sticky
-                threshold: 0
+            const sticky = new StickyScrollHandler('#upgradeCardRight', {
+                offset: 100
             });
 
-            // Handle window resize - recalculate positions
-            let resizeTimer;
-            window.addEventListener('resize', function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    // Reinitialize on significant resize
-                    if (stickyHandler) {
-                        stickyHandler.storeOriginalPosition();
-                        stickyHandler.checkPosition();
+            // Handle resize for sticky
+            let timer;
+            window.addEventListener('resize', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    if (sticky) {
+                        sticky.storePosition();
+                        sticky.check();
                     }
                 }, 250);
             });
 
-            // Cleanup on page unload (optional)
-            window.addEventListener('beforeunload', function() {
-                if (stickyHandler) {
-                    stickyHandler.destroy();
-                }
-            });
-
-            console.log('✅ Sticky Scroll Handler Initialized');
+            console.log('🎨 Dashboard Ready');
         });
-
- 
-        function initStickyWithIntersectionObserver() {
-            const upgradeCard = document.querySelector('#upgradeCardRight');
-            const scrollContainer = document.querySelector('.unified-scroll-wrapper');
-
-            if (!upgradeCard || !scrollContainer) return;
-
-            // Create a sentinel element at the trigger point
-            const sentinel = document.createElement('div');
-            sentinel.className = 'sticky-sentinel';
-            sentinel.style.position = 'absolute';
-            sentinel.style.height = '1px';
-            sentinel.style.width = '100%';
-            sentinel.style.top = '0';
-            sentinel.style.pointerEvents = 'none';
-
-            upgradeCard.parentNode.insertBefore(sentinel, upgradeCard);
-
-            // Create observer
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach(entry => {
-                        if (!entry.isIntersecting) {
-                            upgradeCard.classList.add('is-sticky');
-                        } else {
-                            upgradeCard.classList.remove('is-sticky');
-                        }
-                    });
-                }, {
-                    root: scrollContainer,
-                    threshold: 0,
-                    rootMargin: '-20px 0px 0px 0px'
-                }
-            );
-
-            observer.observe(sentinel);
-        }
-
-        // Uncomment to use Intersection Observer method instead:
-        // document.addEventListener('DOMContentLoaded', initStickyWithIntersectionObserver);
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Sidebar Toggle Functionality
-        const sidebar = document.getElementById('sidebar');
-        const rightSidebar = document.getElementById('rightSidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const rightSidebarToggle = document.getElementById('rightSidebarToggle');
-        const overlay = document.getElementById('sidebarOverlay');
-
-        // Left Sidebar Toggle
-        sidebarToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-
-            // Close right sidebar if open
-            if (rightSidebar.classList.contains('active')) {
-                rightSidebar.classList.remove('active');
-            }
-        });
-
-        // Right Sidebar Toggle
-        rightSidebarToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            rightSidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-
-            // Close left sidebar if open
-            if (sidebar.classList.contains('active')) {
-                sidebar.classList.remove('active');
-            }
-        });
-
-        // Overlay Click - Close All Sidebars
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-            rightSidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-
-        // Close sidebars when clicking outside on mobile
-        document.addEventListener('click', function(event) {
-            const isMobile = window.innerWidth <= 992;
-            const isTablet = window.innerWidth <= 1200;
-
-            // Check if click is outside sidebars and toggles
-            const clickedOutside = !sidebar.contains(event.target) &&
-                !rightSidebar.contains(event.target) &&
-                !sidebarToggle.contains(event.target) &&
-                !rightSidebarToggle.contains(event.target);
-
-            if (clickedOutside) {
-                if (isMobile && sidebar.classList.contains('active')) {
-                    sidebar.classList.remove('active');
-                    overlay.classList.remove('active');
-                }
-
-                if (isTablet && rightSidebar.classList.contains('active')) {
-                    rightSidebar.classList.remove('active');
-                    overlay.classList.remove('active');
-                }
-            }
-        });
-
-        // Prevent sidebar content clicks from closing sidebar
-        sidebar.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        rightSidebar.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        // Handle window resize
-        let resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                const width = window.innerWidth;
-
-                // Reset left sidebar on desktop
-                if (width > 992) {
-                    sidebar.classList.remove('active');
-                    overlay.classList.remove('active');
-                }
-
-                // Reset right sidebar on large desktop
-                if (width > 1200) {
-                    rightSidebar.classList.remove('active');
-                    overlay.classList.remove('active');
-                }
-            }, 250);
-        });
-
-        // Time filter functionality
-        document.querySelectorAll('.time-filter').forEach(filter => {
-            filter.addEventListener('click', function() {
-                document.querySelectorAll('.time-filter').forEach(f => f.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
-        // Animate funnel bars on load
-        window.addEventListener('load', function() {
-            document.querySelectorAll('.funnel-bar').forEach(bar => {
-                const width = bar.style.width;
-                bar.style.width = '0%';
-                setTimeout(() => {
-                    bar.style.width = width;
-                }, 100);
-            });
-        });
-
-        // Active navigation link handling
-        document.querySelectorAll('.nav-menu a').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-
-                // Remove active from all links in the same section
-                const parentMenu = this.closest('.nav-menu');
-                parentMenu.querySelectorAll('a').forEach(a => a.classList.remove('active'));
-
-                // Add active to clicked link
-                this.classList.add('active');
-
-                // Close sidebar on mobile after selection
-                if (window.innerWidth <= 992) {
-                    setTimeout(() => {
-                        sidebar.classList.remove('active');
-                        overlay.classList.remove('active');
-                    }, 300);
-                }
-            });
-        });
-
-        // Escape key to close sidebars
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                sidebar.classList.remove('active');
-                rightSidebar.classList.remove('active');
-                overlay.classList.remove('active');
-            }
-        });
-
-        // Add hover effect to stat cards
-        document.querySelectorAll('.stat-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.borderColor = 'var(--accent-light)';
-            });
-
-            card.addEventListener('mouseleave', function() {
-                this.style.borderColor = 'var(--border)';
-            });
-        });
-
-        // Intersection Observer for fade-in animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver(function(entries) {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe animated elements
-        document.querySelectorAll(
-            '.stat-card, .chart-container, .funnel-card, .orders-card, .due-soon-section, .activity-section').forEach(
-            el => {
-                observer.observe(el);
-            });
-
-        // Handle activity item interactions
-        document.querySelectorAll('.activity-item').forEach(item => {
-            item.addEventListener('click', function() {
-                console.log('Activity item clicked');
-            });
-        });
-
-        // Handle due item actions
-        document.querySelectorAll('.due-item-action').forEach(action => {
-            action.addEventListener('click', function(e) {
-                e.stopPropagation();
-                console.log('Due item action clicked:', this.textContent);
-            });
-        });
-
-        // Pinned links edit functionality
-        document.querySelectorAll('.pinned-edit').forEach(edit => {
-            edit.addEventListener('click', function() {
-                console.log('Edit pinned links clicked');
-            });
-        });
-
-        // Console log for debugging
-        console.log('Dashboard initialized successfully');
-        console.log('Unified scroll enabled - Main content and right sidebar scroll together');
-        console.log('Left Sidebar:', sidebar);
-        console.log('Right Sidebar:', rightSidebar);
-        console.log('Viewport width:', window.innerWidth);
-    </script>
-
-
-
-
-
-
-
-
-
-
-
-<style>
-    
-</style>
-@endsection <!-- Manage Profile Section -->
+@endsection

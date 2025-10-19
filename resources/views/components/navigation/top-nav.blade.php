@@ -2111,7 +2111,6 @@
         color: var(--text-muted);
     }
 
-
 </style>
 
 
@@ -2163,86 +2162,89 @@
         </div>
 
         <!-- DESKTOP ROW -->
-        <div class="nav-row nav-row--desktop">
-            <a class="brand" href="#">
-                <img class="brand-logo" src="{{asset('assets/images/logos/croped/logo_light.png')}}" alt="Brand"
-                    data-theme-src-light="{{asset('assets/images/logos/croped/logo_light.png')}}"
-                    data-theme-src-dark="{{asset('assets/images/logos/croped/logo_dark.png')}}">
-            </a>
+    <!-- DESKTOP ROW -->
+<div class="nav-row nav-row--desktop">
+    <a class="brand" href="#">
+        <img class="brand-logo" src="{{asset('assets/images/logos/croped/logo_light.png')}}" alt="Brand"
+            data-theme-src-light="{{asset('assets/images/logos/croped/logo_light.png')}}"
+            data-theme-src-dark="{{asset('assets/images/logos/croped/logo_dark.png')}}">
+    </a>
 
-            <div class="search-wrap">
+    <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input class="search-input" type="text" placeholder="Search for people, jobs, companies...">
+    </div>
+
+    <div class="actions">
+        <a href="{{ route('tenant.profile',$username) }}" class="nav-item {{ request()->routeIs('tenant.profile',$username) ? 'active' : '' }}">
+            <div class="nav-item-icon">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <span class="nav-item-text">Profile</span>
+        </a>
+    
+        <a href="#" class="search-nav-item" id="searchNavItem">
+            <div class="search-nav-item-icon">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input class="search-input" type="text" placeholder="Search for people, jobs, companies...">
             </div>
-
-            <!-- SEARCH NAV ITEM (Shows 768px-950px) -->
-          
-
-            <div class="actions">
-                <a href="#" class="nav-item active">
-                    <div class="nav-item-icon">
-                        <i class="fa-solid fa-house"></i>
-                    </div>
-                    <span class="nav-item-text">Home</span>
-                </a>
-            
-                <a href="#" class="search-nav-item" id="searchNavItem">
-                    <div class="search-nav-item-icon">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </div>
-                    <span class="search-nav-item-text">Search</span>
-                </a>
-            
-                <a href="#" class="nav-item">
-                    <div class="nav-item-icon">
-                        <i class="fa-regular fa-comments"></i>
-                        <span class="nav-item-badge">99+</span>
-
-                    </div>
-                    <span class="nav-item-text">Q&A</span>
-                </a>
-            
-                <a href="#" class="nav-item">
-                    <div class="nav-item-icon">
-                        <i class="fa-solid fa-chart-line"></i>
-                    </div>
-                    <span class="nav-item-text">Manage</span>
-                </a>
-            
-                <a href="#" class="nav-item" id="messagesBtn">
-                    <div class="nav-item-icon">
-                        <i class="fa-regular fa-comment-dots"></i>
-                        <span class="nav-item-badge">3</span>
-                    </div>
-                    <span class="nav-item-text">Messaging</span>
-                </a>
-            
-                <a href="#" class="nav-item" id="notificationsBtn">
-                    <div class="nav-item-icon">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="nav-item-badge">15</span>
-                    </div>
-                    <span class="nav-item-text">Notifications</span>
-                </a>
-            
-                <div class="nav-divider"></div>
-            
-                <a href="#" class="nav-item nav-item-profile" id="profileBtn">
-                    <div class="profile-avatar-wrapper">
-                        <img class="nav-avatar" src="{{ $user->avatar }}" alt="{{ $user->name }}"
-                        referrerpolicy="no-referrer"
-                        crossorigin="anonymous"
-                        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
-                    >
-                    </div>
-                    <span class="nav-item-text">Me <i class="fa-solid fa-caret-down"></i></span>
-                </a>
-            
-                <button class="share-btn">
-                    <i class="fa-solid fa-share-nodes"></i><span>Share</span>
-                </button>
+            <span class="search-nav-item-text">Search</span>
+        </a>
+    
+        <a href="#" class="nav-item {{ request()->routeIs('qa.*') ? 'active' : '' }}">
+            <div class="nav-item-icon">
+                <i class="fa-regular fa-comments"></i>
+                <span class="nav-item-badge">99+</span>
             </div>
-        </div>
+            <span class="nav-item-text">Q&A</span>
+        </a>
+    
+        <a href="{{ route('tenant.dashboard', $username) }}" 
+           class="nav-item {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}">
+            <div class="nav-item-icon">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <span class="nav-item-text">Manage</span>
+        </a>
+    
+        <a href="#" 
+           class="nav-item {{ request()->routeIs('messages.*') ? 'active' : '' }}" 
+           id="messagesBtn">
+            <div class="nav-item-icon">
+                <i class="fa-regular fa-comment-dots"></i>
+                <span class="nav-item-badge">3</span>
+            </div>
+            <span class="nav-item-text">Messaging</span>
+        </a>
+    
+        <a href="#" 
+           class="nav-item {{ request()->routeIs('notifications.*') ? 'active' : '' }}" 
+           id="notificationsBtn">
+            <div class="nav-item-icon">
+                <i class="fa-regular fa-bell"></i>
+                <span class="nav-item-badge">15</span>
+            </div>
+            <span class="nav-item-text">Notifications</span>
+        </a>
+    
+        <div class="nav-divider"></div>
+    
+        <a href="#" 
+           class="nav-item nav-item-profile {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
+           id="profileBtn">
+            <div class="profile-avatar-wrapper">
+                <img class="nav-avatar" src="{{ $user->avatar }}" alt="{{ $user->name }}"
+                    referrerpolicy="no-referrer"
+                    crossorigin="anonymous"
+                    onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
+            </div>
+            <span class="nav-item-text">Me <i class="fa-solid fa-caret-down"></i></span>
+        </a>
+    
+        <button class="share-btn">
+            <i class="fa-solid fa-share-nodes"></i><span>Share</span>
+        </button>
+    </div>
+</div>
     </div>
 </nav>
 

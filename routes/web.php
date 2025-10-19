@@ -84,7 +84,7 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
      
         Route::get('/', [ProfileController::class, 'index'])->name('profile');
-        Route::get('dashboard', [DashboardController::class, 'index'])->name('index');
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
 
