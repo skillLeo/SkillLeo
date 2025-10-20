@@ -146,7 +146,7 @@ class CvUploadController extends Controller
 
         // Pull top-level fields with common names
         $name = $top['name'] ?? $top['fullname'] ?? $top['full_name'] ?? $top['candidate'] ?? $top['person'] ?? null;
-        $about = $top['about'] ?? $top['summary'] ?? $top['profile'] ?? $top['bio'] ?? null;
+        $about = $top['about'] ?? $top['summary'] ?? $top['profile'] ?? $top['about'] ?? null;
 
         $rawSkills = $top['skills'] ?? $top['skillset'] ?? $top['technologies'] ?? [];
         if (!is_array($rawSkills)) {

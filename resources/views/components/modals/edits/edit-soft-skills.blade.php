@@ -1,9 +1,11 @@
-@props(['softSkillOptions' => [], 'selectedSoft' => []])
+@props(['softSkillOptions' => [], 'selectedSoft' => [],'username'])
+
 
 <x-modals.edits.base-modal id="editSoftSkillsModal" title="Edit Soft Skills" size="md">
-    <form id="softSkillsForm" method="POST" action="{{route('tenant.skills.update')}}">
+    <form id="softSkillsForm" method="POST" action="{{route('tenant.skills.update',$username)}}">
         @csrf
         @method('PUT')
+        <input type="hidden" name="mode" value="soft">
 
         {{-- Soft Skills Section --}}
         <div class="modal-section">

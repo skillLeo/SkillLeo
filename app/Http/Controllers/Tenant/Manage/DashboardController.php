@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Tenant\Dashboard;
+namespace App\Http\Controllers\Tenant\Manage;
 
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -41,13 +41,14 @@ class DashboardController extends Controller
         $location = collect([$p?->city, $p?->state, $p?->country])->filter()->join(', ');
     
         $user = (object) [
-            'first_name'     => $titleCase($first),
+            'username'     => $username,
+            'name'     => $titleCase($first),
             'last_name'      => $titleCase($last),
             'name'           => $full,
             'email'          => $owner->email,
-            'headline'       => (string) ($p?->tagline ?? ''),
-            'bio'            => (string) ($p?->bio ?? ''),
-            'about'          => (string) ($p?->bio ?? ''),
+            'headline'       => (string) ($p?->headline ?? ''),
+            'about'            => (string) ($p?->about ?? ''),
+            'about'          => (string) ($p?->about ?? ''),
             'location'       => $location ?: null,
             'city'           => $p?->city,
             'state'          => $p?->state,
@@ -69,7 +70,7 @@ class DashboardController extends Controller
         ];
     
         // ✅ Pass both $owner (Eloquent model) and $user (view object)
-        return view('tenant.dashboard.index', compact('username', 'user', 'owner'));
+        return view('tenant.manage.dashboard', compact('username', 'user', 'owner'));
     }
 
 

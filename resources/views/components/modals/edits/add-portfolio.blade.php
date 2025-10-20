@@ -3,10 +3,10 @@
 {{-- File: resources/views/components/modals/edits/add-portfolio.blade.php --}}
 {{-- ============================================ --}}
 
-@props(['userSkills' => []])
+@props(['userSkills' => [],'username'])
 
 <x-modals.edits.base-modal id="addPortfolioModal" title="Add New Project" size="lg">
-    <form id="addPortfolioForm" method="POST" action="{{ route('tenant.portfolio.update') }}">
+    <form id="addPortfolioForm" method="POST" action="{{ route('tenant.portfolio.update',$username) }}">
         @csrf
         @method('PUT')
 

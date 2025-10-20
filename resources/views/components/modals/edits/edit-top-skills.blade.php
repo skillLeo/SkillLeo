@@ -1,9 +1,11 @@
-@props(['modalSkills' => []])
+@props(['modalSkills' => [],'username'])
+
 
 <x-modals.edits.base-modal id="editTopSkillsModal" title="Edit Top Skills" size="md">
-    <form id="topSkillsForm" method="POST" action="{{route('tenant.skills.update')}}">
+    <form id="topSkillsForm" method="POST" action="{{route('tenant.skills.update',$username)}}">
         @csrf
         @method('PUT')
+        <input type="hidden" name="mode" value="skills">
 
         {{-- Technical Skills Section --}}
         <div class="modal-section">

@@ -1,7 +1,8 @@
-@props(['modalLanguages' => []])
+@props(['modalLanguages' => [],'username'])
+
 
 <x-modals.edits.base-modal id="editLanguagesModal" title="Languages" size="md">
-    <form id="languagesForm" method="POST" action="{{ route('tenant.language.update') }}">
+    <form id="languagesForm" method="POST" action="{{ route('tenant.language.update' ,$username) }}">
         @csrf
         @method('PUT')
 

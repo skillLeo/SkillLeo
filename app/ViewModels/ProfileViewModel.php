@@ -19,8 +19,8 @@ final class ProfileViewModel
         $o = $this->owner;
         $pref = $o->preference; // ✅ singular
 
-        $fullName = trim(($o->first_name ?? '').' '.($o->last_name ?? '')) ?: ($o->name ?? $o->username);
-        $headline = $o->headline ?? $o->bio ?? null;
+        $fullName = trim(($o->name ?? '').' '.($o->last_name ?? '')) ?: ($o->name ?? $o->username);
+        $headline = $o->headline ?? $o->about ?? null;
         $about    = $o->about ?? $o->summary ?? null;
         $loc      = trim(collect([$o->city ?? $o->location_city, $o->country ?? $o->location_country])->filter()->join(', '));
 
@@ -32,7 +32,7 @@ final class ProfileViewModel
             'instagram'    => $o->instagram ?? $pref?->instagram,
             'twitter'      => $o->twitter ?? $pref?->twitter,
             'linkedin'     => $o->linkedin ?? $pref?->linkedin,
-            'bio'          => $headline ?: '—',
+            'about'          => $headline ?: '—',
             'location'     => $loc ?: '—',
             'avatar'       => $o->avatar_url ?? $o->photo_url ?? null,
             'banner'       => $o->banner_url ?? null,

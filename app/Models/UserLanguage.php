@@ -17,12 +17,13 @@ class UserLanguage extends Model
         'position',
     ];
 
+    // belongsTo (NOT belongsToMany)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Optional helper
+    // Optional: nice label for level
     public function getLevelLabelAttribute(): string
     {
         return match ((int)$this->level) {

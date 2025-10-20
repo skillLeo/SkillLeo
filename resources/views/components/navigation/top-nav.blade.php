@@ -1,3 +1,44 @@
+@php
+    use App\Models\User;
+    use Illuminate\Support\Str;
+
+    // read {username} from current route (e.g. /{username}/manage/...)
+    $username = request()->route('username');
+
+    // grab the owner by username; fallback to logged-in user if no username present
+    /** @var \App\Models\User|null $owner */
+    $owner = $username
+        ? User::with('profile')->where('username', $username)->first()
+        : (auth()->user()?->load('profile'));
+
+    // tiny view-model (kept minimal)
+    $title = fn ($s) => $s !== '' ? Str::of($s)->squish()->title()->toString() : '';
+    if ($owner) {
+        $first = $owner->name ?? $owner->name ?? '';
+        $last  = $owner->last_name  ?? '';
+        $full  = trim($title($first).' '.$title($last)) ?: ($owner->username ?? 'User');
+        $p     = $owner->profile;
+
+        $user = (object) [
+            'name'        => $full,
+            'headline'    => (string)($p?->headline ?? $p?->headline ?? ''),
+            'avatar_url'  => $owner->avatar_url,
+            'avatar'      => $owner->avatar_url, // alias so old markup works
+        ];
+    } else {
+        $user = (object) [
+            'name'        => 'User',
+            'headline'    => '',
+            'avatar_url'  => asset('images/avatar-fallback.png'),
+            'avatar'      => asset('images/avatar-fallback.png'),
+        ];
+    }
+
+    // one safe variable to use everywhere in this file
+    $avatar      = $user->avatar_url ?? $user->avatar ?? asset('images/avatar-fallback.png');
+    $displayName = $user->name ?? 'User';
+@endphp
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     /* ===== CSS VARIABLES ===== */
@@ -909,7 +950,7 @@
         letter-spacing: -0.2px;
     }
 
-    .profile-bio {
+    .profile-about {
         font-size: 13px;
         color: var(--text-muted);
         line-height: 1.5;
@@ -2120,12 +2161,10 @@
     <div class="nav-inner">
         <!-- MOBILE: TOP ROW -->
         <div class="nav-row nav-row--top">
-            <img class="mobile-avatar" src="{{$user->avatar}}" alt="User" id="avatarMobile"
-            referrerpolicy="no-referrer"
-            crossorigin="anonymous"
-            onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
-        
-            >
+            <img class="mobile-avatar" src="{{ $avatar }}" alt="{{ $displayName }}" id="avatarMobile"
+            referrerpolicy="no-referrer" crossorigin="anonymous"
+            onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
+       
             <a class="brand" href="#">
                 <img class="brand-logo" src="{{asset('assets/images/logos/croped/logo_light.png')}}" alt="Brand"
                     data-theme-src-light="{{asset('assets/images/logos/croped/logo_light.png')}}"
@@ -2198,8 +2237,8 @@
             <span class="nav-item-text">Q&A</span>
         </a>
     
-        <a href="{{ route('tenant.dashboard', $username) }}" 
-           class="nav-item {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}">
+        <a href="{{ route('tenant.manage.dashboard', $username) }}" 
+           class="nav-item {{ request()->routeIs('tenant.manage.dashboard') ? 'active' : '' }}">
             <div class="nav-item-icon">
                 <i class="fa-solid fa-chart-line"></i>
             </div>
@@ -2232,10 +2271,9 @@
            class="nav-item nav-item-profile {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
            id="profileBtn">
             <div class="profile-avatar-wrapper">
-                <img class="nav-avatar" src="{{ $user->avatar }}" alt="{{ $user->name }}"
-                    referrerpolicy="no-referrer"
-                    crossorigin="anonymous"
-                    onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
+                <img class="nav-avatar" src="{{ $avatar }}" alt="{{ $displayName }}"
+                referrerpolicy="no-referrer" crossorigin="anonymous"
+                onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
             </div>
             <span class="nav-item-text">Me <i class="fa-solid fa-caret-down"></i></span>
         </a>
@@ -2561,14 +2599,12 @@
 <!-- Profile Dropdown -->
 <div class="profile-dropdown" id="profileDropdown">
     <div class="profile-card">
-        <img class="profile-avatar-mini" src="{{ $user->avatar }}" alt="{{ $user->name }}"
-        referrerpolicy="no-referrer"
-        crossorigin="anonymous"
-        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
-        >
+        <img class="profile-avatar-mini" src="{{ $avatar }}" alt="{{ $displayName }}"
+        referrerpolicy="no-referrer" crossorigin="anonymous"
+        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
         <div class="profile-info">
             <div class="profile-name">{{ $user->name }}</div>
-            <div class="profile-bio">{{ $user->headline }}</div>
+            <div class="profile-about">{{ $user->headline }}</div>
         </div>
     </div>
 

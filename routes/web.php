@@ -9,7 +9,6 @@ use App\Http\Controllers\Auth\{
     PreSignupController,
     EmailVerificationController,
     OAuthController,
-    
 };
 use App\Http\Controllers\Tenant\{
     OnboardingController as TenantOnboardingController,
@@ -27,7 +26,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Tenant\CvUploadController;
 
 use App\Http\Controllers\Tenant\ProfilePage\ProfileController;
-use App\Http\Controllers\Tenant\Dashboard\DashboardController;
+use App\Http\Controllers\Tenant\Manage\DashboardController;
+use App\Http\Controllers\Tenant\Manage\ManageProfileController;
 
 
 
@@ -39,7 +39,6 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
     Route::post('/cv-upload',      [CvUploadController::class, 'upload'])->name('cv.upload');
     Route::get('/cv-output',       [CvUploadController::class, 'output'])->name('cv.output');
     Route::post('/cv-save', [CvUploadController::class, 'save'])->name('cv.save');
-
 });
 // Route::post('/cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
 // Route::post('/cv-upload', [CvUploadController::class, 'upload'])->name('cv.upload');
@@ -72,44 +71,64 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
 
 
-
-
-
-
-    Route::prefix('{username}')
+ 
+Route::prefix('{username}')
     ->name('tenant.')
     ->group(function () {
 
-
-
-     
         Route::get('/', [ProfileController::class, 'index'])->name('profile');
-        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+ 
+        Route::prefix('manage')->name('manage.')->group(function () {
+            Route::get('',            [DashboardController::class,     'index'])->name('dashboard');
+
+            Route::get('personal',    [ManageProfileController::class, 'personal'])->name('personal');
+            Route::get('skills',      [ManageProfileController::class, 'skills'])->name('skills');
+            Route::get('education',   [ManageProfileController::class, 'education'])->name('education');
+            Route::get('experience',  [ManageProfileController::class, 'experience'])->name('experience');
+            Route::get('portfolio',   [ManageProfileController::class, 'portfolio'])->name('portfolio');
+            Route::get('languages',   [ManageProfileController::class, 'languages'])->name('languages');
+        });
+
+        Route::put('skills/update',    [ProfileController::class, 'updateSkills'])->name('skills.update');
+        Route::put('education/update', [ProfileController::class, 'updateEducation'])->name('education.update');
+        Route::put('experience/update',[ProfileController::class, 'updateExperience'])->name('experience.update');
+        Route::put('portfolio/update', [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
+        Route::put('languages/update', [ProfileController::class, 'updateLanguages'])->name('language.update');
 
 
 
-
-
-
-
-
-
-
+        Route::put('profile/update', [ProfileController::class, 'updatePersonal'])->name('profile.update');
 
     });
+ 
+
+ 
+
+ 
 
 
 
 
-    Route::put('profile', [ProfileController::class, 'updateProfile'])->name('tenant.profile.update');
-    Route::put('skills', [ProfileController::class, 'updateSkills'])->name('tenant.skills.update');
-    Route::put('language', [ProfileController::class, 'updateLanguages'])->name('tenant.language.update');
-    Route::put('educaiton', [ProfileController::class, 'updateEducation'])->name('tenant.education.update');
-    Route::put('experience', [ProfileController::class, 'updateExperience'])->name('tenant.experience.update');
-    Route::put('reviews', [ProfileController::class, 'updateReviews'])
+
+
+
+
+
+
+
+
+
+// Route::put('portfolio', [ProfileController::class, 'updatePortfolio'])->name('tenant.portfolio.update');
+// Route::put('skills', [ProfileController::class, 'updateSkills'])->name('tenant.skills.update');
+// Route::put('language', [ProfileController::class, 'updateLanguages'])->name('tenant.language.update');
+// Route::put('educaiton', [ProfileController::class, 'updateEducation'])->name('tenant.education.update');
+// Route::put('experience', [ProfileController::class, 'updateExperience'])->name('tenant.experience.update');
+
+Route::put('reviews', [ProfileController::class, 'updateReviews'])
     ->name('tenant.reviews.update');
 
-    Route::put('services', [ProfileController::class, 'updateServices'])
+Route::put('services', [ProfileController::class, 'updateServices'])
     ->name('tenant.services.update');
 
 Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
@@ -117,14 +136,13 @@ Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
 
 
 
-    Route::put('portfolio', [ProfileController::class, 'updatePortfolio'])->name('tenant.portfolio.update');
 
-    Route::post('/filter-preferences', [ProfileController::class, 'updateFilterPreferences'])
+Route::post('/filter-preferences', [ProfileController::class, 'updateFilterPreferences'])
     ->name('tenant.filter-preferences')
     ->middleware('auth');
 
 
-    Route::post('/banner', [ProfileController::class, 'updateBanner'])
+Route::post('/banner', [ProfileController::class, 'updateBanner'])
     ->name('tenant.banner.update')
     ->middleware(['auth']);
 
@@ -175,7 +193,7 @@ Route::post('/api/timezone/store', function (Request $request) {
 
 
 
-Route::middleware(['auth','throttle:60,1'])
+Route::middleware(['auth', 'throttle:60,1'])
     ->get('/api/username/check', [TenantOnboardingController::class, 'checkUsername'])
     ->name('api.username.check');
 
@@ -286,7 +304,7 @@ Route::middleware('auth')->group(function () {
 
 
 
-    Route::prefix('onboarding/tenant')->middleware(['tenant','onboarding:tenant'])->name('tenant.onboarding.')
+    Route::prefix('onboarding/tenant')->middleware(['tenant', 'onboarding:tenant'])->name('tenant.onboarding.')
         ->group(function () {
 
             // GET routes (pages)
@@ -297,7 +315,7 @@ Route::middleware('auth')->group(function () {
             Route::get('experience', [TenantOnboardingController::class, 'experience'])->name('experience');
             Route::get('portfolio',  [TenantOnboardingController::class, 'portfolio'])->name('portfolio');
             Route::get('education',  [TenantOnboardingController::class, 'education'])->name('education');
-            Route::get('preferences',[TenantOnboardingController::class, 'preferences'])->name('preferences');
+            Route::get('preferences', [TenantOnboardingController::class, 'preferences'])->name('preferences');
             Route::get('review',     [TenantOnboardingController::class, 'review'])->name('review');
             Route::get('publish',    [TenantOnboardingController::class, 'publish'])->name('publish');
 
@@ -320,7 +338,7 @@ Route::middleware('auth')->group(function () {
                 // CV Upload POST routes
                 // Route::post('cv-upload',      [CvUploadController::class, 'upload'])->name('cv.upload');
                 // Route::post('cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
-                
+
                 // Additional actions
                 Route::post('start-from-scratch', [TenantOnboardingController::class, 'scratch'])->name('scratch');
                 Route::post('confirm', function () {
@@ -330,26 +348,22 @@ Route::middleware('auth')->group(function () {
         });
 
 
- Route::prefix('onboarding/client')
-    ->middleware(['client','onboarding:client']) 
-    ->name('client.onboarding.')
-    ->group(function () {
-        Route::get('info',        [ClientOnboardingController::class, 'info'])->name('info');
-        Route::get('project',     [ClientOnboardingController::class, 'project'])->name('project');
-        Route::get('budget',      [ClientOnboardingController::class, 'budget'])->name('budget');
-        Route::get('preferences', [ClientOnboardingController::class, 'preferences'])->name('preferences');
-        Route::get('review',      [ClientOnboardingController::class, 'review'])->name('review');
+    Route::prefix('onboarding/client')
+        ->middleware(['client', 'onboarding:client'])
+        ->name('client.onboarding.')
+        ->group(function () {
+            Route::get('info',        [ClientOnboardingController::class, 'info'])->name('info');
+            Route::get('project',     [ClientOnboardingController::class, 'project'])->name('project');
+            Route::get('budget',      [ClientOnboardingController::class, 'budget'])->name('budget');
+            Route::get('preferences', [ClientOnboardingController::class, 'preferences'])->name('preferences');
+            Route::get('review',      [ClientOnboardingController::class, 'review'])->name('review');
 
-        Route::middleware('onboarding.post:client')->group(function () {
-            Route::post('info',        [ClientOnboardingController::class, 'storeInfo'])->name('info.store');
-            Route::post('project',     [ClientOnboardingController::class, 'storeProject'])->name('project.store');
-            Route::post('budget',      [ClientOnboardingController::class, 'storeBudget'])->name('budget.store');
-            Route::post('preferences', [ClientOnboardingController::class, 'storePreferences'])->name('preferences.store');
-            Route::post('publish',     [ClientOnboardingController::class, 'publish'])->name('publish'); 
+            Route::middleware('onboarding.post:client')->group(function () {
+                Route::post('info',        [ClientOnboardingController::class, 'storeInfo'])->name('info.store');
+                Route::post('project',     [ClientOnboardingController::class, 'storeProject'])->name('project.store');
+                Route::post('budget',      [ClientOnboardingController::class, 'storeBudget'])->name('budget.store');
+                Route::post('preferences', [ClientOnboardingController::class, 'storePreferences'])->name('preferences.store');
+                Route::post('publish',     [ClientOnboardingController::class, 'publish'])->name('publish');
+            });
         });
-    });
-
 });
-
-
-

@@ -252,14 +252,14 @@
             return $this->profile?->city;
         }
 
-        public function getTaglineAttribute(): ?string
+        public function getheadlineAttribute(): ?string
         {
-            return $this->profile?->tagline;
+            return $this->profile?->headline;
         }
 
-        public function getBioAttribute(): ?string
+        public function getaboutAttribute(): ?string
         {
-            return $this->profile?->bio;
+            return $this->profile?->about;
         }
 
         public function getLocationAttribute(): ?string
@@ -450,15 +450,11 @@
 
 
 
-    // app/Models/User.php
-    public function languages()
+    public function languages(): HasMany
     {
-        return $this->hasMany(\App\Models\UserLanguage::class)
-            ->orderBy('position');
+        // simple child records, sorted by position
+        return $this->hasMany(UserLanguage::class)->orderBy('position');
     }
-
-
-
 
 
     public function services()

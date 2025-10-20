@@ -476,7 +476,7 @@
                 <p class="cfu-subtitle">
                   Where talent meets opportunity. Publish a polished portfolio, match with clients, 
                   create orders and milestones, manage projects with teammates, and get paid — 
-                  with AI drafting your bio, case studies, and proposals from your CV.
+                  with AI drafting your about, case studies, and proposals from your CV.
                 </p>
           
                 <div class="cfu-cta-group">
@@ -804,7 +804,7 @@
                                                 AI that writes with you
                                             </h6>
                                             <p class="text-neutral-500 max-w-400-px">
-                                                Upload your CV or describe your work — SkillLeo drafts your bio, skills, and case studies for a polished public profile.
+                                                Upload your CV or describe your work — SkillLeo drafts your about, skills, and case studies for a polished public profile.
                                             </p>
                                         </div>
                                     </div>
@@ -1263,7 +1263,7 @@
                                     data-bs-parent="#accordionExample">
                                     <div class="accordion-body p-0">
                                         <p class="text-neutral-500">
-                                            Upload your CV or describe your work. AI drafts your bio, skills, and case studies. You review, edit, and publish.
+                                            Upload your CV or describe your work. AI drafts your about, skills, and case studies. You review, edit, and publish.
                                         </p>
                                     </div>
                                 </div>
@@ -1405,7 +1405,7 @@
                                                 Profiles that convert
                                             </h6>
                                             <p class="text-neutral-500">
-                                                AI-assisted bios, skill tags, and case studies that help you land the next conversation.
+                                                AI-assisted abouts, skill tags, and case studies that help you land the next conversation.
                                             </p>
                                         </div>
                                     </div>

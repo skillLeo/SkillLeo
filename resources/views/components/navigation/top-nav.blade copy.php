@@ -1029,7 +1029,7 @@
       margin-bottom: 2px;
   }
 
-  .profile-bio {
+  .profile-about {
       font-size: 13px;
       color: var(--text-muted);
       line-height: 1.4;
@@ -1270,7 +1270,7 @@
         <img class="profile-avatar-mini" src="{{ $user->avatar ?? 'https://i.pravatar.cc/96?img=13' }}" alt="Profile">
         <div class="profile-info">
             <div class="profile-name">{{ $user->name ?? 'Hassam Mehmood' }}</div>
-            <div class="profile-bio">{{ $user->bio ?? 'Full-Stack Developer | AI & Chatbot Expert' }}</div>
+            <div class="profile-about">{{ $user->about ?? 'Full-Stack Developer | AI & Chatbot Expert' }}</div>
         </div>
     </div>
 

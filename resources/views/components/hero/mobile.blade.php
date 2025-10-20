@@ -109,23 +109,23 @@
             </div>
         </div>
 
-        {{-- Bio with 100 char limit --}}
+        {{-- about with 100 char limit --}}
         @php
-            $bio = $user->bio ?? 'I build maintainable and performant web applications. Experienced with Laravel, React, and cloud deployments.';
-            $shortBio = strlen($bio) > 100 ? substr($bio, 0, 100) . '...' : $bio;
-            $needsExpand = strlen($bio) > 100;
+            $about = $user->about ?? 'I build maintainable and performant web applications. Experienced with Laravel, React, and cloud deployments.';
+            $shortabout = strlen($about) > 100 ? substr($about, 0, 100) . '...' : $about;
+            $needsExpand = strlen($about) > 100;
         @endphp
         
-        {{-- <div class="hm-bio-container">
-            <p class="hm-bio" id="hmBioText">{{ $shortBio }}</p>
+        {{-- <div class="hm-about-container">
+            <p class="hm-about" id="hmaboutText">{{ $shortabout }}</p>
             @if($needsExpand)
-                <button class="hm-see-more" id="hmSeeMoreBtn" onclick="toggleBio()">
-                    See more <i class="fa-solid fa-chevron-down" id="hmBioIcon"></i>
+                <button class="hm-see-more" id="hmSeeMoreBtn" onclick="toggleabout()">
+                    See more <i class="fa-solid fa-chevron-down" id="hmaboutIcon"></i>
                 </button>
             @endif
         </div> --}}
         
-        <div style="display:none;" id="hmFullBio">{{ $bio }}</div>
+        <div style="display:none;" id="hmFullabout">{{ $about }}</div>
 
         {{-- @if($user->skills && count($user->skills) > 0)
             <div class="hm-skills">
@@ -412,11 +412,11 @@
     line-height: 1.4;
 }
 
-.hm-bio-container {
+.hm-about-container {
     margin-bottom: 16px;
 }
 
-.hm-bio {
+.hm-about {
     font-size: 15px;
     color: var(--text-body);
     line-height: 1.5;
@@ -720,24 +720,24 @@ function openAiAssistant() {
     alert('AI Assistant feature coming soon!');
 }
 
-// Toggle bio expand/collapse
-let bioExpanded = false;
-function toggleBio() {
-    const bioText = document.getElementById('hmBioText');
-    const fullBio = document.getElementById('hmFullBio');
+// Toggle about expand/collapse
+let aboutExpanded = false;
+function toggleabout() {
+    const aboutText = document.getElementById('hmaboutText');
+    const fullabout = document.getElementById('hmFullabout');
     const btn = document.getElementById('hmSeeMoreBtn');
-    const icon = document.getElementById('hmBioIcon');
+    const icon = document.getElementById('hmaboutIcon');
     
-    bioExpanded = !bioExpanded;
+    aboutExpanded = !aboutExpanded;
     
-    if (bioExpanded) {
-        bioText.textContent = fullBio.textContent;
-        btn.innerHTML = 'See less <i class="fa-solid fa-chevron-up" id="hmBioIcon"></i>';
+    if (aboutExpanded) {
+        aboutText.textContent = fullabout.textContent;
+        btn.innerHTML = 'See less <i class="fa-solid fa-chevron-up" id="hmaboutIcon"></i>';
         btn.classList.add('expanded');
     } else {
-        const shortText = fullBio.textContent.substring(0, 100) + '...';
-        bioText.textContent = shortText;
-        btn.innerHTML = 'See more <i class="fa-solid fa-chevron-down" id="hmBioIcon"></i>';
+        const shortText = fullabout.textContent.substring(0, 100) + '...';
+        aboutText.textContent = shortText;
+        btn.innerHTML = 'See more <i class="fa-solid fa-chevron-down" id="hmaboutIcon"></i>';
         btn.classList.remove('expanded');
     }
 }

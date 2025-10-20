@@ -246,7 +246,7 @@
     </div>
 
     <div class="name-row">
-        <h2 class="user-name" title="{{ $user->name }}">{{ $user->name }}</h2>
+        <h2 class="user-name" title="{{ $user->full_name }}">{{ $user->full_name }}</h2>
     </div>
 
     @if(!empty($user->headline))
@@ -262,15 +262,15 @@
 
     <div class="hr"></div>
 
-    @php $bio = (string) ($user->bio ?? ''); @endphp
-    @if($bio !== '')
+    @php $about = (string) ($user->about ?? ''); @endphp
+    @if($about !== '')
         <div class="about-row">
             <span class="label">About:</span>
             <x-ui.icon name="about" size="xs" color="secondary" class="hover-lift clickable" />
         </div>
         <p class="about-text">
-            {{ Str::limit($bio, 200) }}
-            @if(Str::length($bio) > 200)
+            {{ Str::limit($about, 200) }}
+            @if(Str::length($about) > 200)
                 <a href="#" class="see-more-inline">See more</a>
             @endif
         </p>

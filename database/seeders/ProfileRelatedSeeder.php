@@ -145,8 +145,8 @@ class ProfileRelatedSeeder extends Seeder
             'country' => 'United States',
             'state' => 'California',
             'city' => 'San Francisco',
-            'tagline' => 'Full Stack Developer · Laravel & React',
-            'bio' => 'I build maintainable and performant web applications. Experienced with Laravel, React, and cloud deployments.',
+            'headline' => 'Full Stack Developer · Laravel & React',
+            'about' => 'I build maintainable and performant web applications. Experienced with Laravel, React, and cloud deployments.',
             'social_links' => json_encode([
                 'linkedin' => 'https://linkedin.com/in/demo-user',
                 'twitter' => 'https://twitter.com/demo_user',

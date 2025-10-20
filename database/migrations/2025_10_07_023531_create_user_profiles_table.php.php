@@ -18,9 +18,9 @@ return new class extends Migration
             $table->string('state', 120)->nullable();
             $table->string('city', 120)->nullable();
             
-            // Bio & Professional Info
-            $table->string('tagline', 255)->nullable();
-            $table->text('bio')->nullable();
+            // about & Professional Info
+            $table->string('headline', 255)->nullable();
+            $table->text('about')->nullable();
             $table->string('banner')->nullable();
             $table->json('banner_preference')->nullable();
             

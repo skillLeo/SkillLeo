@@ -23,7 +23,7 @@ class OnboardingController extends Controller
     public function storePersonal(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => ['required','string','max:255'],
+            'name' => ['required','string','max:255'],
             'last_name'  => ['required','string','max:255'],
             'username'   => ['required','string','max:255','unique:users,username'],
         ]);
@@ -160,7 +160,7 @@ class OnboardingController extends Controller
             ]);
 
             $user = User::create([
-                'first_name' => $personal['first_name'] ?? null,
+                'name' => $personal['name'] ?? null,
                 'last_name'  => $personal['last_name'] ?? null,
                 'username'   => $personal['username'] ?? null,
                 'email'      => strtolower($request->input('email')),

@@ -94,7 +94,7 @@
     }
 
     const name = top.name || top.fullname || top['full_name'] || top.person || top.candidate || cvRaw.Name || null;
-    const about = top.about || top.summary || top.profile || top.bio || cvRaw.About || null;
+    const about = top.about || top.summary || top.profile || top.about || cvRaw.About || null;
     const email = top.email || top.mail || cvRaw.Email || null;
     const phone = top.phone || top.contact || cvRaw.Phone || null;
 

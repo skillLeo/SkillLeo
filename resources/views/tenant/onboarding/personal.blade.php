@@ -18,7 +18,7 @@
     <div class="input-row">
         <x-onboarding.input
             label="First Name"
-            name="first_name"
+            name="name"
             id="firstName"
             placeholder="John"
             required

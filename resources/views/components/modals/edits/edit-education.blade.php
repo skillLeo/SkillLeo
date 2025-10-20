@@ -1,7 +1,7 @@
-@props(['modalEducations' => []])
+@props(['modalEducations' => [],'username'])
 
 <x-modals.edits.base-modal id="editEducationModal" title="Education" size="lg">
-    <form id="educationModalForm" method="POST" action="{{ route('tenant.education.update') }}">
+    <form id="educationModalForm" method="POST" action="{{ route('tenant.education.update',$username) }}">
         @csrf
         @method('PUT')
 

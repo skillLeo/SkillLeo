@@ -1,7 +1,10 @@
+@props(['user' => null,'username'])
+
 <x-modals.edits.base-modal id="editSkillsModal" title="Edit Skills" size="lg">
-    <form id="skillsForm" method="POST" action="{{route('tenant.skills.update')}}">
+    <form id="skillsForm" method="POST" action="{{route('tenant.skills.update',$username)}}">
         @csrf
         @method('PUT')
+        <input type="hidden" name="mode" value="both">
 
         {{-- Technical Skills Section --}}
         <div class="modal-section">
@@ -398,24 +401,17 @@
         font-weight: 500;
     }
 
-    .soft-skill-card:hover .soft-skill-content {
-        border-color: var(--accent);
-        background: var(--accent-light);
-    }
+ 
 
-    .soft-skill-checkbox:checked+.soft-skill-content {
-        border-color: var(--accent);
-        background: var(--accent-light);
-    }
+/* Checked state detail colors */
+.soft-skill-checkbox:checked + .soft-skill-content i {
+    color: var(--accent);
+}
+.soft-skill-checkbox:checked + .soft-skill-content .soft-skill-label {
+    color: var(--accent);
+}
 
-    .soft-skill-checkbox:checked+.soft-skill-content i {
-        color: var(--accent);
-    }
 
-    .soft-skill-checkbox:checked+.soft-skill-content .soft-skill-label {
-        color: var(--accent);
-        font-weight: 600;
-    }
 
     .soft-skills-counter {
         text-align: right;

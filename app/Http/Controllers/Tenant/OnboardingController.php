@@ -50,7 +50,7 @@ class OnboardingController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'first_name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:120'],
             'last_name'  => ['required', 'string', 'max:120'],
             'username'   => [
                 'required',
@@ -64,7 +64,7 @@ class OnboardingController extends Controller
         ]);
 
         $user->forceFill([
-            'name'                => $data['first_name'],
+            'name'                => $data['name'],
             'last_name'           => $data['last_name'],
             'username'            => $data['username'],
             'is_profile_complete' => 'location',  // ➜ next step
@@ -1361,8 +1361,8 @@ class OnboardingController extends Controller
 
         // Build a light snapshot for the view (used if localStorage is empty or incomplete)
         $profile = [
-            'name'        => trim($user->first_name . ' ' . $user->last_name) ?: $user->name,
-            'initial'     => strtoupper(mb_substr($user->first_name ?: $user->name, 0, 1)),
+            'name'        => trim($user->name . ' ' . $user->last_name) ?: $user->name,
+            'initial'     => strtoupper(mb_substr($user->name ?: $user->name, 0, 1)),
             'username'    => $user->username ?? ('user-' . $user->id),
             'location'    => trim(implode(', ', array_filter([$user->city, $user->country]))),
             'skills'      => collect($user->skills ?? [])->values(), // if you store global skills on user

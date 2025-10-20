@@ -68,7 +68,7 @@
         <div id="individualFields" style="display: none;">
             <div class="input-row">
                 <x-ui.onboarding.input 
-                    name="first_name"
+                    name="name"
                     label="First Name"
                     placeholder="John"
                 />

@@ -1,7 +1,7 @@
-@props(['modalPortfolios' => [], 'userSkills' => []])
+@props(['modalPortfolios' => [], 'userSkills' => [],'username'])
 
 <x-modals.edits.base-modal id="editPortfolioModal" title="Portfolio Projects" size="lg">
-    <form id="portfolioModalForm" method="POST" action="{{ route('tenant.portfolio.update') }}">
+    <form id="portfolioModalForm" method="POST" action="{{ route('tenant.portfolio.update',$username) }}">
         @csrf
         @method('PUT')
 

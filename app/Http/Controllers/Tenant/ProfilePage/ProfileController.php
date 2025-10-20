@@ -241,26 +241,28 @@ class ProfileController extends Controller
             ])
             ->where('username', $username)
             ->firstOrFail();
-    
-        // ===== Basic user view-model =====
+
+        $p = $owner->profile; // alias
+
+        $social   = is_array($p?->social_links) ? $p->social_links : [];
         $titleCase = static fn($s) => $s !== '' ? \Illuminate\Support\Str::of($s)->squish()->title()->toString() : '';
         $first = $owner->name ?? '';
         $last  = $owner->last_name ?? '';
         $full  = trim($titleCase($first) . ' ' . $titleCase($last)) ?: ($owner->username ?? 'User');
-    
+
         $p = $owner->profile; // short alias to profile
         $social   = is_array($p?->social_links) ? $p->social_links : [];
         $avatar   = $owner->avatar_url ?: ('https://ui-avatars.com/api/?name=' . urlencode($full) . '&size=200&background=random');
         $location = collect([$p?->city, $p?->state, $p?->country])->filter()->join(', ');
-    
+
         $user = (object) [
-            'first_name'     => $titleCase($first),
+            'name'     => $titleCase($first),
             'last_name'      => $titleCase($last),
-            'name'           => $full,
+            'full_name'           => $full,
             'email'          => $owner->email,
-            'headline'       => (string) ($p?->tagline ?? ''),
-            'bio'            => (string) ($p?->bio ?? ''),
-            'about'          => (string) ($p?->bio ?? ''),
+            'headline'       => (string) ($p?->headline ?? ''),
+            'about'            => (string) ($p?->about ?? ''),
+            'about'          => (string) ($p?->about ?? ''),
             'location'       => $location ?: null,
             'city'           => $p?->city,
             'state'          => $p?->state,
@@ -277,20 +279,25 @@ class ProfileController extends Controller
             'last_seen_text' => $owner->last_seen_text ?? null,
             'open_to_work'   => false,
         ];
-    
+        $user->profile = $owner->profile;
+
         $user->services    = $owner->services->sortBy('position')->pluck('title')->values()->all();
         $user->whyChooseMe = $owner->reasons->sortBy('position')->pluck('text')->values()->all();
-    
+
         // ===== Skills summary =====
         $skillsData = $owner->skills
             ->sortBy('pivot.position')
             ->map(fn($s) => [
                 'name'       => (string) $s->name,
-                'percentage' => (int) match ((int)($s->pivot->level ?? 1)) { 3 => 95, 2 => 82, default => 68 },
+                'percentage' => (int) match ((int)($s->pivot->level ?? 1)) {
+                    3 => 95,
+                    2 => 82,
+                    default => 68
+                },
             ])->values()->all();
-    
+
         $skillNames = $owner->skills->sortBy('pivot.position')->pluck('name')->take(8)->values()->all();
-    
+
         // ===== Experiences list =====
         $experiences = $owner->experiences->map(function ($e) {
             $period = '';
@@ -315,7 +322,7 @@ class ProfileController extends Controller
                 ])->values()->all(),
             ];
         })->values()->all();
-    
+
         // ===== Filters: only skills used in projects =====
         $usedSkillIds = $owner->portfolios
             ->flatMap(function ($p) {
@@ -323,7 +330,7 @@ class ProfileController extends Controller
                 return $meta['skill_ids'] ?? [];
             })
             ->filter()->map(fn($id) => (int) $id)->unique()->values();
-    
+
         $userSkillsForFilters = $owner->skills
             ->whereIn('id', $usedSkillIds)
             ->map(fn($s) => [
@@ -332,26 +339,26 @@ class ProfileController extends Controller
                 'slug' => \Illuminate\Support\Str::slug($s->name),
             ])
             ->unique('slug')->values()->all();
-    
+
         // ===== Portfolios (respect sort preference) =====
         $filterPreferences = is_array($p?->filter_preferences) ? $p->filter_preferences : [];
         $sortOrder = $filterPreferences['sort_order'] ?? 'position';
-    
+
         $portfoliosQuery = $owner->portfolios();
         $sortOrder === 'newest'
             ? $portfoliosQuery->orderBy('created_at', 'desc')
             : $portfoliosQuery->orderBy('position', 'asc');
-    
+
         $portfolios = $portfoliosQuery->get()->map(function ($p) use ($userSkillsForFilters) {
             $meta  = is_array($p->meta) ? $p->meta : [];
             $image = $p->image_url ?: ($p->image_path ? asset('storage/' . ltrim($p->image_path, '/')) : null);
             $skillIds = $meta['skill_ids'] ?? [];
-    
+
             $skillSlugs = collect($userSkillsForFilters)
                 ->filter(fn($s) => in_array($s['id'], $skillIds))
                 ->pluck('slug')
                 ->all();
-    
+
             return [
                 'id'          => $p->id,
                 'title'       => (string) $p->title,
@@ -364,12 +371,12 @@ class ProfileController extends Controller
                 'position'    => $p->position,
             ];
         })->values()->all();
-    
+
         $categories = array_values(array_unique(array_filter([
             'All',
             ...collect($portfolios)->pluck('category')->filter()->all(),
         ])));
-    
+
         // ===== Education =====
         $education = $owner->educations->map(function ($e) {
             $from = $e->start_year ?: '—';
@@ -382,7 +389,7 @@ class ProfileController extends Controller
                 'recent'      => (bool) $e->is_current,
             ];
         })->values()->all();
-    
+
         // ===== Modal data =====
         $modalSkills = $owner->skills->values()->map(function ($s, $i) {
             return [
@@ -392,15 +399,15 @@ class ProfileController extends Controller
                 'position' => (int) ($s->pivot->position ?? $i),
             ];
         })->all();
-    
+
         $softSkillOptions = SoftSkill::query()
             ->orderBy('name')
             ->get(['slug', 'name', 'icon'])
             ->map(fn($s) => ['value' => $s->slug, 'label' => $s->name, 'icon' => $s->icon ?: 'sparkles'])
             ->values()->all();
-    
+
         $selectedSoft = $owner->softSkills->pluck('slug')->values()->all();
-    
+
         $user->softSkills = $owner->softSkills
             ->sortBy('pivot.position')
             ->map(fn($s) => [
@@ -410,21 +417,21 @@ class ProfileController extends Controller
                 'level'    => (int) ($s->pivot->level ?? 1),
                 'position' => (int) ($s->pivot->position ?? 0),
             ])->values()->all();
-    
+
         $levelLabel = fn(int $lvl) => match (true) {
             $lvl >= 4 => 'Native or Bilingual',
             $lvl === 3 => 'Professional Working',
             $lvl === 2 => 'Limited Working',
             default    => 'Elementary',
         };
-    
+
         $userLanguages = $owner->languages
             ->sortBy('position')
             ->map(fn($l) => [
                 'name'  => (string) $l->name,
                 'level' => $levelLabel((int) $l->level),
             ])->values()->all();
-    
+
         $modalLanguages = $owner->languages
             ->sortBy('position')->values()
             ->map(function ($l, $i) {
@@ -435,9 +442,9 @@ class ProfileController extends Controller
                     'position' => (int) ($l->position ?? $i),
                 ];
             })->all();
-    
+
         $user->languages = $userLanguages;
-    
+
         $modalExperiences = $owner->experiences
             ->sortBy('position')->values()
             ->map(function ($e, $i) {
@@ -461,9 +468,9 @@ class ProfileController extends Controller
                     'position'         => (int) ($e->position ?? $i),
                 ];
             })->all();
-    
+
         $user->education = $education;
-    
+
         $modalPortfolios = $owner->portfolios
             ->sortBy('position')->values()
             ->map(function ($p, $i) {
@@ -482,16 +489,16 @@ class ProfileController extends Controller
                     'position'    => (int) ($p->position ?? $i),
                 ];
             })->all();
-    
+
         // ===== Visible/hidden skills for filters =====
         if (count($userSkillsForFilters) > 0) {
             $visibleSkillSlugs = $filterPreferences['visible_skills']
                 ?? collect($userSkillsForFilters)->take(6)->pluck('slug')->all();
-    
+
             $visibleSkills = collect($userSkillsForFilters)
                 ->filter(fn($s) => in_array($s['slug'], $visibleSkillSlugs))
                 ->values()->all();
-    
+
             $hiddenSkills = collect($userSkillsForFilters)
                 ->reject(fn($s) => in_array($s['slug'], $visibleSkillSlugs))
                 ->values()->all();
@@ -499,12 +506,12 @@ class ProfileController extends Controller
             $visibleSkills = [];
             $hiddenSkills  = [];
         }
-    
+
         // ===== Banner: attach to $user (so Blade can use $user->banner_url etc.) =====
         $bannerUrl     = ($p && $p->banner) ? Storage::disk('public')->url($p->banner) : null;
         $bp            = is_array($p?->banner_preference) ? $p->banner_preference : [];
         $bannerVersion = $p && $p->updated_at ? $p->updated_at->getTimestamp() : time();
-        
+
         // Merge onto the $user object that Blade uses
         $user->banner_url      = $bannerUrl;
         $user->banner_fit      = $bp['fit']      ?? 'cover';
@@ -513,10 +520,10 @@ class ProfileController extends Controller
         $user->banner_offset_x = (float) ($bp['offset_x'] ?? 0);
         $user->banner_offset_y = (float) ($bp['offset_y'] ?? 0);
         $user->banner_version  = $bannerVersion;
-    
+
         // ===== Misc =====
         $LIMITS = ['projects' => 3];
-    
+
         return view('tenant.profile.index', [
             'brandName'            => config('app.name', 'SkillLeo'),
             'user'                 => $user,
@@ -550,7 +557,7 @@ class ProfileController extends Controller
 
         ]);
     }
-    
+
 
     public function updatePortfolio(Request $request)
     {
@@ -867,30 +874,35 @@ class ProfileController extends Controller
 
 
     // Update profile
-    public function updateProfile(Request $request)
+    public function updatePersonal(Request $request, string $username)
     {
-        $user = $request->user();
+        $user = User::where('username', $username)->firstOrFail();
+
+        // Authorization
+        abort_unless(Auth::check() && Auth::id() === $user->id, 403);
 
         // ============ VALIDATION ============
         $validated = $request->validate([
-            'first_name' => 'required|string|max:120',
+            'name' => 'required|string|max:120',
             'last_name' => 'nullable|string|max:120',
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'headline' => 'nullable|string|max:120',
             'about' => 'nullable|string|max:2000',
             'phone' => 'nullable|string|max:40',
-            
-            // Location fields (from autocomplete)
+
+            // Location fields
             'city' => 'nullable|string|max:120',
             'state' => 'nullable|string|max:120',
             'country' => 'nullable|string|max:120',
-            
+
             // Social links
             'linkedin' => 'nullable|url|max:255',
             'twitter' => 'nullable|url|max:255',
+            'github' => 'nullable|url|max:255',
+            'website' => 'nullable|url|max:255',
             'facebook' => 'nullable|url|max:255',
             'instagram' => 'nullable|url|max:255',
-            
+
             // Avatar
             'avatar' => 'nullable|image|max:5120', // 5MB
         ]);
@@ -899,13 +911,13 @@ class ProfileController extends Controller
 
         try {
             // ============ UPDATE USER BASIC INFO ============
-            $user->name = $validated['first_name'];
+            $user->name = $validated['name'];
             $user->last_name = $validated['last_name'] ?? null;
             $user->email = $validated['email'];
 
             // ============ HANDLE AVATAR UPLOAD ============
             if ($request->hasFile('avatar')) {
-                // Delete old avatar if exists
+                // Delete old avatar if exists and is local
                 if ($user->avatar_url && !filter_var($user->avatar_url, FILTER_VALIDATE_URL)) {
                     $oldPath = str_replace('/storage/', '', parse_url($user->avatar_url, PHP_URL_PATH));
                     Storage::disk('public')->delete($oldPath);
@@ -919,38 +931,16 @@ class ProfileController extends Controller
             $user->save();
 
             // ============ NORMALIZE LOCATION DATA ============
-            $city = $validated['city'] ? Str::of($validated['city'])->trim()->title()->substr(0, 120)->toString() : null;
-            $state = $validated['state'] ? Str::of($validated['state'])->trim()->title()->substr(0, 120)->toString() : null;
-            $country = $validated['country'] ? Str::of($validated['country'])->trim()->title()->substr(0, 120)->toString() : null;
-
-            // ============ VERIFY LOCATION IN DATABASE ============
-            $locationData = $this->verifyLocation($country, $state, $city);
+            $city = $validated['city'] ? Str::of($validated['city'])->trim()->title()->toString() : null;
+            $state = $validated['state'] ? Str::of($validated['state'])->trim()->title()->toString() : null;
+            $country = $validated['country'] ? Str::of($validated['country'])->trim()->title()->toString() : null;
 
             // ============ PREPARE SOCIAL LINKS ============
             $socialLinks = [];
-            foreach (['linkedin', 'twitter', 'facebook', 'instagram'] as $platform) {
+            foreach (['linkedin', 'twitter', 'github', 'website', 'facebook', 'instagram'] as $platform) {
                 if (!empty($validated[$platform])) {
                     $socialLinks[$platform] = $validated[$platform];
                 }
-            }
-
-            // ============ PREPARE META DATA ============
-            $existingMeta = $user->profile?->meta ?? [];
-            
-            if ($country && $state && $city) {
-                $locationMeta = [
-                    'location' => [
-                        'country_id' => $locationData['country_id'] ?? null,
-                        'state_id' => $locationData['state_id'] ?? null,
-                        'city_id' => $locationData['city_id'] ?? null,
-                        'verified' => $locationData['verified'] ?? false,
-                        'source' => 'profile_edit',
-                        'updated_at' => now()->toIso8601String(),
-                    ],
-                ];
-                $mergedMeta = array_replace_recursive($existingMeta, $locationMeta);
-            } else {
-                $mergedMeta = $existingMeta;
             }
 
             // ============ UPDATE OR CREATE PROFILE ============
@@ -958,13 +948,12 @@ class ProfileController extends Controller
                 ['user_id' => $user->id],
                 [
                     'phone' => $validated['phone'] ?? null,
-                    'tagline' => $validated['headline'] ?? null,
-                    'bio' => $validated['about'] ?? null,
+                    'headline' => $validated['headline'] ?? null,
+                    'about' => $validated['about'] ?? null,
                     'city' => $city,
                     'state' => $state,
                     'country' => $country,
                     'social_links' => $socialLinks,
-                    'meta' => $mergedMeta,
                 ]
             );
 
@@ -977,7 +966,7 @@ class ProfileController extends Controller
             DB::commit();
 
             // ============ RETURN RESPONSE ============
-            if ($request->ajax()) {
+            if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Profile updated successfully',
@@ -989,8 +978,8 @@ class ProfileController extends Controller
                 ]);
             }
 
-            return back()->with('success', 'Profile updated successfully');
-
+            return back()
+                ->with('status', 'Profile updated successfully! 🎉');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1000,7 +989,7 @@ class ProfileController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            if ($request->ajax()) {
+            if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to update profile. Please try again.',
@@ -1009,7 +998,7 @@ class ProfileController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update profile. Please try again.');
+                ->withErrors(['error' => 'Failed to update profile. Please try again.']);
         }
     }
 
@@ -1037,44 +1026,43 @@ class ProfileController extends Controller
         try {
             // Find country (case-insensitive)
             $country = Country::whereRaw('LOWER(name) = ?', [Str::lower($countryName)])->first();
-            
+
             if (!$country) {
                 return $data;
             }
-            
+
             $data['country_id'] = $country->id;
 
             // Find state
             $state = State::where('country_id', $country->id)
                 ->whereRaw('LOWER(name) = ?', [Str::lower($stateName)])
                 ->first();
-            
+
             if (!$state) {
                 return $data;
             }
-            
+
             $data['state_id'] = $state->id;
 
             // Find city
             $city = City::where('state_id', $state->id)
                 ->whereRaw('LOWER(name) = ?', [Str::lower($cityName)])
                 ->first();
-            
+
             if (!$city) {
                 return $data;
             }
-            
+
             $data['city_id'] = $city->id;
             $data['verified'] = true;
 
             return $data;
-
         } catch (\Exception $e) {
             Log::error('Location verification failed', [
                 'error' => $e->getMessage(),
                 'location' => "{$cityName}, {$stateName}, {$countryName}"
             ]);
-            
+
             return $data;
         }
     }
@@ -1167,88 +1155,67 @@ class ProfileController extends Controller
 
 
 
-
-
-
-
+ 
+    
     public function updateSkills(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = $request->user();
-
+    
         $data = $request->validate([
-            // from hidden input (JSON string) for technical skills
-            'skills' => ['required', 'string'],
-            // from checkboxes for soft skills (values = slugs)
-            'soft_skills' => ['array'],
-            'soft_skills.*' => ['string', 'max:120'],
+            'skills'         => ['nullable'],             // JSON string (optional)
+            'soft_skills'    => ['sometimes', 'array'],   // optional
+            'soft_skills.*'  => ['nullable', 'string'],
+            'soft_payload'   => ['sometimes'],            // JSON string (optional)
+            'mode'           => ['nullable', 'in:skills,soft,both'],
         ]);
-
-        // ---------- TECH SKILLS (unchanged from your working version) ----------
-        $skillsPayload = json_decode($data['skills'], true);
-        if (!is_array($skillsPayload)) {
-            return back()->withErrors(['skills' => 'Invalid skills payload'])->withInput();
-        }
-
-        $normTech = [];
-        foreach ($skillsPayload as $i => $row) {
-            $name = trim((string)($row['name'] ?? ''));
-            if ($name === '') continue;
-
-            $level = (int)($row['level'] ?? 2);
-            $level = max(1, min(3, $level));
-
-            $normTech[] = [
-                'name'     => mb_substr($name, 0, 120),
-                'level'    => $level,
-                'position' => (int)($row['position'] ?? $i),
-            ];
-        }
-        if (count($normTech) < 3) {
-            return back()->withErrors(['skills' => 'Please add at least 3 skills.'])->withInput();
-        }
-
-        // ---------- SOFT SKILLS (new tables with updateOrCreate) ----------
-        // Limit to 6 and keep original order for positions
-        $softSlugs = array_slice(array_values(array_unique($request->input('soft_skills', []))), 0, 6);
-
-        // Optional: map slugs -> icons (use the same icons you use in Blade)
-        $iconMap = [
-            'communication' => 'comments',
-            'leadership' => 'users',
-            'teamwork' => 'handshake',
-            'problem-solving' => 'lightbulb',
-            'creativity' => 'palette',
-            'time-management' => 'clock',
-            'adaptability' => 'sync',
-            'critical-thinking' => 'brain',
-            'attention-to-detail' => 'search',
-            'organization' => 'list',
-            'collaboration' => 'users-cog',
-            'emotional-intelligence' => 'heart',
-            'decision-making' => 'balance-scale',
-            'conflict-resolution' => 'handshake-angle',
-            'negotiation' => 'handshake-simple',
-            'presentation' => 'chalkboard-user',
-            'public-speaking' => 'microphone',
-            'active-listening' => 'ear-listen',
-            'empathy' => 'hands-holding-heart',
-            'self-motivation' => 'rocket',
-            'work-ethic' => 'briefcase',
-            'flexibility' => 'arrows-spin',
-            'resilience' => 'shield-heart',
-            'initiative' => 'flag',
-            'strategic-thinking' => 'chess',
-            'analytical-skills' => 'chart-line',
-            'customer-service' => 'headset',
-            'project-management' => 'tasks',
-            'multitasking' => 'layer-group',
-            'mentoring' => 'user-graduate',
-        ];
-
-        DB::transaction(function () use ($user, $normTech, $softSlugs, $iconMap) {
-            // ----- Save TECH skills (sync pivot with extra cols) -----
-            $attach = [];
+    
+        // Small helper to safely decode JSON (string|Stringable|null -> array|null)
+        $safeDecode = function ($val): ?array {
+            if ($val instanceof \Illuminate\Support\Stringable) {
+                $val = (string) $val;
+            }
+            if (!is_string($val)) return null;
+            $val = trim($val);
+            if ($val === '' || $val === 'null') return null;
+            $decoded = json_decode($val, true);
+            return is_array($decoded) ? $decoded : null;
+        };
+    
+        // =========================
+        // TECHNICAL SKILLS (OPTIONAL)
+        // =========================
+        $attachTech = null;
+    
+        // Use input() or cast to string (NOT ->string())
+        $rawSkills = $request->input('skills'); // string|null
+        if (is_string($rawSkills) && trim($rawSkills) !== '') {
+            $skillsPayload = $safeDecode($rawSkills);
+            if (!is_array($skillsPayload)) {
+                return back()->withErrors(['skills' => 'Invalid skills payload'])->withInput();
+            }
+    
+            $normTech = [];
+            foreach ($skillsPayload as $i => $row) {
+                $name = trim((string)($row['name'] ?? ''));
+                if ($name === '') continue;
+    
+                $level = (int)($row['level'] ?? 2);
+                $level = max(1, min(3, $level));
+    
+                $normTech[] = [
+                    'name'     => mb_substr($name, 0, 120),
+                    'level'    => $level,
+                    'position' => (int)($row['position'] ?? $i),
+                ];
+            }
+    
+            // Enforce minimum only if tech block was actually submitted
+            if (count($normTech) < 3) {
+                return back()->withErrors(['skills' => 'Please add at least 3 skills.'])->withInput();
+            }
+    
+            $attachTech = [];
             foreach ($normTech as $row) {
                 $existing = Skill::whereRaw('LOWER(name) = ?', [mb_strtolower($row['name'])])->first();
                 if (!$existing) {
@@ -1257,45 +1224,128 @@ class ProfileController extends Controller
                         'slug' => Str::slug($row['name']),
                     ]);
                 }
-                $attach[$existing->id] = [
+                $attachTech[$existing->id] = [
                     'level'    => $row['level'],
                     'position' => $row['position'],
                 ];
             }
-            $user->skills()->sync($attach);
-
-            // ----- Save SOFT skills with updateOrCreate() -----
-            $keptSoftIds = [];
-            foreach ($softSlugs as $i => $slug) {
-                $name = Str::headline(str_replace('-', ' ', $slug)); // "critical-thinking" => "Critical Thinking"
-                $soft = SoftSkill::firstOrCreate(
-                    ['slug' => $slug],
-                    ['name' => $name, 'icon' => $iconMap[$slug] ?? null]
-                );
-
-                // create/update the user pivot row
-                $pivot = UserSoftSkill::updateOrCreate(
-                    ['user_id' => $user->id, 'soft_skill_id' => $soft->id],
-                    ['level' => 2, 'position' => $i]
-                );
-
-                $keptSoftIds[] = $soft->id;
-            }
-
-            // Remove any unchecked soft skills
-            UserSoftSkill::where('user_id', $user->id)
-                ->when(!empty($keptSoftIds), fn($q) => $q->whereNotIn('soft_skill_id', $keptSoftIds))
-                ->when(empty($keptSoftIds), fn($q) => $q) // if none selected, delete all
-                ->delete();
-        });
-
-        if ($request->wantsJson()) {
-            return response()->json(['ok' => true]);
         }
-
-        return back()->with('success', 'Skills updated successfully.');
+    
+        // =========================
+        // SOFT SKILLS (OPTIONAL, DYNAMIC)
+        // =========================
+        $softItems = [];
+    
+        // Prefer fully-dynamic JSON payload if present
+        $rawSoftPayload = $request->input('soft_payload'); // string|null
+        $decodedSoft    = $safeDecode($rawSoftPayload);
+    
+        if (is_array($decodedSoft)) {
+            // Expect array of objects: { id?, slug?, name?, icon?, level? }
+            $softItems = $decodedSoft;
+        } elseif ($request->has('soft_skills')) {
+            // Fallback: simple array (ids/slugs/names)
+            $softItems = array_map(
+                fn($v) => ['value' => (string)$v],
+                array_values($request->input('soft_skills', []))
+            );
+        }
+    
+        // Normalize & cap to 6
+        $MAX_SOFT = 6;
+        $normalizedSoft = [];
+        $seen = [];
+    
+        foreach ($softItems as $i => $item) {
+            $id    = isset($item['id']) ? (int)$item['id'] : null;
+            $slug  = isset($item['slug']) ? trim((string)$item['slug']) : null;
+            $name  = isset($item['name']) ? trim((string)$item['name']) : null;
+            $icon  = isset($item['icon']) ? trim((string)$item['icon']) : null;
+            $level = isset($item['level']) ? max(1, min(3, (int)$item['level'])) : 2;
+    
+            if (!$id && !$slug && !$name && isset($item['value'])) {
+                $val = trim((string)$item['value']);
+                if ($val !== '') {
+                    if (ctype_digit($val)) {
+                        $id = (int)$val;
+                    } else {
+                        if (str_contains($val, '-')) {
+                            $slug = Str::slug($val);
+                            $name = $name ?: Str::headline(str_replace('-', ' ', $slug));
+                        } else {
+                            $name = $val;
+                            $slug = Str::slug($val);
+                        }
+                    }
+                }
+            }
+    
+            if ($name && !$slug) $slug = Str::slug($name);
+            if ($slug && !$name) $name = Str::headline(str_replace('-', ' ', $slug));
+    
+            $key = $id ? "id:$id" : ($slug ? "slug:$slug" : ($name ? "name:".mb_strtolower($name) : null));
+            if (!$key || isset($seen[$key])) continue;
+            $seen[$key] = true;
+    
+            $normalizedSoft[] = compact('id','slug','name','icon','level');
+            if (count($normalizedSoft) >= $MAX_SOFT) break;
+        }
+    
+        DB::transaction(function () use ($user, $attachTech, $normalizedSoft) {
+            // TECH
+            if (is_array($attachTech)) {
+                $user->skills()->sync($attachTech);
+            }
+    
+            // SOFT
+            if (!empty($normalizedSoft)) {
+                $keptSoftIds = [];
+    
+                foreach ($normalizedSoft as $position => $row) {
+                    if (!empty($row['id'])) {
+                        $soft = SoftSkill::find($row['id']);
+                        if (!$soft) {
+                            $slug = $row['slug'] ?? ($row['name'] ? Str::slug($row['name']) : null);
+                            $name = $row['name'] ?? ($slug ? Str::headline(str_replace('-', ' ', $slug)) : null);
+                            $soft = SoftSkill::firstOrCreate(
+                                ['slug' => $slug ?? Str::slug($name ?? 'untitled')],
+                                ['name' => $name ?? 'Untitled', 'icon' => $row['icon'] ?? null]
+                            );
+                        }
+                    } else {
+                        $slug = $row['slug'] ?? ($row['name'] ? Str::slug($row['name']) : null);
+                        $name = $row['name'] ?? ($slug ? Str::headline(str_replace('-', ' ', $slug)) : 'Untitled');
+    
+                        $soft = SoftSkill::firstOrCreate(
+                            ['slug' => $slug ?? Str::slug($name)],
+                            ['name' => $name, 'icon' => $row['icon'] ?? null]
+                        );
+    
+                        if (!empty($row['icon']) && $soft->icon !== $row['icon']) {
+                            $soft->icon = $row['icon'];
+                            $soft->save();
+                        }
+                    }
+    
+                    UserSoftSkill::updateOrCreate(
+                        ['user_id' => $user->id, 'soft_skill_id' => $soft->id],
+                        ['level' => $row['level'] ?? 2, 'position' => $position]
+                    );
+    
+                    $keptSoftIds[] = $soft->id;
+                }
+    
+                UserSoftSkill::where('user_id', $user->id)
+                    ->whereNotIn('soft_skill_id', $keptSoftIds)
+                    ->delete();
+            }
+        });
+    
+        return $request->wantsJson()
+            ? response()->json(['ok' => true])
+            : back()->with('success', 'Skills updated successfully.');
     }
-
+    
 
 
 
@@ -1687,753 +1737,5 @@ class ProfileController extends Controller
             Log::error('Review update failed', ['error' => $e->getMessage()]);
             return back()->with('error', 'Failed to update reviews: ' . $e->getMessage());
         }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public function times(Request $request, string $username)
-    {
-        // Find user by username
-        $user = User::where('username', $username)
-            ->with(['profile', 'devices' => function ($query) {
-                $query->orderByDesc('last_seen_at')->limit(5);
-            }])
-            ->firstOrFail();
-
-        // Get viewer's timezone
-        $viewerTimezone = TimezoneService::getViewerTimezone();
-
-        // Check if viewer is the profile owner
-        $isOwner = Auth::check() && Auth::id() === $user->id;
-
-        // Prepare all time data
-        $timeData = [
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'name' => $user->name,
-                'avatar_url' => $user->avatar_url,
-                'timezone' => $user->timezone,
-                'timezone_offset' => TimezoneService::getTimezoneOffset($user->timezone),
-            ],
-
-            'viewer' => [
-                'timezone' => $viewerTimezone,
-                'timezone_offset' => TimezoneService::getTimezoneOffset($viewerTimezone),
-                'is_owner' => $isOwner,
-            ],
-
-            'timestamps' => [
-                'created_at' => [
-                    'utc' => $user->created_at?->toIso8601String(),
-                    'utc_formatted' => $user->created_at?->format('Y-m-d H:i:s') . ' UTC',
-                    'user_timezone' => TimezoneService::formatForDisplay(
-                        $user->created_at,
-                        $user->timezone,
-                        'M d, Y g:i A'
-                    ),
-                    'viewer_timezone' => TimezoneService::formatForDisplay(
-                        $user->created_at,
-                        $viewerTimezone,
-                        'M d, Y g:i A'
-                    ),
-                    'human' => TimezoneService::humanTime($user->created_at, $viewerTimezone),
-                    'label' => 'Account Created',
-                ],
-
-                'updated_at' => [
-                    'utc' => $user->updated_at?->toIso8601String(),
-                    'utc_formatted' => $user->updated_at?->format('Y-m-d H:i:s') . ' UTC',
-                    'user_timezone' => TimezoneService::formatForDisplay(
-                        $user->updated_at,
-                        $user->timezone,
-                        'M d, Y g:i A'
-                    ),
-                    'viewer_timezone' => TimezoneService::formatForDisplay(
-                        $user->updated_at,
-                        $viewerTimezone,
-                        'M d, Y g:i A'
-                    ),
-                    'human' => TimezoneService::humanTime($user->updated_at, $viewerTimezone),
-                    'label' => 'Profile Updated',
-                ],
-
-                'last_login_at' => [
-                    'utc' => $user->last_login_at?->toIso8601String(),
-                    'utc_formatted' => $user->last_login_at?->format('Y-m-d H:i:s') . ' UTC',
-                    'user_timezone' => TimezoneService::formatForDisplay(
-                        $user->last_login_at,
-                        $user->timezone,
-                        'M d, Y g:i A'
-                    ),
-                    'viewer_timezone' => TimezoneService::formatForDisplay(
-                        $user->last_login_at,
-                        $viewerTimezone,
-                        'M d, Y g:i A'
-                    ),
-                    'human' => TimezoneService::humanTime($user->last_login_at, $viewerTimezone),
-                    'label' => 'Last Login',
-                ],
-
-                'last_seen_at' => [
-                    'utc' => $user->last_seen_at?->toIso8601String(),
-                    'utc_formatted' => $user->last_seen_at?->format('Y-m-d H:i:s') . ' UTC',
-                    'user_timezone' => TimezoneService::formatForDisplay(
-                        $user->last_seen_at,
-                        $user->timezone,
-                        'M d, Y g:i A'
-                    ),
-                    'viewer_timezone' => TimezoneService::formatForDisplay(
-                        $user->last_seen_at,
-                        $viewerTimezone,
-                        'M d, Y g:i A'
-                    ),
-                    'human' => TimezoneService::humanTime($user->last_seen_at, $viewerTimezone),
-                    'status_text' => TimezoneService::getOnlineStatusText($user->last_seen_at, $viewerTimezone),
-                    'label' => 'Last Seen',
-                ],
-            ],
-
-            'online_status' => [
-                'is_online' => $this->onlineStatus->isOnline($user),
-                'status' => $this->onlineStatus->getStatus($user),
-                'status_text' => $this->onlineStatus->getLastSeenText($user, $viewerTimezone),
-            ],
-
-            'activity' => [
-                'login_count' => $user->login_count ?? 0,
-                'account_age_days' => $user->created_at?->diffInDays(now()) ?? 0,
-                'is_active' => $user->is_active === 'active',
-                'account_status' => $user->account_status,
-                'profile_complete' => $user->is_profile_complete,
-            ],
-
-            'devices' => $user->devices->map(function ($device) use ($viewerTimezone) {
-                return [
-                    'id' => $device->id,
-                    'device_name' => $device->device_name,
-                    'device_type' => $device->device_type,
-                    'browser' => $device->browser,
-                    'platform' => $device->platform,
-                    'last_seen_at' => [
-                        'utc' => $device->last_seen_at?->toIso8601String(),
-                        'formatted' => TimezoneService::formatForDisplay(
-                            $device->last_seen_at,
-                            $viewerTimezone,
-                            'M d, Y g:i A'
-                        ),
-                        'human' => TimezoneService::humanTime($device->last_seen_at, $viewerTimezone),
-                    ],
-                    'last_activity_at' => [
-                        'utc' => $device->last_activity_at?->toIso8601String(),
-                        'formatted' => TimezoneService::formatForDisplay(
-                            $device->last_activity_at,
-                            $viewerTimezone,
-                            'M d, Y g:i A'
-                        ),
-                        'human' => TimezoneService::humanTime($device->last_activity_at, $viewerTimezone),
-                    ],
-                    'is_current' => $device->is_current ?? false,
-                ];
-            })->toArray(),
-
-            'location' => [
-                'country' => $user->country,
-                'state' => $user->state,
-                'city' => $user->city,
-                'location_string' => $user->location,
-            ],
-        ];
-
-        return view('tenant.profile.times', compact('timeData'));
     }
 }
