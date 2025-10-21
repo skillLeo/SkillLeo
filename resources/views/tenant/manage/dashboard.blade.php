@@ -398,15 +398,6 @@
                     </div>
                 </div>
 
-                <!-- Sticky Upgrade Card -->
-                <div class="upgrade-card sticky-on-scroll" id="upgradeCardRight">
-                    <h6>Go Pro — Unlock Everything</h6>
-                    <div class="icon"><i class="fas fa-rocket"></i></div>
-                    <p style="margin:10px 0 16px; position: relative; z-index: 1;">
-                        Advanced analytics, AI helpers & priority support.
-                    </p>
-                    <button class="btn-upgrade" type="button">Upgrade Now</button>
-                </div>
-
+         
 
 @endsection

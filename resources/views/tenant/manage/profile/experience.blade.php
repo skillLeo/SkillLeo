@@ -2,6 +2,7 @@
     use Illuminate\Support\Str;
     use Illuminate\Support\Carbon;
 @endphp
+
 @extends('tenant.manage.app')
 
 @section('title', 'Manage Experience - ' . $user->name)
@@ -32,13 +33,51 @@
         </div>
     </div>
 
+    {{-- Search Bar --}}
+    <div class="search-container">
+        <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" 
+                   id="experienceSearchInput" 
+                   class="search-input" 
+                   placeholder="Search by job title, company, or location..."
+                   autocomplete="off">
+            <button type="button" class="search-clear" id="searchClearBtn" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results" id="searchResults">
+            <span class="results-text">Showing <strong id="visibleCount">{{ $owner->experiences->count() }}</strong> of <strong id="totalCount">{{ $owner->experiences->count() }}</strong> positions</span>
+        </div>
+    </div>
+
     <div class="content-section">
-        <div class="experience-timeline">
+        <div class="experience-timeline" id="experienceTimeline">
             @forelse($owner->experiences as $experience)
-                <div class="experience-item" data-experience-id="{{ $experience->id }}">
+                @php
+                    $searchText = strtolower(
+                        $experience->title . ' ' . 
+                        $experience->company . ' ' . 
+                        ($experience->location_city ?? '') . ' ' . 
+                        ($experience->location_country ?? '') . ' ' . 
+                        ($experience->description ?? '')
+                    );
+                @endphp
+
+                <div class="experience-item" 
+                     data-experience-id="{{ $experience->id }}"
+                     data-search-text="{{ $searchText }}">
                     <div class="experience-marker">
                         @if($experience->is_current)
-                            <div class="marker-dot active"></div>
+                            <div class="marker-dot active">
+                                <span class="pulse-ring"></span>
+                            </div>
                         @else
                             <div class="marker-dot"></div>
                         @endif
@@ -58,15 +97,15 @@
                                     <polyline points="12 6 12 12 16 14"/>
                                 </svg>
                                 @if($experience->start_month && $experience->start_year)
-                                    {{ \Carbon\Carbon::createFromDate($experience->start_year, $experience->start_month, 1)->format('M Y') }}
+                                    {{ Carbon::createFromDate($experience->start_year, $experience->start_month, 1)->format('M Y') }}
                                 @else
                                     {{ $experience->start_year ?: '—' }}
                                 @endif
                                 —
                                 @if($experience->is_current)
-                                    Present
+                                    <span class="current-badge">Present</span>
                                 @elseif($experience->end_month && $experience->end_year)
-                                    {{ \Carbon\Carbon::createFromDate($experience->end_year, $experience->end_month, 1)->format('M Y') }}
+                                    {{ Carbon::createFromDate($experience->end_year, $experience->end_month, 1)->format('M Y') }}
                                 @else
                                     {{ $experience->end_year ?: '—' }}
                                 @endif
@@ -83,22 +122,18 @@
                         </div>
 
                         @if($experience->description)
-                            <p class="experience-description">{{ Str::limit($experience->description, 150) }}</p>
+                            <p class="experience-description">{{ Str::limit($experience->description, 180) }}</p>
                         @endif
 
                         @if($experience->skills && $experience->skills->count() > 0)
                             <div class="experience-skills">
-                                @foreach($experience->skills->take(5) as $skill)
+                                @foreach($experience->skills->take(6) as $skill)
                                     <span class="skill-tag">{{ $skill->name }}</span>
                                 @endforeach
-                                @if($experience->skills->count() > 5)
-                                    <span class="skill-tag-more">+{{ $experience->skills->count() - 5 }}</span>
+                                @if($experience->skills->count() > 6)
+                                    <span class="skill-tag-more">+{{ $experience->skills->count() - 6 }}</span>
                                 @endif
                             </div>
-                        @endif
-
-                        @if($experience->is_current)
-                            <span class="experience-badge">Currently working here</span>
                         @endif
                     </div>
                 </div>
@@ -113,6 +148,17 @@
                     <button class="btn btn-primary" onclick="openModal('editExperienceModal')">Add First Experience</button>
                 </div>
             @endforelse
+        </div>
+
+        {{-- No Results Message --}}
+        <div class="no-results" id="noResults" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <h3>No experience found</h3>
+            <p>Try adjusting your search query</p>
+            <button type="button" class="btn btn-primary" onclick="clearSearch()">Clear Search</button>
         </div>
     </div>
 
@@ -142,15 +188,189 @@
 
         <div class="help-card accent">
             <h4>🎯 Pro Tip</h4>
-            <p>Profiles with detailed experience get 2x more profile views</p>
+            <p>Profiles with detailed experience get 2x more profile views. Add specific metrics and outcomes!</p>
         </div>
     </div>
 @endsection
+
 @push('styles')
 <style>
-/* ============================================
-   PROFESSIONAL EXPERIENCE PAGE - TIMELINE
-   ============================================ */
+/* ============ ALERTS ============ */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+}
+
+.alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ PAGE HEADER ============ */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ============ BUTTONS ============ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* ============ SEARCH CONTAINER ============ */
+.search-container {
+    margin-bottom: 24px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    transition: all 0.2s ease;
+    max-width: 600px;
+}
+
+.search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.search-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.search-box:focus-within .search-icon {
+    color: var(--accent);
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    outline: none;
+    padding: 12px 12px;
+    font-size: 14px;
+    color: var(--text-body);
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--apc-bg);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+    background: var(--border);
+    color: var(--text-heading);
+}
+
+.search-results {
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.results-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.results-text strong {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+
 
 /* ============ EXPERIENCE TIMELINE ============ */
 .experience-timeline {
@@ -165,64 +385,90 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: linear-gradient(to bottom, var(--accent), transparent);
+    background: linear-gradient(to bottom, var(--accent), rgba(var(--accent-rgb), 0.1));
 }
 
 .experience-item {
     position: relative;
-    margin-bottom: 28px;
-    cursor: pointer;
+    margin-bottom: 32px;
+    transition: all 0.3s ease;
 }
 
 .experience-item:last-child {
     margin-bottom: 0;
 }
 
+.experience-item.hidden {
+    display: none !important;
+}
+
 /* ============ EXPERIENCE MARKER ============ */
 .experience-marker {
     position: absolute;
     left: -24px;
-    top: 10px;
+    top: 12px;
     z-index: 2;
+}
+
+.marker-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 3px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.marker-dot.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15);
+}
+
+.pulse-ring {
+    position: absolute;
+    inset: -6px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
 }
 
 .experience-item:hover .marker-dot {
     border-color: var(--accent);
-    transform: scale(1.25);
+    transform: scale(1.2);
 }
 
 /* ============ EXPERIENCE CARD ============ */
 .experience-card {
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
     border-radius: 12px;
     padding: 24px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 }
 
 .experience-item:hover .experience-card {
     border-color: var(--accent);
-    box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.1);
-    transform: translateX(6px);
-}
-
-.experience-item.selected .experience-card {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+    box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.12);
+    transform: translateX(8px);
 }
 
 /* ============ EXPERIENCE HEADER ============ */
 .experience-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
     margin-bottom: 14px;
-}
-
-.experience-main {
-    flex: 1;
 }
 
 .experience-title {
@@ -236,36 +482,9 @@
 
 .experience-company {
     font-size: 15px;
-    color: var(--text-body);
+    color: var(--accent);
     margin: 0;
-    font-weight: 500;
-}
-
-/* ============ EXPERIENCE DELETE ============ */
-.experience-delete {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: 6px;
-    opacity: 0;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.experience-item:hover .experience-delete {
-    opacity: 1;
-}
-
-.experience-delete:hover {
-    background: #ef4444;
-    color: white;
-    border-color: #ef4444;
+    font-weight: 600;
 }
 
 /* ============ EXPERIENCE META ============ */
@@ -292,10 +511,22 @@
     opacity: 0.6;
 }
 
+.current-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    background: rgba(var(--accent-rgb), 0.15);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 /* ============ EXPERIENCE DESCRIPTION ============ */
 .experience-description {
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.7;
     color: var(--text-body);
     margin: 0 0 14px 0;
 }
@@ -304,71 +535,124 @@
 .experience-skills {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 14px;
+    gap: 6px;
+    margin-top: 16px;
 }
 
 .skill-tag {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    padding: 5px 10px;
     background: var(--apc-bg);
     border: 1px solid var(--border);
     border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-body);
     transition: all 0.2s ease;
 }
 
 .skill-tag:hover {
     border-color: var(--accent);
-    background: rgba(var(--accent-rgb), 0.05);
+    background: rgba(var(--accent-rgb), 0.08);
+    color: var(--accent);
 }
 
 .skill-tag-more {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    padding: 5px 10px;
     background: rgba(var(--accent-rgb), 0.1);
     border: 1px solid var(--accent);
     border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: var(--accent);
 }
 
-/* ============ EXPERIENCE BADGE ============ */
-.experience-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: rgba(var(--accent-rgb), 0.1);
-    color: var(--accent);
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-top: 14px;
+/* ============ EMPTY & NO RESULTS ============ */
+.empty-state, .no-results {
+    text-align: center;
+    padding: 80px 20px;
 }
 
-/* ============ FORM SELECT ============ */
-select.form-control {
-    cursor: pointer;
+.empty-state svg, .no-results svg {
+    color: var(--text-muted);
+    opacity: 0.15;
+    margin-bottom: 24px;
+}
+
+.empty-state h3, .no-results h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 12px 0;
+}
+
+.empty-state p, .no-results p {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin: 0 0 28px 0;
+}
+
+/* ============ HELP CARDS ============ */
+.help-card {
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.help-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--text-heading);
+}
+
+.help-card.accent {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    border-color: var(--accent);
+}
+
+.help-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+.help-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.help-list li {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--text-body);
+    line-height: 1.5;
 }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
     .experience-timeline {
         padding-left: 28px;
     }
 
     .experience-marker {
         left: -20px;
-    }
-
-    .experience-delete {
-        opacity: 1;
     }
 
     .experience-item:hover .experience-card {
@@ -385,186 +669,70 @@ select.form-control {
 @endpush
 
 @push('scripts')
-@php
-    $experiencePayload = $owner->experiences->map(function ($e) {
-        return [
-            'db_id' => $e->id,
-            'company' => $e->company,
-            'company_id' => $e->company_id,
-            'title' => $e->title,
-            'startMonth' => $e->start_month,
-            'startYear' => $e->start_year,
-            'endMonth' => $e->end_month,
-            'endYear' => $e->end_year,
-            'current' => (bool)$e->is_current,
-            'locationCity' => $e->location_city,
-            'locationCountry' => $e->location_country,
-            'description' => $e->description,
-            'skills' => $e->skills->map(fn($s) => ['name' => $s->name, 'level' => $s->level ?? 2])->values(),
-            'position' => $e->position,
-        ];
-    })->values();
-@endphp
-
 <script>
-let experienceArray = @json($experiencePayload);
+(function() {
+    'use strict';
 
-function addNewExperience() {
-    document.getElementById('inspectorDefault').style.display = 'none';
-    document.getElementById('inspectorForm').style.display = 'block';
-    document.getElementById('formTitle').textContent = 'Add Experience';
-    document.getElementById('experienceId').value = '';
-    document.getElementById('experienceTitle').value = '';
-    document.getElementById('experienceCompany').value = '';
-    document.getElementById('experienceStartMonth').value = '';
-    document.getElementById('experienceStartYear').value = '';
-    document.getElementById('experienceEndMonth').value = '';
-    document.getElementById('experienceEndYear').value = '';
-    document.getElementById('experienceCurrent').checked = false;
-    document.getElementById('experienceCity').value = '';
-    document.getElementById('experienceCountry').value = '';
-    document.getElementById('experienceDescription').value = '';
-    document.getElementById('endDateFields').style.display = 'grid';
-    
-    updateCharCount();
-    document.getElementById('experienceTitle').focus();
-}
+    const searchInput = document.getElementById('experienceSearchInput');
+    const clearBtn = document.getElementById('searchClearBtn');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const noResultsEl = document.getElementById('noResults');
+    const timeline = document.getElementById('experienceTimeline');
 
-function selectExperience(id) {
-    document.querySelectorAll('.experience-item').forEach(item => item.classList.remove('selected'));
-    const item = document.querySelector(`[data-experience-id="${id}"]`);
-    if (item) item.classList.add('selected');
-    
-    const experience = experienceArray.find(e => e.db_id === id);
-    if (!experience) return;
-    
-    document.getElementById('inspectorDefault').style.display = 'none';
-    document.getElementById('inspectorForm').style.display = 'block';
-    document.getElementById('formTitle').textContent = 'Edit Experience';
-    document.getElementById('experienceId').value = id;
-    document.getElementById('experienceTitle').value = experience.title;
-    document.getElementById('experienceCompany').value = experience.company;
-    document.getElementById('experienceStartMonth').value = experience.startMonth || '';
-    document.getElementById('experienceStartYear').value = experience.startYear || '';
-    document.getElementById('experienceEndMonth').value = experience.endMonth || '';
-    document.getElementById('experienceEndYear').value = experience.endYear || '';
-    document.getElementById('experienceCurrent').checked = experience.current;
-    document.getElementById('experienceCity').value = experience.locationCity || '';
-    document.getElementById('experienceCountry').value = experience.locationCountry || '';
-    document.getElementById('experienceDescription').value = experience.description || '';
-    
-    document.getElementById('endDateFields').style.display = experience.current ? 'none' : 'grid';
-    
-    updateCharCount();
-}
+    const allItems = document.querySelectorAll('.experience-item[data-search-text]');
+    const totalCount = allItems.length;
 
-function saveExperience() {
-    const id = document.getElementById('experienceId').value;
-    const title = document.getElementById('experienceTitle').value.trim();
-    const company = document.getElementById('experienceCompany').value.trim();
-    const startMonth = parseInt(document.getElementById('experienceStartMonth').value) || null;
-    const startYear = parseInt(document.getElementById('experienceStartYear').value) || null;
-    const endMonth = parseInt(document.getElementById('experienceEndMonth').value) || null;
-    const endYear = parseInt(document.getElementById('experienceEndYear').value) || null;
-    const current = document.getElementById('experienceCurrent').checked;
-    const locationCity = document.getElementById('experienceCity').value.trim();
-    const locationCountry = document.getElementById('experienceCountry').value.trim();
-    const description = document.getElementById('experienceDescription').value.trim();
-    
-    if (!title || !company) {
-        alert('Please fill in required fields');
-        return;
-    }
-    
-    const experienceData = {
-        title,
-        company,
-        company_id: null,
-        startMonth,
-        startYear,
-        endMonth: current ? null : endMonth,
-        endYear: current ? null : endYear,
-        current,
-        locationCity,
-        locationCountry,
-        description,
-        skills: []
-    };
-    
-    if (id) {
-        const index = experienceArray.findIndex(e => e.db_id == id);
-        if (index !== -1) {
-            experienceArray[index] = { ...experienceArray[index], ...experienceData };
-        }
-    } else {
-        experienceArray.push({
-            db_id: null,
-            ...experienceData,
-            position: experienceArray.length
+    function performSearch(query) {
+        const searchTerm = query.toLowerCase().trim();
+        let visibleCount = 0;
+
+        allItems.forEach(item => {
+            const searchText = item.dataset.searchText || '';
+            const matches = searchText.includes(searchTerm);
+            
+            item.classList.toggle('hidden', !matches);
+            
+            if (matches) {
+                visibleCount++;
+            }
         });
+
+        visibleCountEl.textContent = visibleCount;
+
+        const hasResults = visibleCount > 0;
+        noResultsEl.style.display = hasResults ? 'none' : 'flex';
+        timeline.style.display = hasResults ? 'block' : 'none';
+
+        clearBtn.style.display = searchTerm ? 'flex' : 'none';
     }
-    
-    submitExperience();
-}
 
-function deleteExperience(id, title) {
-    if (confirm(`Delete experience as ${title}?`)) {
-        experienceArray = experienceArray.filter(e => e.db_id != id);
-        submitExperience();
-    }
-}
+    window.clearSearch = function() {
+        searchInput.value = '';
+        performSearch('');
+        searchInput.focus();
+    };
 
-function submitExperience() {
-    document.getElementById('experienceData').value = JSON.stringify(experienceArray);
-    document.getElementById('experienceUpdateForm').submit();
-}
-
-function closeInspector() {
-    document.getElementById('inspectorForm').style.display = 'none';
-    document.getElementById('inspectorDefault').style.display = 'block';
-    document.querySelectorAll('.experience-item').forEach(item => item.classList.remove('selected'));
-}
-
-// Toggle end date fields
-document.getElementById('experienceCurrent')?.addEventListener('change', (e) => {
-    const endDateFields = document.getElementById('endDateFields');
-    if (e.target.checked) {
-        endDateFields.style.display = 'none';
-        document.getElementById('experienceEndMonth').value = '';
-        document.getElementById('experienceEndYear').value = '';
-    } else {
-        endDateFields.style.display = 'grid';
-    }
-});
-
-// Character counter
-function updateCharCount() {
-    const desc = document.getElementById('experienceDescription');
-    const count = document.getElementById('descCount');
-    if (desc && count) {
-        count.textContent = desc.value.length;
-    }
-}
-
-document.getElementById('experienceDescription')?.addEventListener('input', updateCharCount);
-
-// Search
-document.getElementById('experienceSearch')?.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    document.querySelectorAll('.experience-item').forEach(item => {
-        const title = item.querySelector('.experience-title').textContent.toLowerCase();
-        const company = item.querySelector('.experience-company').textContent.toLowerCase();
-        item.style.display = (title.includes(query) || company.includes(query)) ? 'block' : 'none';
+    searchInput.addEventListener('input', (e) => {
+        performSearch(e.target.value);
     });
-});
 
-// Keyboard Shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.target.matches('input, textarea, select')) return;
-    if (e.key.toLowerCase() === 'a') { e.preventDefault(); addNewExperience(); }
-    if (e.key === 'Escape') closeInspector();
-});
+    clearBtn.addEventListener('click', () => {
+        clearSearch();
+    });
 
-function importExperience() { alert('Import feature coming soon!'); }
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            clearSearch();
+        }
+    });
+
+    totalCountEl.textContent = totalCount;
+})();
 </script>
 @endpush

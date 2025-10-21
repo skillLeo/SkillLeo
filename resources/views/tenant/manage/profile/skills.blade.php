@@ -28,9 +28,33 @@
         </div>
     </div>
 
+    {{-- Search Bar --}}
+    <div class="search-container">
+        <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" 
+                   id="skillsSearchInput" 
+                   class="search-input" 
+                   placeholder="Search skills..."
+                   autocomplete="off">
+            <button type="button" class="search-clear" id="searchClearBtn" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results" id="searchResults">
+            <span class="results-text">Showing <strong id="visibleCount">{{ $skills->count() + $owner->softSkills->count() }}</strong> of <strong id="totalCount">{{ $skills->count() + $owner->softSkills->count() }}</strong> skills</span>
+        </div>
+    </div>
+
     <div class="content-section">
         {{-- Technical Skills Section --}}
-        <div class="skills-section">
+        <div class="skills-section" id="technicalSkillsSection">
             <div class="section-header">
                 <h3 class="section-title">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,13 +62,17 @@
                         <polyline points="8 6 2 12 8 18" />
                     </svg>
                     Technical Skills
-                    <span class="skill-count">{{ $skills->count() }}</span>
+                    <span class="skill-count" id="techSkillCount">{{ $skills->count() }}</span>
                 </h3>
             </div>
 
             <div class="skills-grid">
                 @forelse($skills as $skill)
-                    <div class="skill-chip" data-skill-id="{{ $skill->id }}" data-level="{{ $skill->pivot->level }}">
+                    <div class="skill-chip" 
+                         data-skill-id="{{ $skill->id }}" 
+                         data-level="{{ $skill->pivot->level }}"
+                         data-skill-name="{{ strtolower($skill->name) }}"
+                         data-skill-type="technical">
                         <div class="skill-info">
                             <span class="skill-name">{{ $skill->name }}</span>
                             <span class="skill-level level-{{ $skill->pivot->level }}">
@@ -71,7 +99,7 @@
         </div>
 
         {{-- Soft Skills Section --}}
-        <div class="skills-section">
+        <div class="skills-section" id="softSkillsSection">
             <div class="section-header">
                 <h3 class="section-title">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -81,13 +109,15 @@
                         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                     Soft Skills
-                    <span class="skill-count">{{ $owner->softSkills->count() }}</span>
+                    <span class="skill-count" id="softSkillCount">{{ $owner->softSkills->count() }}</span>
                 </h3>
             </div>
 
             <div class="soft-skills-grid">
                 @forelse($owner->softSkills as $soft)
-                    <div class="soft-skill-card">
+                    <div class="soft-skill-card"
+                         data-skill-name="{{ strtolower($soft->name) }}"
+                         data-skill-type="soft">
                         <div class="soft-skill-icon">
                             <i class="fas fa-{{ $soft->icon ?? 'star' }}"></i>
                         </div>
@@ -110,6 +140,17 @@
                     </div>
                 @endforelse
             </div>
+        </div>
+
+        {{-- No Results Message --}}
+        <div class="no-results" id="noResults" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <h3>No skills found</h3>
+            <p>Try adjusting your search query</p>
+            <button type="button" class="btn btn-primary" onclick="clearSearch()">Clear Search</button>
         </div>
     </div>
 
@@ -146,7 +187,6 @@
 
 @push('styles')
 <style>
-
 /* ============ ALERTS ============ */
 .alert {
     display: flex;
@@ -186,7 +226,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
 }
@@ -246,6 +286,88 @@
     box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
 }
 
+/* ============ SEARCH CONTAINER ============ */
+.search-container {
+    margin-bottom: 24px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    transition: all 0.2s ease;
+    max-width: 500px;
+}
+
+.search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.search-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.search-box:focus-within .search-icon {
+    color: var(--accent);
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    outline: none;
+    padding: 12px 12px;
+    font-size: 14px;
+    color: var(--text-body);
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--apc-bg);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+    background: var(--border);
+    color: var(--text-heading);
+}
+
+.search-results {
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.results-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.results-text strong {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 /* ============ CONTENT SECTION ============ */
 .content-section {
     background: var(--card);
@@ -257,10 +379,15 @@
 /* ============ SKILLS SECTION ============ */
 .skills-section {
     margin-bottom: 32px;
+    transition: all 0.3s ease;
 }
 
 .skills-section:last-child {
     margin-bottom: 0;
+}
+
+.skills-section.hidden {
+    display: none;
 }
 
 .section-header {
@@ -314,6 +441,10 @@
     border: 1.5px solid var(--border);
     border-radius: 8px;
     transition: all 0.2s ease;
+}
+
+.skill-chip.hidden {
+    display: none !important;
 }
 
 .skill-chip:hover {
@@ -374,6 +505,10 @@
     align-items: center;
     gap: 12px;
     transition: all 0.2s;
+}
+
+.soft-skill-card.hidden {
+    display: none !important;
 }
 
 .soft-skill-card:hover {
@@ -444,6 +579,35 @@
     margin: 0;
 }
 
+/* ============ NO RESULTS STATE ============ */
+.no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.no-results svg {
+    color: var(--text-muted);
+    opacity: 0.2;
+    margin-bottom: 20px;
+}
+
+.no-results h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 8px 0;
+}
+
+.no-results p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 24px 0;
+}
+
 /* ============ HELP CARDS ============ */
 .help-card {
     padding: 16px;
@@ -492,12 +656,16 @@
         gap: 16px;
     }
 
+    .search-box {
+        max-width: 100%;
+    }
+
     .skills-grid {
         flex-direction: column;
     }
 
     .skill-chip {
-        width: 100%;
+        width: 85%;
     }
 
     .soft-skills-grid {
@@ -523,4 +691,113 @@
     }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+
+    // Elements
+    const searchInput = document.getElementById('skillsSearchInput');
+    const clearBtn = document.getElementById('searchClearBtn');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const noResultsEl = document.getElementById('noResults');
+    const techSection = document.getElementById('technicalSkillsSection');
+    const softSection = document.getElementById('softSkillsSection');
+    const techCountEl = document.getElementById('techSkillCount');
+    const softCountEl = document.getElementById('softSkillCount');
+
+    // All skill elements
+    const techSkills = document.querySelectorAll('[data-skill-type="technical"]');
+    const softSkills = document.querySelectorAll('[data-skill-type="soft"]');
+    const allSkills = [...techSkills, ...softSkills];
+
+    const totalCount = allSkills.length;
+
+    // Search functionality
+    function performSearch(query) {
+        const searchTerm = query.toLowerCase().trim();
+        
+        let visibleCount = 0;
+        let visibleTech = 0;
+        let visibleSoft = 0;
+
+        // Filter technical skills
+        techSkills.forEach(skill => {
+            const skillName = skill.dataset.skillName;
+            const matches = skillName.includes(searchTerm);
+            
+            skill.classList.toggle('hidden', !matches);
+            
+            if (matches) {
+                visibleCount++;
+                visibleTech++;
+            }
+        });
+
+        // Filter soft skills
+        softSkills.forEach(skill => {
+            const skillName = skill.dataset.skillName;
+            const matches = skillName.includes(searchTerm);
+            
+            skill.classList.toggle('hidden', !matches);
+            
+            if (matches) {
+                visibleCount++;
+                visibleSoft++;
+            }
+        });
+
+        // Update counts
+        visibleCountEl.textContent = visibleCount;
+        techCountEl.textContent = visibleTech;
+        softCountEl.textContent = visibleSoft;
+
+        // Show/hide sections
+        techSection.classList.toggle('hidden', visibleTech === 0);
+        softSection.classList.toggle('hidden', visibleSoft === 0);
+
+        // Show/hide no results message
+        noResultsEl.style.display = visibleCount === 0 ? 'flex' : 'none';
+
+        // Show/hide clear button
+        clearBtn.style.display = searchTerm ? 'flex' : 'none';
+    }
+
+    // Clear search
+    window.clearSearch = function() {
+        searchInput.value = '';
+        performSearch('');
+        searchInput.focus();
+    };
+
+    // Event listeners
+    searchInput.addEventListener('input', (e) => {
+        performSearch(e.target.value);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        clearSearch();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Ctrl/Cmd + K to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        // Escape to clear search
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            clearSearch();
+        }
+    });
+
+    // Initialize
+    totalCountEl.textContent = totalCount;
+})();
+</script>
 @endpush

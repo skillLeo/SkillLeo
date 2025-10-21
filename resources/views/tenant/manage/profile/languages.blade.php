@@ -28,50 +28,82 @@
         </div>
     </div>
 
+    {{-- Search Bar --}}
+    <div class="search-container">
+        <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" 
+                   id="languageSearchInput" 
+                   class="search-input" 
+                   placeholder="Search languages..."
+                   autocomplete="off">
+            <button type="button" class="search-clear" id="searchClearBtn" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results" id="searchResults">
+            <span class="results-text">Showing <strong id="visibleCount">{{ $owner->languages->count() }}</strong> of <strong id="totalCount">{{ $owner->languages->count() }}</strong> languages</span>
+        </div>
+    </div>
+
     <div class="content-section">
-        <div class="languages-list">
+        <div class="languages-grid" id="languagesGrid">
             @forelse($owner->languages as $language)
                 @php
                     $level = optional($language->pivot)->level ?? ($language->level ?? 0);
                     $level = max(0, min(4, (int) $level));
                     $percent = ($level / 4) * 100;
+                    
+                    $levelText = match($level) {
+                        4 => 'Native or Bilingual',
+                        3 => 'Professional Working',
+                        2 => 'Limited Working',
+                        1 => 'Elementary',
+                        default => 'Beginner'
+                    };
+                    
+                    $searchText = strtolower($language->name . ' ' . $levelText);
                 @endphp
         
-                <div class="language-item" data-language-id="{{ $language->id }}">
-                    <div class="language-content">
-                        <div class="language-main">
-                            <h4 class="language-name">{{ $language->name }}</h4>
-        
-                            <span class="language-level level-{{ $level }}">
-                                @if($level >= 4)
-                                    Native or Bilingual
-                                @elseif($level === 3)
-                                    Professional Working
-                                @elseif($level === 2)
-                                    Limited Working
-                                @elseif($level === 1)
-                                    Elementary
-                                @else
-                                    Beginner
-                                @endif
-                            </span>
+                <div class="language-card" 
+                     data-language-id="{{ $language->id }}"
+                     data-search-text="{{ $searchText }}">
+                    
+                    <div class="language-header">
+                        <div class="language-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
                         </div>
-        
-                        <div class="language-proficiency">
-                            <div class="proficiency-bar">
-                                <div class="proficiency-fill" style="width: {{ $percent }}%"></div>
-                            </div>
-        
-                            <span class="proficiency-dots">
-                                @for($i = 1; $i <= 4; $i++)
-                                    <span class="dot {{ $i <= $level ? 'active' : '' }}"></span>
-                                @endfor
-                            </span>
+                        <h4 class="language-name">{{ $language->name }}</h4>
+                    </div>
+
+                    <div class="language-level-badge level-{{ $level }}">
+                        {{ $levelText }}
+                    </div>
+
+                    <div class="language-proficiency">
+                        <div class="proficiency-bar">
+                            <div class="proficiency-fill level-{{ $level }}" style="width: {{ $percent }}%"></div>
+                        </div>
+
+                        <div class="proficiency-dots">
+                            @for($i = 1; $i <= 4; $i++)
+                                <span class="dot {{ $i <= $level ? 'active level-' . $level : '' }}"></span>
+                            @endfor
                         </div>
                     </div>
                 </div>
             @empty
-                <div class="empty-state">
+                <div class="empty-state-full">
                     <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="2" y1="12" x2="22" y2="12"/>
@@ -82,6 +114,17 @@
                     <button class="btn btn-primary" onclick="openModal('editLanguagesModal')">Add First Language</button>
                 </div>
             @endforelse
+        </div>
+
+        {{-- No Results Message --}}
+        <div class="no-results" id="noResults" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <h3>No languages found</h3>
+            <p>Try adjusting your search query</p>
+            <button type="button" class="btn btn-primary" onclick="clearSearch()">Clear Search</button>
         </div>
     </div>
 
@@ -111,73 +154,283 @@
 
         <div class="help-card accent">
             <h4>🎯 Pro Tip</h4>
-            <p>Being multilingual increases job opportunities by 30%</p>
+            <p>Being multilingual increases job opportunities by 30%. Highlight your strongest languages!</p>
         </div>
     </div>
 @endsection
 
 @push('styles')
 <style>
-.languages-list {
+/* ============ ALERTS ============ */
+.alert {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
 }
 
-.language-item {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.25s ease;
+.alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-.language-item:hover {
-    border-color: var(--accent);
-    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.08);
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.language-content {
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ PAGE HEADER ============ */
+.page-header {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    align-items:align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
 }
 
-.language-main {
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ============ BUTTONS ============ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* ============ SEARCH CONTAINER ============ */
+.search-container {
+    margin-bottom: 24px;
+}
+
+.search-box {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    transition: all 0.2s ease;
+    max-width: 500px;
+}
+
+.search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.search-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.search-box:focus-within .search-icon {
+    color: var(--accent);
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    outline: none;
+    padding: 12px 12px;
+    font-size: 14px;
+    color: var(--text-body);
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--apc-bg);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+    background: var(--border);
+    color: var(--text-heading);
+}
+
+.search-results {
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.results-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.results-text strong {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+
+/* ============ LANGUAGES GRID ============ */
+.languages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.language-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.language-card.hidden {
+    display: none !important;
+}
+
+.language-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.12);
+    transform: translateY(-4px);
+}
+
+/* ============ LANGUAGE HEADER ============ */
+.language-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.language-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--accent-rgb), 0.1);
+    border-radius: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
 }
 
 .language-name {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
     color: var(--text-heading);
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
-.language-level {
-    padding: 4px 12px;
+/* ============ LANGUAGE LEVEL BADGE ============ */
+.language-level-badge {
+    padding: 6px 12px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 16px;
+    display: inline-block;
 }
 
-.language-level.level-1 { background: #fef3c7; color: #92400e; }
-.language-level.level-2 { background: #dbeafe; color: #1e40af; }
-.language-level.level-3 { background: #d1fae5; color: #065f46; }
-.language-level.level-4 { background: #e0e7ff; color: #4338ca; }
+.language-level-badge.level-1 {
+    background: #fef3c7;
+    color: #92400e;
+}
 
+.language-level-badge.level-2 {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.language-level-badge.level-3 {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.language-level-badge.level-4 {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+/* ============ LANGUAGE PROFICIENCY ============ */
 .language-proficiency {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .proficiency-bar {
-    flex: 1;
     height: 8px;
     background: var(--apc-bg);
     border-radius: 4px;
@@ -186,433 +439,230 @@
 
 .proficiency-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-dark));
     border-radius: 4px;
-    transition: width 0.5s ease;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.proficiency-fill.level-1 {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.proficiency-fill.level-2 {
+    background: linear-gradient(90deg, #60a5fa, #3b82f6);
+}
+
+.proficiency-fill.level-3 {
+    background: linear-gradient(90deg, #34d399, #10b981);
+}
+
+.proficiency-fill.level-4 {
+    background: linear-gradient(90deg, #818cf8, #6366f1);
 }
 
 .proficiency-dots {
     display: flex;
-    gap: 6px;
+    gap: 8px;
+    justify-content: center;
 }
 
 .proficiency-dots .dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: var(--border);
     transition: all 0.3s ease;
 }
 
-.proficiency-dots .dot.active {
-    background: var(--accent);
-    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+.proficiency-dots .dot.active.level-1 {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.4);
+}
+
+.proficiency-dots .dot.active.level-2 {
+    background: #60a5fa;
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+}
+
+.proficiency-dots .dot.active.level-3 {
+    background: #34d399;
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+
+.proficiency-dots .dot.active.level-4 {
+    background: #818cf8;
+    box-shadow: 0 0 8px rgba(129, 140, 248, 0.4);
+}
+
+/* ============ EMPTY & NO RESULTS ============ */
+.empty-state-full, .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-state-full svg, .no-results svg {
+    color: var(--text-muted);
+    opacity: 0.15;
+    margin-bottom: 24px;
+}
+
+.empty-state-full h3, .no-results h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 12px 0;
+}
+
+.empty-state-full p, .no-results p {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin: 0 0 28px 0;
+}
+
+/* ============ HELP CARDS ============ */
+.help-card {
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.help-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--text-heading);
+}
+
+.help-card.accent {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    border-color: var(--accent);
+}
+
+.help-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+.help-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.help-list li {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .languages-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============ DARK MODE ============ */
+@media (prefers-color-scheme: dark) {
+    .language-level-badge.level-1 { 
+        background: rgba(251, 191, 36, 0.2); 
+        color: #fbbf24; 
+    }
+    .language-level-badge.level-2 { 
+        background: rgba(96, 165, 250, 0.2); 
+        color: #60a5fa; 
+    }
+    .language-level-badge.level-3 { 
+        background: rgba(52, 211, 153, 0.2); 
+        color: #34d399; 
+    }
+    .language-level-badge.level-4 { 
+        background: rgba(129, 140, 248, 0.2); 
+        color: #818cf8; 
+    }
 }
 </style>
 @endpush
-    
-    @push('styles')
-    <style>
-    /* ============================================
-       PROFESSIONAL LANGUAGES PAGE - CLEAN DESIGN
-       ============================================ */
-    
-    /* ============ LANGUAGES LIST ============ */
-    .languages-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-    
-    .language-item {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-    }
-    
-    .language-item:hover {
-        border-color: var(--accent);
-        box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.08);
-        transform: translateY(-2px);
-    }
-    
-    .language-item.selected {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-    }
-    
-    /* ============ LANGUAGE CONTENT ============ */
-    .language-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-    
-    .language-main {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-    }
-    
-    .language-name {
-        font-size: 17px;
-        font-weight: 600;
-        color: var(--text-heading);
-        margin: 0;
-        letter-spacing: -0.01em;
-    }
-    
-    .language-level {
-        padding: 4px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-    }
-    
-    .language-level.level-1 {
-        background: #fef3c7;
-        color: #92400e;
-    }
-    
-    .language-level.level-2 {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-    
-    .language-level.level-3 {
-        background: #d1fae5;
-        color: #065f46;
-    }
-    
-    .language-level.level-4 {
-        background: #e0e7ff;
-        color: #4338ca;
-    }
-    
-    /* ============ LANGUAGE PROFICIENCY ============ */
-    .language-proficiency {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-    
-    .proficiency-bar {
-        flex: 1;
-        height: 8px;
-        background: var(--apc-bg);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    
-    .proficiency-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--accent), var(--accent-dark));
-        border-radius: 4px;
-        transition: width 0.5s ease;
-    }
-    
-    .proficiency-dots {
-        display: flex;
-        gap: 6px;
-    }
-    
-    .proficiency-dots .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--border);
-        transition: all 0.3s ease;
-    }
-    
-    .proficiency-dots .dot.active {
-        background: var(--accent);
-        box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
-    }
-    
-    /* ============ LANGUAGE DELETE ============ */
-    .language-delete {
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-        cursor: pointer;
-        border-radius: 8px;
-        opacity: 0;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-    }
-    
-    .language-item:hover .language-delete {
-        opacity: 1;
-    }
-    
-    .language-delete:hover {
-        background: #ef4444;
-        color: white;
-        border-color: #ef4444;
-        transform: scale(1.1);
-    }
-    
-    /* ============ PROFICIENCY SELECTOR ============ */
-    .proficiency-selector {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .proficiency-btn {
-        padding: 14px 16px;
-        background: var(--card);
-        border: 2px solid var(--border);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .proficiency-btn:hover {
-        border-color: var(--accent);
-        background: rgba(var(--accent-rgb), 0.02);
-    }
-    
-    .proficiency-btn.active {
-        border-color: var(--accent);
-        background: rgba(var(--accent-rgb), 0.05);
-    }
-    
-    .proficiency-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-heading);
-        display: block;
-    }
-    
-    .proficiency-desc {
-        font-size: 12px;
-        color: var(--text-muted);
-        display: block;
-    }
-    
-    .proficiency-visual {
-        display: flex;
-        gap: 6px;
-        margin-top: 4px;
-    }
-    
-    .proficiency-btn .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--border);
-        transition: all 0.3s ease;
-    }
-    
-    .proficiency-btn .dot.active {
-        background: var(--accent);
-    }
-    
-    .proficiency-btn.active .dot.active {
-        box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
-    }
-    
-    /* ============ EMPTY STATE ============ */
-    .empty-state {
-        text-align: center;
-        padding: 80px 20px;
-    }
-    
-    .empty-state svg {
-        color: var(--text-muted);
-        opacity: 0.15;
-        margin-bottom: 24px;
-    }
-    
-    .empty-state h3 {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text-heading);
-        margin: 0 0 12px 0;
-        letter-spacing: -0.01em;
-    }
-    
-    .empty-state p {
-        font-size: 15px;
-        color: var(--text-muted);
-        margin: 0 0 28px 0;
-        line-height: 1.5;
-    }
-    
-    /* ============ RESPONSIVE ============ */
-    @media (max-width: 768px) {
-        .language-main {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-        }
-    
-        .language-proficiency {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-        }
-    
-        .proficiency-dots {
-            justify-content: center;
-        }
-    
-        .language-delete {
-            opacity: 1;
-        }
-    }
-    
-    /* ============ DARK MODE ============ */
-    @media (prefers-color-scheme: dark) {
-        .language-level.level-1 { background: rgba(253, 230, 138, 0.2); color: #fbbf24; }
-        .language-level.level-2 { background: rgba(147, 197, 253, 0.2); color: #60a5fa; }
-        .language-level.level-3 { background: rgba(167, 243, 208, 0.2); color: #34d399; }
-        .language-level.level-4 { background: rgba(199, 210, 254, 0.2); color: #818cf8; }
-    }
-    </style>
-    @endpush
-    
-    @push('scripts')
-    @php
-        $languagePayload = $owner->languages->map(function ($l) {
-            return [
-                'id' => $l->id,
-                'name' => $l->name,
-                'level' => $l->level,
-                'position' => $l->position,
-            ];
-        })->values();
-    @endphp
-    
-    <script>
-    let languageArray = @json($languagePayload);
-    
-    function addNewLanguage() {
-        document.getElementById('inspectorDefault').style.display = 'none';
-        document.getElementById('inspectorForm').style.display = 'block';
-        document.getElementById('formTitle').textContent = 'Add Language';
-        document.getElementById('languageId').value = '';
-        document.getElementById('languageName').value = '';
-        document.getElementById('languageLevel').value = '2';
-        
-        document.querySelectorAll('.proficiency-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.proficiency-btn[data-level="2"]').classList.add('active');
-        
-        document.getElementById('languageName').focus();
-    }
-    
-    function selectLanguage(id) {
-        document.querySelectorAll('.language-item').forEach(item => item.classList.remove('selected'));
-        const item = document.querySelector(`[data-language-id="${id}"]`);
-        if (item) item.classList.add('selected');
-        
-        const language = languageArray.find(l => l.id === id);
-        if (!language) return;
-        
-        document.getElementById('inspectorDefault').style.display = 'none';
-        document.getElementById('inspectorForm').style.display = 'block';
-        document.getElementById('formTitle').textContent = 'Edit Language';
-        document.getElementById('languageId').value = id;
-        document.getElementById('languageName').value = language.name;
-        document.getElementById('languageLevel').value = language.level;
-        
-        document.querySelectorAll('.proficiency-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`.proficiency-btn[data-level="${language.level}"]`)?.classList.add('active');
-    }
-    
-    function saveLanguage() {
-        const id = document.getElementById('languageId').value;
-        const name = document.getElementById('languageName').value.trim();
-        const level = parseInt(document.getElementById('languageLevel').value);
-        
-        if (!name) {
-            alert('Please enter a language name');
-            return;
-        }
-        
-        const languageData = {
-            name,
-            level
-        };
-        
-        if (id) {
-            const index = languageArray.findIndex(l => l.id == id);
-            if (index !== -1) {
-                languageArray[index] = { ...languageArray[index], ...languageData };
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+
+    const searchInput = document.getElementById('languageSearchInput');
+    const clearBtn = document.getElementById('searchClearBtn');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const noResultsEl = document.getElementById('noResults');
+    const languagesGrid = document.getElementById('languagesGrid');
+
+    const allCards = document.querySelectorAll('.language-card[data-search-text]');
+    const totalCount = allCards.length;
+
+    function performSearch(query) {
+        const searchTerm = query.toLowerCase().trim();
+        let visibleCount = 0;
+
+        allCards.forEach(card => {
+            const searchText = card.dataset.searchText || '';
+            const matches = searchText.includes(searchTerm);
+            
+            card.classList.toggle('hidden', !matches);
+            
+            if (matches) {
+                visibleCount++;
             }
-        } else {
-            languageArray.push({
-                id: Date.now(),
-                ...languageData,
-                position: languageArray.length
-            });
-        }
-        
-        submitLanguages();
-    }
-    
-    function deleteLanguage(id, name) {
-        if (confirm(`Delete ${name}?`)) {
-            languageArray = languageArray.filter(l => l.id != id);
-            submitLanguages();
-        }
-    }
-    
-    function submitLanguages() {
-        document.getElementById('languageData').value = JSON.stringify(languageArray);
-        document.getElementById('languageUpdateForm').submit();
-    }
-    
-    function closeInspector() {
-        document.getElementById('inspectorForm').style.display = 'none';
-        document.getElementById('inspectorDefault').style.display = 'block';
-        document.querySelectorAll('.language-item').forEach(item => item.classList.remove('selected'));
-    }
-    
-    // Proficiency selector
-    document.querySelectorAll('.proficiency-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.proficiency-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('languageLevel').value = btn.dataset.level;
         });
+
+        visibleCountEl.textContent = visibleCount;
+
+        const hasResults = visibleCount > 0;
+        noResultsEl.style.display = hasResults ? 'none' : 'flex';
+        languagesGrid.style.display = hasResults ? 'grid' : 'none';
+
+        clearBtn.style.display = searchTerm ? 'flex' : 'none';
+    }
+
+    window.clearSearch = function() {
+        searchInput.value = '';
+        performSearch('');
+        searchInput.focus();
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        performSearch(e.target.value);
     });
-    
-    // Search
-    document.getElementById('languageSearch')?.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        document.querySelectorAll('.language-item').forEach(item => {
-            const name = item.querySelector('.language-name').textContent.toLowerCase();
-            item.style.display = name.includes(query) ? 'flex' : 'none';
-        });
+
+    clearBtn.addEventListener('click', () => {
+        clearSearch();
     });
-    
-    // Keyboard Shortcuts
+
     document.addEventListener('keydown', (e) => {
-        if (e.target.matches('input, textarea, select')) return;
-        if (e.key.toLowerCase() === 'a') { e.preventDefault(); addNewLanguage(); }
-        if (e.key === 'Escape') closeInspector();
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            clearSearch();
+        }
     });
-    </script>
-    @endpush
+
+    totalCountEl.textContent = totalCount;
+})();
+</script>
+@endpush

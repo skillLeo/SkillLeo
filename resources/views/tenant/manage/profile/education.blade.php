@@ -28,40 +28,95 @@
         </div>
     </div>
 
+    {{-- Search Bar --}}
+    <div class="search-container">
+        <div class="search-box">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" 
+                   id="educationSearchInput" 
+                   class="search-input" 
+                   placeholder="Search by degree, school, or field of study..."
+                   autocomplete="off">
+            <button type="button" class="search-clear" id="searchClearBtn" style="display: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="search-results" id="searchResults">
+            <span class="results-text">Showing <strong id="visibleCount">{{ $owner->educations->count() }}</strong> of <strong id="totalCount">{{ $owner->educations->count() }}</strong> degrees</span>
+        </div>
+    </div>
+
     <div class="content-section">
-        <div class="education-timeline">
+        <div class="education-grid" id="educationGrid">
             @forelse($owner->educations as $education)
-                <div class="education-item" data-education-id="{{ $education->id }}">
-                    <div class="education-marker">
+                @php
+                    $searchText = strtolower(
+                        $education->degree . ' ' . 
+                        ($education->field ?? '') . ' ' . 
+                        $education->school . ' ' . 
+                        ($education->city ?? '') . ' ' . 
+                        ($education->country ?? '')
+                    );
+                @endphp
+
+                <div class="education-card" 
+                     data-education-id="{{ $education->id }}"
+                     data-search-text="{{ $searchText }}">
+                    
+                    <div class="education-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                        </svg>
                         @if($education->is_current)
-                            <div class="marker-dot active"></div>
-                        @else
-                            <div class="marker-dot"></div>
+                            <span class="status-indicator active"></span>
                         @endif
                     </div>
-                    <div class="education-card">
-                        <div class="education-header">
-                            <div class="education-main">
-                                <h4 class="education-degree">{{ $education->degree }}{{ $education->field ? ' in ' . $education->field : '' }}</h4>
-                                <p class="education-school">{{ $education->school }}</p>
-                            </div>
-                        </div>
+
+                    <div class="education-content">
+                        <h4 class="education-degree">
+                            {{ $education->degree }}
+                            @if($education->field)
+                                <span class="education-field">in {{ $education->field }}</span>
+                            @endif
+                        </h4>
+                        <p class="education-school">{{ $education->school }}</p>
+
                         <div class="education-meta">
                             <span class="education-period">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"/>
                                     <polyline points="12 6 12 12 16 14"/>
                                 </svg>
-                                {{ $education->start_year ?: '—' }} - {{ $education->is_current ? 'Present' : ($education->end_year ?: '—') }}
+                                {{ $education->start_year ?: '—' }} 
+                                — 
+                                @if($education->is_current)
+                                    <span class="current-text">Present</span>
+                                @else
+                                    {{ $education->end_year ?: '—' }}
+                                @endif
                             </span>
+
+                            @if($education->city || $education->country)
+                                <span class="education-location">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    {{ collect([$education->city, $education->country])->filter()->join(', ') }}
+                                </span>
+                            @endif
                         </div>
-                        @if($education->is_current)
-                            <span class="education-badge">Currently studying</span>
-                        @endif
                     </div>
                 </div>
             @empty
-                <div class="empty-state">
+                <div class="empty-state-full">
                     <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                         <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                         <path d="M6 12v5c3 3 9 3 12 0v-5"/>
@@ -71,6 +126,17 @@
                     <button class="btn btn-primary" onclick="openModal('editEducationModal')">Add First Education</button>
                 </div>
             @endforelse
+        </div>
+
+        {{-- No Results Message --}}
+        <div class="no-results" id="noResults" style="display: none;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <h3>No education found</h3>
+            <p>Try adjusting your search query</p>
+            <button type="button" class="btn btn-primary" onclick="clearSearch()">Clear Search</button>
         </div>
     </div>
 
@@ -102,416 +168,470 @@
 
         <div class="help-card accent">
             <h4>🎯 Pro Tip</h4>
-            <p>List your most recent education first for better visibility</p>
+            <p>List your most recent education first for better visibility. Include honors or distinctions!</p>
         </div>
     </div>
 @endsection
-    @push('styles')
-    <style>
-    /* ============================================
-       PROFESSIONAL EDUCATION PAGE - TIMELINE STYLE
-       ============================================ */
-    
-    /* ============ EDUCATION TIMELINE ============ */
-    .education-timeline {
-        position: relative;
-        padding-left: 32px;
-    }
-    
-    .education-timeline::before {
-        content: '';
-        position: absolute;
-        left: 8px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: linear-gradient(to bottom, var(--accent), transparent);
-    }
-    
-    .education-item {
-        position: relative;
-        margin-bottom: 24px;
-        cursor: pointer;
-    }
-    
-    .education-item:last-child {
-        margin-bottom: 0;
-    }
-    
-    /* ============ EDUCATION MARKER ============ */
-    .education-marker {
-        position: absolute;
-        left: -24px;
-        top: 8px;
-        z-index: 2;
-    }
-    
-    .marker-dot {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--card);
-        border: 3px solid var(--border);
-        transition: all 0.25s ease;
-    }
-    
-    .marker-dot.active {
-        border-color: var(--accent);
-        background: var(--accent);
-        box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1);
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0%, 100% { box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1); }
-        50% { box-shadow: 0 0 0 8px rgba(var(--accent-rgb), 0.05); }
-    }
-    
-    .education-item:hover .marker-dot {
-        border-color: var(--accent);
-        transform: scale(1.2);
-    }
-    
-    /* ============ EDUCATION CARD ============ */
-    .education-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-    }
-    
-    .education-item:hover .education-card {
-        border-color: var(--accent);
-        box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.08);
-        transform: translateX(4px);
-    }
-    
-    .education-item.selected .education-card {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-    }
-    
-    /* ============ EDUCATION HEADER ============ */
-    .education-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 12px;
-    }
-    
-    .education-main {
-        flex: 1;
-    }
-    
-    .education-degree {
-        font-size: 17px;
-        font-weight: 600;
-        color: var(--text-heading);
-        margin: 0 0 6px 0;
-        line-height: 1.4;
-        letter-spacing: -0.01em;
-    }
-    
-    .education-school {
-        font-size: 15px;
-        color: var(--text-body);
-        margin: 0;
-        font-weight: 500;
-    }
-    
-    /* ============ EDUCATION DELETE ============ */
-    .education-delete {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--text-muted);
-        cursor: pointer;
-        border-radius: 6px;
-        opacity: 0;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-    }
-    
-    .education-item:hover .education-delete {
-        opacity: 1;
-    }
-    
-    .education-delete:hover {
-        background: #ef4444;
-        color: white;
-        border-color: #ef4444;
-    }
-    
-    /* ============ EDUCATION META ============ */
-    .education-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        align-items: center;
-    }
-    
-    .education-period,
-    .education-location {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        color: var(--text-muted);
-    }
-    
-    .education-period svg,
-    .education-location svg {
-        flex-shrink: 0;
-        opacity: 0.6;
-    }
-    
-    /* ============ EDUCATION BADGE ============ */
-    .education-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        background: rgba(var(--accent-rgb), 0.1);
-        color: var(--accent);
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-top: 12px;
-    }
-    
-    /* ============ FORM ROW ============ */
-    .form-row {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    
-    /* ============ CHECKBOX ============ */
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        font-size: 14px;
-        color: var(--text-body);
-    }
-    
-    .checkbox-label input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-        accent-color: var(--accent);
-    }
-    
-    /* ============ EMPTY STATE ============ */
-    .empty-state {
-        text-align: center;
-        padding: 80px 20px;
-    }
-    
-    .empty-state svg {
-        color: var(--text-muted);
-        opacity: 0.15;
-        margin-bottom: 24px;
-    }
-    
-    .empty-state h3 {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text-heading);
-        margin: 0 0 12px 0;
-        letter-spacing: -0.01em;
-    }
-    
-    .empty-state p {
-        font-size: 15px;
-        color: var(--text-muted);
-        margin: 0 0 28px 0;
-        line-height: 1.5;
-    }
-    
-    /* ============ RESPONSIVE ============ */
-    @media (max-width: 768px) {
-        .education-timeline {
-            padding-left: 28px;
-        }
-    
-        .education-marker {
-            left: -20px;
-        }
-    
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-    
-        .education-delete {
-            opacity: 1;
-        }
-    
-        .education-item:hover .education-card {
-            transform: none;
-        }
-    }
-    </style>
-    @endpush
-    
-    @push('scripts')
-    @php
-        $educationPayload = $owner->educations->map(function ($e) {
-            return [
-                'db_id' => $e->id,
-                'school' => $e->school,
-                'degree' => $e->degree,
-                'field' => $e->field,
-                'startYear' => $e->start_year,
-                'endYear' => $e->end_year,
-                'current' => (bool)$e->is_current,
-                'city' => $e->city,
-                'country' => $e->country,
-                'position' => $e->position,
-            ];
-        })->values();
-    @endphp
-    
-    <script>
-    let educationArray = @json($educationPayload);
-    
-    function addNewEducation() {
-        document.getElementById('inspectorDefault').style.display = 'none';
-        document.getElementById('inspectorForm').style.display = 'block';
-        document.getElementById('formTitle').textContent = 'Add Education';
-        document.getElementById('educationId').value = '';
-        document.getElementById('educationSchool').value = '';
-        document.getElementById('educationDegree').value = '';
-        document.getElementById('educationField').value = '';
-        document.getElementById('educationStartYear').value = '';
-        document.getElementById('educationEndYear').value = '';
-        document.getElementById('educationCurrent').checked = false;
-        document.getElementById('educationCity').value = '';
-        document.getElementById('educationCountry').value = '';
-        
-        document.getElementById('educationSchool').focus();
-    }
-    
-    function selectEducation(id) {
-        document.querySelectorAll('.education-item').forEach(item => item.classList.remove('selected'));
-        const item = document.querySelector(`[data-education-id="${id}"]`);
-        if (item) item.classList.add('selected');
-        
-        const education = educationArray.find(e => e.db_id === id);
-        if (!education) return;
-        
-        document.getElementById('inspectorDefault').style.display = 'none';
-        document.getElementById('inspectorForm').style.display = 'block';
-        document.getElementById('formTitle').textContent = 'Edit Education';
-        document.getElementById('educationId').value = id;
-        document.getElementById('educationSchool').value = education.school;
-        document.getElementById('educationDegree').value = education.degree;
-        document.getElementById('educationField').value = education.field || '';
-        document.getElementById('educationStartYear').value = education.startYear || '';
-        document.getElementById('educationEndYear').value = education.endYear || '';
-        document.getElementById('educationCurrent').checked = education.current;
-        document.getElementById('educationCity').value = education.city || '';
-        document.getElementById('educationCountry').value = education.country || '';
-    }
-    
-    function saveEducation() {
-        const id = document.getElementById('educationId').value;
-        const school = document.getElementById('educationSchool').value.trim();
-        const degree = document.getElementById('educationDegree').value.trim();
-        const field = document.getElementById('educationField').value.trim();
-        const startYear = parseInt(document.getElementById('educationStartYear').value) || null;
-        const endYear = parseInt(document.getElementById('educationEndYear').value) || null;
-        const current = document.getElementById('educationCurrent').checked;
-        const city = document.getElementById('educationCity').value.trim();
-        const country = document.getElementById('educationCountry').value.trim();
-        
-        if (!school || !degree) {
-            alert('Please fill in required fields');
-            return;
-        }
-        
-        const educationData = {
-            school,
-            degree,
-            field,
-            startYear,
-            endYear: current ? null : endYear,
-            current,
-            city,
-            country
-        };
-        
-        if (id) {
-            const index = educationArray.findIndex(e => e.db_id == id);
-            if (index !== -1) {
-                educationArray[index] = { ...educationArray[index], ...educationData };
-            }
-        } else {
-            educationArray.push({
-                db_id: null,
-                ...educationData,
-                position: educationArray.length
-            });
-        }
-        
-        submitEducation();
-    }
-    
-    function deleteEducation(id, school) {
-        if (confirm(`Delete education from ${school}?`)) {
-            educationArray = educationArray.filter(e => e.db_id != id);
-            submitEducation();
-        }
-    }
-    
-    function submitEducation() {
-        document.getElementById('educationData').value = JSON.stringify(educationArray);
-        document.getElementById('educationUpdateForm').submit();
-    }
-    
-    function closeInspector() {
-        document.getElementById('inspectorForm').style.display = 'none';
-        document.getElementById('inspectorDefault').style.display = 'block';
-        document.querySelectorAll('.education-item').forEach(item => item.classList.remove('selected'));
-    }
-    
-    // Toggle end year when "currently studying" is checked
-    document.getElementById('educationCurrent')?.addEventListener('change', (e) => {
-        const endYearInput = document.getElementById('educationEndYear');
-        if (e.target.checked) {
-            endYearInput.value = '';
-            endYearInput.disabled = true;
-        } else {
-            endYearInput.disabled = false;
-        }
-    });
-    
-    // Search
-    document.getElementById('educationSearch')?.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        document.querySelectorAll('.education-item').forEach(item => {
-            const school = item.querySelector('.education-school').textContent.toLowerCase();
-            const degree = item.querySelector('.education-degree').textContent.toLowerCase();
-            item.style.display = (school.includes(query) || degree.includes(query)) ? 'block' : 'none';
-        });
-    });
-    
-    // Keyboard Shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.target.matches('input, textarea')) return;
-        if (e.key.toLowerCase() === 'a') { e.preventDefault(); addNewEducation(); }
-        if (e.key === 'Escape') closeInspector();
-    });
-    
-    function importEducation() { alert('Import feature coming soon!'); }
-    </script>
-    @endpush
 
+@push('styles')
+<style>
+/* ============ ALERTS ============ */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+}
+
+.alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ PAGE HEADER ============ */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+    font-weight: 400;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ============ BUTTONS ============ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* ============ SEARCH CONTAINER ============ */
+.search-container {
+    margin-bottom: 24px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0 14px;
+    transition: all 0.2s ease;
+    max-width: 600px;
+}
+
+.search-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+.search-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.search-box:focus-within .search-icon {
+    color: var(--accent);
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: none;
+    outline: none;
+    padding: 12px 12px;
+    font-size: 14px;
+    color: var(--text-body);
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--apc-bg);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-clear:hover {
+    background: var(--border);
+    color: var(--text-heading);
+}
+
+.search-results {
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.results-text {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.results-text strong {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+
+/* ============ EDUCATION GRID ============ */
+.education-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.education-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.education-card.hidden {
+    display: none !important;
+}
+
+.education-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.12);
+    transform: translateY(-4px);
+}
+
+/* ============ EDUCATION ICON ============ */
+.education-icon {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--accent-rgb), 0.1);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    color: var(--accent);
+}
+
+.status-indicator {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    border: 3px solid var(--card);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.status-indicator.active {
+    animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+    }
+}
+
+/* ============ EDUCATION CONTENT ============ */
+.education-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.education-degree {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+}
+
+.education-field {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-body);
+    margin-top: 4px;
+}
+
+.education-school {
+    font-size: 15px;
+    color: var(--accent);
+    margin: 0;
+    font-weight: 600;
+}
+
+/* ============ EDUCATION META ============ */
+.education-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.education-period,
+.education-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.education-period svg,
+.education-location svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.current-text {
+    display: inline-flex;
+    padding: 2px 8px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ============ EMPTY & NO RESULTS ============ */
+.empty-state-full, .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-state-full svg, .no-results svg {
+    color: var(--text-muted);
+    opacity: 0.15;
+    margin-bottom: 24px;
+}
+
+.empty-state-full h3, .no-results h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-heading);
+    margin: 0 0 12px 0;
+}
+
+.empty-state-full p, .no-results p {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin: 0 0 28px 0;
+}
+
+/* ============ HELP CARDS ============ */
+.help-card {
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.help-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: var(--text-heading);
+}
+
+.help-card.accent {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    border-color: var(--accent);
+}
+
+.help-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+.help-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.help-list li {
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: var(--text-body);
+    line-height: 1.5;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .education-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+
+    const searchInput = document.getElementById('educationSearchInput');
+    const clearBtn = document.getElementById('searchClearBtn');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const noResultsEl = document.getElementById('noResults');
+    const educationGrid = document.getElementById('educationGrid');
+
+    const allCards = document.querySelectorAll('.education-card[data-search-text]');
+    const totalCount = allCards.length;
+
+    function performSearch(query) {
+        const searchTerm = query.toLowerCase().trim();
+        let visibleCount = 0;
+
+        allCards.forEach(card => {
+            const searchText = card.dataset.searchText || '';
+            const matches = searchText.includes(searchTerm);
+            
+            card.classList.toggle('hidden', !matches);
+            
+            if (matches) {
+                visibleCount++;
+            }
+        });
+
+        visibleCountEl.textContent = visibleCount;
+
+        const hasResults = visibleCount > 0;
+        noResultsEl.style.display = hasResults ? 'none' : 'flex';
+        educationGrid.style.display = hasResults ? 'grid' : 'none';
+
+        clearBtn.style.display = searchTerm ? 'flex' : 'none';
+    }
+
+    window.clearSearch = function() {
+        searchInput.value = '';
+        performSearch('');
+        searchInput.focus();
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        performSearch(e.target.value);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        clearSearch();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            clearSearch();
+        }
+    });
+
+    totalCountEl.textContent = totalCount;
+})();
+</script>
+@endpush

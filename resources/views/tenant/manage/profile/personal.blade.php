@@ -114,7 +114,11 @@
                         $avatarSrc = $user->avatar_url ?? null;
                     @endphp
                     @if ($avatarSrc)
-                        <img id="avatarImg" src="{{ $avatarSrc }}" alt="{{ $user->name }}">
+                        <img id="avatarImg" src="{{ $avatarSrc }}" alt="{{ $user->name }}"
+                        
+                        
+                        referrerpolicy="no-referrer" crossorigin="anonymous"
+                        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
                     @else
                         <svg id="avatarFallback" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -289,7 +293,10 @@
         <div class="preview-card">
             <div class="preview-avatar" id="previewAvatar">
                 @if ($avatarSrc)
-                    <img id="previewAvatarImg" src="{{ $avatarSrc }}" alt="{{ $user->name }}">
+                    <img id="previewAvatarImg" src="{{ $avatarSrc }}" alt="{{ $user->name }}"
+                      referrerpolicy="no-referrer" crossorigin="anonymous"
+        onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';"
+                    >
                 @else
                     <svg id="previewAvatarFallback" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -604,18 +611,7 @@ function importFromLinkedIn() {
         }
 
         /* ============ CONTENT SECTIONS ============ */
-        .content-section {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 32px;
-            margin-bottom: 16px;
-            transition: border-color 0.2s ease;
-        }
-
-        .content-section:hover {
-            border-color: rgba(var(--accent-rgb), 0.3);
-        }
+ 
 
         .section-header {
             margin-bottom: 24px;
@@ -855,13 +851,7 @@ function importFromLinkedIn() {
         }
 
         /* ============ INSPECTOR PANEL (RIGHT SIDEBAR) ============ */
-        .inspector-panel {
-            position: sticky;
-            top: 80px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+
 
         .inspector-header {
             margin-bottom: 8px;
