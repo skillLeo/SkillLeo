@@ -23,95 +23,77 @@ class UserDevice extends Model
         'last_activity_at',
         'location_country',
         'location_city',
+        'revoked_at',
     ];
 
     protected $casts = [
-        'last_seen_at' => 'datetime',
+        'last_seen_at'     => 'datetime',
         'last_activity_at' => 'datetime',
-        'is_trusted' => 'boolean',
-        'created_at' => 'datetime',
+        'revoked_at'       => 'datetime',
+        'is_trusted'       => 'boolean',
+        'created_at'       => 'datetime',
+        'updated_at'       => 'datetime',
     ];
 
     protected $appends = ['device_display_name', 'is_current_device'];
 
-    /**
-     * Get the user that owns the device
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Generate a friendly display name for the device
-     */
+    // ---------- Accessors ----------
     public function getDeviceDisplayNameAttribute(): string
     {
-        $parts = array_filter([
+        $bits = array_filter([
             $this->browser,
             $this->platform,
             $this->device_type !== 'desktop' ? ucfirst($this->device_type) : null,
         ]);
 
-        return implode(' on ', $parts) ?: 'Unknown Device';
+        return implode(' on ', $bits) ?: 'Unknown Device';
     }
 
-    /**
-     * Check if this is the current device
-     */
     public function getIsCurrentDeviceAttribute(): bool
     {
         return request()->fingerprint() === $this->device_id;
     }
 
-    /**
-     * Update last activity timestamp
-     */
-    public function touchActivity(): void
-    {
-        $this->update(['last_activity_at' => now()]);
-    }
-
-    /**
-     * Mark device as trusted
-     */
-    public function markAsTrusted(): void
-    {
-        $this->update(['is_trusted' => true]);
-    }
-
-    /**
-     * Scope: Only active devices (seen in last 90 days)
-     */
+    // ---------- Scopes / helpers ----------
     public function scopeActive($query)
     {
-        return $query->where('last_seen_at', '>=', now()->subDays(90));
+        return $query->whereNull('revoked_at')
+            ->where('last_seen_at', '>=', now()->subDays(90));
     }
 
-    /**
-     * Scope: Current session devices
-     */
-    public function scopeCurrent($query)
+    public function scopeNotRevoked($query)
     {
-        return $query->where('device_id', request()->fingerprint());
+        return $query->whereNull('revoked_at');
     }
 
-    /**
-     * Parse user agent and extract device information
-     */
+    public function revoke(): void
+    {
+        $this->forceFill(['revoked_at' => now(), 'is_trusted' => false])->save();
+    }
+
+    public function markAsTrusted(): void
+    {
+        $this->forceFill(['is_trusted' => true])->save();
+    }
+
     public static function parseUserAgent(string $userAgent): array
     {
         $agent = new Agent();
         $agent->setUserAgent($userAgent);
 
         return [
-            'device_type' => $agent->isDesktop() ? 'desktop' : 
-                           ($agent->isTablet() ? 'tablet' : 
-                           ($agent->isMobile() ? 'mobile' : 'unknown')),
-            'platform' => $agent->platform(),
-            'browser' => $agent->browser(),
+            'device_type'     => $agent->isDesktop() ? 'desktop'
+                                  : ($agent->isTablet() ? 'tablet'
+                                  : ($agent->isMobile() ? 'mobile' : 'unknown')),
+            'platform'        => $agent->platform(),
+            'browser'         => $agent->browser(),
             'browser_version' => $agent->version($agent->browser()),
-            'device_name' => $agent->device() ?: $agent->platform(),
+            'device_name'     => $agent->device() ?: ($agent->platform() ?: 'Device'),
         ];
     }
 }

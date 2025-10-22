@@ -28,6 +28,8 @@ use App\Http\Controllers\Tenant\CvUploadController;
 use App\Http\Controllers\Tenant\ProfilePage\ProfileController;
 use App\Http\Controllers\Tenant\Manage\DashboardController;
 use App\Http\Controllers\Tenant\Manage\ManageProfileController;
+use App\Http\Controllers\Settings\SettingsController;
+use App\Http\Controllers\Settings\AccountController;
 
 
 
@@ -71,14 +73,14 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
 
 
- 
-Route::prefix('{username}')
+
+    Route::prefix('{username}')
     ->name('tenant.')
     ->group(function () {
 
         Route::get('/', [ProfileController::class, 'index'])->name('profile');
 
- 
+
         Route::prefix('manage')->name('manage.')->group(function () {
             Route::get('',            [DashboardController::class,     'index'])->name('dashboard');
 
@@ -92,7 +94,7 @@ Route::prefix('{username}')
 
         Route::put('skills/update',    [ProfileController::class, 'updateSkills'])->name('skills.update');
         Route::put('education/update', [ProfileController::class, 'updateEducation'])->name('education.update');
-        Route::put('experience/update',[ProfileController::class, 'updateExperience'])->name('experience.update');
+        Route::put('experience/update', [ProfileController::class, 'updateExperience'])->name('experience.update');
         Route::put('portfolio/update', [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
         Route::put('languages/update', [ProfileController::class, 'updateLanguages'])->name('language.update');
 
@@ -100,30 +102,74 @@ Route::prefix('{username}')
 
         Route::put('profile/update', [ProfileController::class, 'updatePersonal'])->name('profile.update');
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/', [SettingsController::class, 'index'])->name('index');
+            Route::get('/security', [SettingsController::class, 'security'])->name('security');
+            Route::get('/privacy', [SettingsController::class, 'privacy'])->name('privacy');
+            Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
+            Route::get('/appearance', [SettingsController::class, 'appearance'])->name('appearance');
+            Route::get('/billing', [SettingsController::class, 'billing'])->name('billing');
+            Route::get('/data', [SettingsController::class, 'data'])->name('data');
+            Route::get('/advanced', [SettingsController::class, 'advanced'])->name('advanced');
+            Route::get('/danger', [SettingsController::class, 'danger'])->name('danger');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            Route::get('/account', [AccountController::class, 'account'])->name('account');
+            Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
+            Route::post('/account/email/verification/send', [AccountController::class, 'sendVerification'])
+                ->name('account.email.verify.send');
+            Route::delete('/account/devices/{device}', [AccountController::class, 'revokeDevice'])
+                ->name('account.devices.revoke');
+            Route::post('/account/devices/{device}/trust', [AccountController::class, 'trustDevice'])
+                ->name('account.devices.trust');
+            Route::post('/account/devices/revoke-others', [AccountController::class, 'revokeOtherSessions'])
+                ->name('account.devices.revoke_others');
+        });
     });
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
  
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Route::put('portfolio', [ProfileController::class, 'updatePortfolio'])->name('tenant.portfolio.update');
-// Route::put('skills', [ProfileController::class, 'updateSkills'])->name('tenant.skills.update');
-// Route::put('language', [ProfileController::class, 'updateLanguages'])->name('tenant.language.update');
-// Route::put('educaiton', [ProfileController::class, 'updateEducation'])->name('tenant.education.update');
-// Route::put('experience', [ProfileController::class, 'updateExperience'])->name('tenant.experience.update');
 
 Route::put('reviews', [ProfileController::class, 'updateReviews'])
     ->name('tenant.reviews.update');
