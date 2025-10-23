@@ -25,7 +25,8 @@
     use Illuminate\Foundation\Auth\User as Authenticatable;
     use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     use Illuminate\Support\Facades\Storage;
- 
+    use App\Support\Device;
+
  
     
     class User extends Authenticatable
@@ -73,18 +74,25 @@
             'online_status',
         ];
 
-        /**
-         * Boot method to auto-create profile
-         */
+     
+
         protected static function boot()
         {
             parent::boot();
-
+        
             // Auto-create empty profile when user is created
             static::created(function ($user) {
                 $user->profile()->create([]);
+                
+                // Auto-create security record
+                $user->security()->create([
+                    'two_factor_email' => false,
+                    'two_factor_phone' => false,
+                    'two_factor_enabled' => false,
+                ]);
             });
         }
+    
 
         /**
          * Get the route key for the model.
@@ -136,16 +144,14 @@
                 ->orderByDesc('last_activity_at');
         }
 
-        public function currentDevice()
+        
+        public function currentDevice(): ?UserDevice
         {
-            if (!request()->fingerprint()) {
-                return null;
-            }
-
-            return $this->devices()
-                ->where('device_id', request()->fingerprint())
-                ->first();
+            $id = Device::id(request());
+            return $this->devices()->where('device_id', $id)->first();
         }
+        
+
 
         public function oauthIdentities(): HasMany
         {
@@ -586,13 +592,46 @@ public function getBannerPositionAttribute(): string
 
 
 
-
-
-
-
-
-
-
-
-
+    public function security(): HasOne
+    {
+        return $this->hasOne(UserSecurity::class);
     }
+    
+    // Also add this to your User model's boot method:
+ 
+
+
+
+
+    public function userSecurity()
+    {
+        return $this->hasOne(UserSecurity::class);
+    }
+    
+    public function recoveryCodes()
+    {
+        return $this->hasMany(RecoveryCode::class);
+    }
+    
+    public function trustedDevices()
+    {
+        return $this->hasMany(TrustedDevice::class);
+    }
+    
+    public function has2FAEnabled()
+    {
+        $security = $this->userSecurity;
+        
+        if (!$security) {
+            return false;
+        }
+        
+        return $security->two_factor_enabled || 
+               $security->two_factor_email || 
+               $security->two_factor_phone;
+    }
+    }
+    
+
+
+    

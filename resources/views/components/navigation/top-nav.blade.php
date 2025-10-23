@@ -2623,7 +2623,7 @@
             <span class="profile-menu-text">Dashboard</span>
         </a>
 
-        <a href="#" class="profile-menu-link">
+        <a href="{{route('tenant.settings.account',$username)}}" class="profile-menu-link">
             <div class="profile-menu-icon">
                 <i class="fa-solid fa-gear"></i>
             </div>
@@ -2648,10 +2648,25 @@
 
         <div class="profile-divider"></div>
 
-        <div class="profile-signout">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Sign Out</span>
-        </div>
+ {{-- In your Blade where the signout UI lives --}}
+<div class="profile-signout">
+    <form id="logoutForm" action="{{ route('auth.logout') }}" method="POST" style="display:none;">
+        @csrf
+    </form>
+
+    <button type="button" class="signout-btn"
+            onclick="document.getElementById('logoutForm').submit()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+    </button>
+</div>
+
+<style>
+.signout-btn{border:none;background:none;color:inherit;font:inherit;display:flex;gap:8px;align-items:center;cursor:pointer}
+.signout-btn:hover{color:var(--accent,#1351d8)}
+</style>
+
+        
     </div>
 </div>
 
@@ -2880,21 +2895,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Profile menu links
-    document.querySelectorAll('.profile-menu-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Clicked:', this.querySelector('.profile-menu-text').textContent);
-        });
-    });
+ 
 
-    // Sign out
-    document.querySelector('.profile-signout')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm('Are you sure you want to sign out?')) {
-            console.log('User signed out');
-            // Add your sign out logic here
-        }
-    });
+
 });
 </script>

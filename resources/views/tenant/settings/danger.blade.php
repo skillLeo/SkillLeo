@@ -1,379 +1,827 @@
-
 @extends('tenant.settings.layout')
 
 @section('settings-content')
-    <div class="settings-page-header">
-        <h2 class="settings-page-title">Danger Zone</h2>
-        <p class="settings-page-desc">Irreversible and destructive actions for your account.</p>
+<div class="settings-page-header">
+  <h2 class="settings-page-title">Danger Zone</h2>
+  <p class="settings-page-desc">Irreversible and destructive actions for your account.</p>
+</div>
+
+@php
+  $status = $user->is_active;
+  $requiresPassword = $requiresPassword ?? filled($user->password);
+@endphp
+
+{{-- Status Alerts --}}
+@if($status === 'hibernated')
+  <div class="alert alert-info">
+    <div class="alert-icon">
+      <i class="fas fa-info-circle"></i>
+    </div>
+    <div class="alert-content">
+      <div class="alert-title">Account Hibernated</div>
+      <div class="alert-message">Your account is currently hibernated. Sign in to reactivate it.</div>
+    </div>
+  </div>
+@elseif($status === 'pending_delete')
+  <div class="alert alert-warning">
+    <div class="alert-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="alert-content">
+      <div class="alert-title">Deletion Scheduled</div>
+      <div class="alert-message">Your account is scheduled for deletion. You can cancel this action below before the deadline.</div>
+    </div>
+  </div>
+@endif
+
+@if(session('status'))
+  <div class="alert alert-success">
+    <div class="alert-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="alert-content">
+      <div class="alert-message">{{ session('status') }}</div>
+    </div>
+  </div>
+@endif
+
+{{-- Hibernate Account --}}
+<div class="danger-card">
+  <div class="danger-card-header">
+    <div class="danger-card-icon hibernate">
+      <i class="fas fa-pause-circle"></i>
+    </div>
+    <div class="danger-card-info">
+      <h3 class="danger-card-title">Hibernate Account</h3>
+      <p class="danger-card-desc">Temporarily disable your account without losing any data. You can reactivate anytime.</p>
+    </div>
+  </div>
+  
+  <div class="danger-card-body">
+    <div class="info-box">
+      <div class="info-box-title">What happens when you hibernate?</div>
+      <ul class="info-list">
+        <li>Your profile will be hidden from search and public view</li>
+        <li>You won't be able to sign in until you reactivate</li>
+        <li>All your data remains intact and secure</li>
+        <li>Active subscriptions continue unless canceled separately</li>
+      </ul>
     </div>
 
-    <!-- Warning Banner -->
-    <div style="background: #fef2f2; border: 2px solid #fca5a5; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <div style="display: flex; gap: 16px;">
-            <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 24px;"></i>
-            <div>
-                <div style="font-weight: var(--fw-bold); color: #991b1b; margin-bottom: 8px; font-size: 16px;">
-                    Caution: Destructive Actions
-                </div>
-                <p style="margin: 0; font-size: var(--fs-body); color: #7f1d1d; line-height: 1.5;">
-                    The actions in this section are permanent and cannot be undone. Please proceed with extreme caution.
-                </p>
-            </div>
+    <button 
+      class="btn btn-warning btn-lg" 
+      onclick="openHibernateModal()"
+      {{ $status !== 'active' ? 'disabled' : '' }}>
+      <i class="fas fa-pause-circle"></i>
+      Hibernate Account
+    </button>
+  </div>
+</div>
+
+{{-- Delete Account --}}
+<div class="danger-card danger-card-critical">
+  <div class="danger-card-header">
+    <div class="danger-card-icon delete">
+      <i class="fas fa-trash-alt"></i>
+    </div>
+    <div class="danger-card-info">
+      <h3 class="danger-card-title">Delete Account</h3>
+      <p class="danger-card-desc">Permanently delete your account and all associated data. This action cannot be undone.</p>
+    </div>
+  </div>
+
+  <div class="danger-card-body">
+    @if($status === 'pending_delete')
+      <div class="alert alert-warning mb-4">
+        <div class="alert-icon">
+          <i class="fas fa-clock"></i>
         </div>
+        <div class="alert-content">
+          <div class="alert-title">Deletion Pending</div>
+          <div class="alert-message">Your account is scheduled for deletion. Cancel below to keep your account.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-lg" onclick="openCancelDeleteModal()">
+        <i class="fas fa-undo"></i>
+        Cancel Deletion
+      </button>
+    @else
+      <div class="warning-box">
+        <div class="warning-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+          <div class="warning-title">This action is permanent and irreversible</div>
+          <p>All your data will be permanently deleted. If you might return, consider hibernating your account instead.</p>
+        </div>
+      </div>
+
+      <button 
+        class="btn btn-danger btn-lg" 
+        onclick="openDeleteModal()"
+        {{ $status !== 'active' ? 'disabled' : '' }}>
+        <i class="fas fa-trash-alt"></i>
+        Delete Account
+      </button>
+    @endif
+  </div>
+</div>
+
+{{-- Hibernate Modal --}}
+<div id="hibernateModal" class="modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeHibernateModal()"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 class="modal-title">Hibernate Account</h3>
+      <button class="modal-close" onclick="closeHibernateModal()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
 
-    <!-- Hibernate Account -->
-    <div class="settings-card">
-        <div class="settings-card-header">
-            <h3 class="settings-card-title">Hibernate Account</h3>
-            <p class="settings-card-desc">Temporarily disable your account without losing data</p>
-        </div>
-        <div class="settings-card-body">
-            <div style="background: var(--bg); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                <div style="font-weight: var(--fw-semibold); color: var(--text-heading); margin-bottom: 12px;">
-                    What happens when you hibernate your account?
-                </div>
-                <ul
-                    style="margin: 0; padding-left: 20px; font-size: var(--fs-body); color: var(--text-body); line-height: 1.8;">
-                    <li>Your profile will be hidden from search and public view</li>
-                    <li>You won't be able to log in until you reactivate</li>
-                    <li>Your data will be preserved and can be restored</li>
-                    <li>Active subscriptions will continue (you can cancel separately)</li>
-                    <li>You can reactivate anytime by logging in</li>
-                </ul>
-            </div>
+    <form method="POST" action="{{ route('tenant.settings.danger.hibernate', $username) }}">
+      @csrf
+      <div class="modal-body">
+        <p class="modal-text">Your account will be hidden and inaccessible until you sign in again to reactivate it.</p>
 
-            <button class="settings-btn settings-btn-danger" onclick="openHibernateModal()">
-                <i class="fas fa-pause-circle"></i> Hibernate Account
-            </button>
-        </div>
+        @if($requiresPassword)
+          <div class="form-group">
+            <label class="form-label">Confirm your password</label>
+            <input 
+              name="password" 
+              type="password" 
+              class="form-input" 
+              placeholder="Enter your password"
+              required 
+              autocomplete="current-password">
+            @error('password')
+              <div class="form-error">{{ $message }}</div>
+            @enderror
+          </div>
+        @else
+          <div class="info-box info-box-sm">
+            <i class="fas fa-info-circle"></i>
+            You signed in with a social account. No password required.
+          </div>
+        @endif
+
+        <label class="checkbox-label">
+          <input type="checkbox" name="confirm" value="1" required>
+          <span>I understand my account will be hidden until I reactivate it</span>
+        </label>
+        @error('confirm')
+          <div class="form-error">{{ $message }}</div>
+        @enderror
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeHibernateModal()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-warning">
+          <i class="fas fa-pause-circle"></i>
+          Hibernate Account
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{-- Delete Modal (Step 1) --}}
+<div id="deleteModal" class="modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeDeleteModal()"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 class="modal-title">Delete Account</h3>
+      <button class="modal-close" onclick="closeDeleteModal()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
 
-    <!-- Delete Account -->
-    <div class="settings-card" style="border: 2px solid #fca5a5;">
-        <div class="settings-card-header">
-            <h3 class="settings-card-title" style="color: #dc2626;">Delete Account</h3>
-            <p class="settings-card-desc">Permanently delete your account and all associated data</p>
-        </div>
-        <div class="settings-card-body">
-            <div
-                style="background: #fef2f2; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fca5a5;">
-                <div style="font-weight: var(--fw-bold); color: #991b1b; margin-bottom: 12px;">
-                    ⚠️ This action is permanent and cannot be undone!
-                </div>
-                <div style="font-weight: var(--fw-semibold); color: #991b1b; margin-bottom: 12px;">
-                    What will be deleted:
-                </div>
-                <ul style="margin: 0; padding-left: 20px; font-size: var(--fs-body); color: #7f1d1d; line-height: 1.8;">
-                    <li>Your profile and all personal information</li>
-                    <li>All projects, portfolios, and work samples</li>
-                    <li>Messages, conversations, and communications</li>
-                    <li>Orders, invoices, and transaction history</li>
-                    <li>Connected apps and integrations</li>
-                    <li>All analytics and activity data</li>
-                </ul>
+    @if(!session('danger.challenge'))
+      <form method="POST" action="{{ route('tenant.settings.danger.delete.start', $username) }}">
+        @csrf
+        <div class="modal-body">
+          <div class="warning-box warning-box-modal">
+            <div class="warning-icon">
+              <i class="fas fa-exclamation-triangle"></i>
             </div>
-
-            <div style="background: var(--bg); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                <div style="font-weight: var(--fw-semibold); color: var(--text-heading); margin-bottom: 12px;">
-                    Before you delete:
-                </div>
-                <ul
-                    style="margin: 0; padding-left: 20px; font-size: var(--fs-body); color: var(--text-body); line-height: 1.8;">
-                    <li>Download your data if you want to keep a copy</li>
-                    <li>Cancel any active subscriptions</li>
-                    <li>Withdraw any remaining balance</li>
-                    <li>Notify clients about ongoing projects</li>
-                    <li>Consider hibernating instead if you might return</li>
-                </ul>
-            </div><button class="settings-btn settings-btn-danger" onclick="openDeleteModal()">
-                <i class="fas fa-trash-alt"></i> Delete Account Permanently
-            </button>
-        </div>
-    </div><!-- Hibernate Modal -->
-    <div id="hibernateModal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; align-items: center; justify-content: center;">
-        <div
-            style="background: var(--card); border-radius: 16px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-2xl);">
-            <!-- Modal Header -->
-            <div style="padding: 24px; border-bottom: 1px solid var(--border);">
-                <h3 style="margin: 0; font-size: 20px; font-weight: var(--fw-bold); color: var(--text-heading);">
-                    Hibernate Your Account
-                </h3>
-            </div><!-- Modal Body -->
-            <div style="padding: 24px;">
-                <div
-                    style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; gap: 12px;">
-                        <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 18px;"></i>
-                        <div style="font-size: var(--fs-subtle); color: #78350f; line-height: 1.5;">
-                            Your account will be temporarily disabled. You can reactivate it anytime by simply logging in.
-                        </div>
-                    </div>
-                </div>
-                <div class="settings-form-group">
-                    <label class="settings-form-label">
-                        Enter your password to confirm
-                    </label>
-                    <input type="password" class="settings-form-input" placeholder="Your password"
-                        id="hibernatePassword">
-                </div>
-                <div style="display: flex; align-items: start; gap: 12px; margin-top: 20px;">
-                    <input type="checkbox" id="hibernateConfirm" style="margin-top: 4px;">
-                    <label for="hibernateConfirm"
-                        style="font-size: var(--fs-body); color: var(--text-body); cursor: pointer;">
-                        I understand that my account will be hidden until I reactivate it
-                    </label>
-                </div>
-            </div><!-- Modal Footer -->
-            <div
-                style="padding: 24px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end;">
-                <button class="settings-btn settings-btn-secondary" onclick="closeHibernateModal()">
-                    Cancel
-                </button>
-                <button class="settings-btn settings-btn-danger" onclick="confirmHibernate()">
-                    <i class="fas fa-pause-circle"></i> Hibernate Account
-                </button>
+            <div class="warning-content">
+              <div class="warning-title">This action is permanent</div>
+              <p>All your data will be permanently deleted and cannot be recovered.</p>
             </div>
-        </div>
-    </div><!-- Delete Modal -->
-    <div id="deleteModal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 9999; align-items: center; justify-content: center;">
-        <div
-            style="background: var(--card); border-radius: 16px; max-width: 550px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-2xl);">
-            <!-- Modal Header -->
-            <div style="padding: 24px; border-bottom: 1px solid var(--border); background: #fef2f2;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div
-                        style="width: 48px; height: 48px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 24px;"></i>
-                    </div>
-                    <div>
-                        <h3 style="margin: 0 0 4px 0; font-size: 20px; font-weight: var(--fw-bold); color: #dc2626;">
-                            Delete Account Permanently
-                        </h3>
-                        <p style="margin: 0; font-size: var(--fs-subtle); color: #991b1b;">
-                            This action cannot be undone
-                        </p>
-                    </div>
-                </div>
-            </div><!-- Modal Body -->
-            <div style="padding: 24px;">
-                <div
-                    style="background: #fef2f2; border: 2px solid #fca5a5; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-                    <div style="font-weight: var(--fw-bold); color: #991b1b; margin-bottom: 8px;">
-                        ⚠️ Final Warning
-                    </div>
-                    <p style="margin: 0; font-size: var(--fs-body); color: #7f1d1d; line-height: 1.5;">
-                        All your data will be permanently deleted within 30 days. This includes your profile, projects,
-                        messages, and all associated content. This action is irreversible.
-                    </p>
-                </div>
+          </div>
 
-                <div class="settings-form-group">
-                    <label class="settings-form-label">
-                        Type <strong style="color: var(--text-heading);">DELETE</strong> to confirm
-                    </label>
-                    <input type="text" class="settings-form-input" placeholder="Type DELETE" id="deleteConfirmText">
-                </div>
+          <div class="form-group">
+            <label class="form-label">
+              Type <strong>DELETE</strong> to confirm
+            </label>
+            <input 
+              name="phrase" 
+              type="text" 
+              class="form-input" 
+              placeholder="DELETE" 
+              required
+              autocomplete="off">
+            @error('phrase')
+              <div class="form-error">{{ $message }}</div>
+            @enderror
+          </div>
 
-                <div class="settings-form-group">
-                    <label class="settings-form-label">
-                        Enter your password
-                    </label>
-                    <input type="password" class="settings-form-input" placeholder="Your password" id="deletePassword">
-                </div>
-
-                <div class="settings-form-group">
-                    <label class="settings-form-label">
-                        Enter the 6-digit code sent to your email
-                    </label>
-                    <div style="display: flex; gap: 8px; justify-content: center;">
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                        <div style="width: 16px;"></div>
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                        <input type="text" maxlength="1" class="delete-otp-input"
-                            style="width: 48px; height: 56px; text-align: center; font-size: 24px; font-weight: var(--fw-bold); border: 2px solid var(--border); border-radius: 8px;">
-                    </div>
-                    <span class="settings-form-help">
-                        Didn't receive the code? <a href="#" style="color: var(--accent);">Resend</a>
-                    </span>
-                </div>
-
-                <div style="display: flex; align-items: start; gap: 12px; margin-top: 20px;">
-                    <input type="checkbox" id="deleteConfirmCheck" style="margin-top: 4px;">
-                    <label for="deleteConfirmCheck"
-                        style="font-size: var(--fs-body); color: var(--text-body); cursor: pointer;">
-                        I understand this action is permanent and all my data will be deleted
-                    </label>
-                </div>
+          @if($requiresPassword)
+            <div class="form-group">
+              <label class="form-label">Confirm your password</label>
+              <input 
+                name="password" 
+                type="password" 
+                class="form-input" 
+                placeholder="Enter your password"
+                required 
+                autocomplete="current-password">
+              @error('password')
+                <div class="form-error">{{ $message }}</div>
+              @enderror
             </div>
-
-            <!-- Modal Footer -->
-            <div
-                style="padding: 24px; border-top: 1px solid var(--border); background: #fef2f2; display: flex; gap: 12px; justify-content: flex-end;">
-                <button class="settings-btn settings-btn-secondary" onclick="closeDeleteModal()">
-                    Cancel
-                </button>
-                <button class="settings-btn settings-btn-danger" onclick="confirmDelete()" id="finalDeleteBtn" disabled>
-                    <i class="fas fa-trash-alt"></i> Delete My Account Forever
-                </button>
+          @else
+            <div class="info-box info-box-sm">
+              <i class="fas fa-info-circle"></i>
+              You signed in with a social account. No password required.
             </div>
+          @endif
         </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-paper-plane"></i>
+            Send Verification Code
+          </button>
+        </div>
+      </form>
+    @else
+      <form method="POST" action="{{ route('tenant.settings.danger.delete.confirm', $username) }}">
+        @csrf
+        <input type="hidden" name="challenge_id" value="{{ session('danger.challenge') }}">
+        
+        <div class="modal-body">
+          <p class="modal-text">We've sent a 6-digit verification code to your email. Enter it below to confirm account deletion.</p>
+
+          <div class="form-group">
+            <label class="form-label">Verification Code</label>
+            <input 
+              name="code" 
+              type="text" 
+              inputmode="numeric" 
+              pattern="[0-9]{6}" 
+              maxlength="6"
+              class="form-input form-input-code" 
+              placeholder="000000" 
+              required
+              autocomplete="one-time-code">
+            @error('code')
+              <div class="form-error">{{ $message }}</div>
+            @enderror
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i>
+            Confirm Deletion
+          </button>
+        </div>
+      </form>
+    @endif
+  </div>
+</div>
+
+{{-- Cancel Deletion Modal --}}
+<div id="cancelDeleteModal" class="modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeCancelDeleteModal()"></div>
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 class="modal-title">Cancel Account Deletion</h3>
+      <button class="modal-close" onclick="closeCancelDeleteModal()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-    @push('scripts')
-        <script>
-            // Hibernate Modal
-            function openHibernateModal() {
-                document.getElementById('hibernateModal').style.display = 'flex';
-            }
 
-            function closeHibernateModal() {
-                document.getElementById('hibernateModal').style.display = 'none';
-            }
+    <form method="POST" action="{{ route('tenant.settings.danger.delete.cancel', $username) }}">
+      @csrf
+      <div class="modal-body">
+        <p class="modal-text">Are you sure you want to cancel the scheduled deletion and keep your account?</p>
 
-            function confirmHibernate() {
-                const password = document.getElementById('hibernatePassword').value;
-                const confirm = document.getElementById('hibernateConfirm').checked;
+        @if($requiresPassword)
+          <div class="form-group">
+            <label class="form-label">Confirm your password</label>
+            <input 
+              name="password" 
+              type="password" 
+              class="form-input" 
+              placeholder="Enter your password"
+              required 
+              autocomplete="current-password">
+            @error('password')
+              <div class="form-error">{{ $message }}</div>
+            @enderror
+          </div>
+        @else
+          <label class="checkbox-label">
+            <input type="checkbox" name="confirm" value="1" required>
+            <span>I want to cancel the pending deletion and keep my account</span>
+          </label>
+          @error('confirm')
+            <div class="form-error">{{ $message }}</div>
+          @enderror
+        @endif
+      </div>
 
-                if (!password) {
-                    alert('Please enter your password');
-                    return;
-                }
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeCancelDeleteModal()">
+          Close
+        </button>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-undo"></i>
+          Cancel Deletion
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
-                if (!confirm) {
-                    alert('Please confirm that you understand the consequences');
-                    return;
-                }
+<style>
+/* Alert Styles */
+.alert {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border: 1px solid;
+}
 
-                // Demo alert
-                alert('Account hibernation requested (This is a demo)');
-                closeHibernateModal();
-            }
+.alert-info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
 
-            // Delete Modal
-            function openDeleteModal() {
-                document.getElementById('deleteModal').style.display = 'flex';
-                // Simulate sending email code
-                setTimeout(() => {
-                    alert('A verification code has been sent to your email (This is a demo)');
-                }, 500);
-            }
+.alert-warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
 
-            function closeDeleteModal() {
-                document.getElementById('deleteModal').style.display = 'none';
-            }
+.alert-success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
 
-            function confirmDelete() {
-                const confirmText = document.getElementById('deleteConfirmText').value;
-                const password = document.getElementById('deletePassword').value;
-                const confirmed = document.getElementById('deleteConfirmCheck').checked;
+.alert-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
 
-                if (confirmText !== 'DELETE') {
-                    alert('Please type DELETE to confirm');
-                    return;
-                }
+.alert-content {
+  flex: 1;
+}
 
-                if (!password) {
-                    alert('Please enter your password');
-                    return;
-                }
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
 
-                if (!confirmed) {
-                    alert('Please confirm that you understand this is permanent');
-                    return;
-                }
+.alert-message {
+  font-size: 14px;
+  opacity: 0.9;
+}
 
-                // Get OTP code
-                const otpInputs = document.querySelectorAll('.delete-otp-input');
-                const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+/* Danger Card Styles */
+.danger-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
 
-                if (otpCode.length !== 6) {
-                    alert('Please enter the complete 6-digit code');
-                    return;
-                }
+.danger-card-critical {
+  border: 2px solid #fca5a5;
+}
 
-                // Demo alert
-                if (confirm('Are you ABSOLUTELY sure? This cannot be undone!')) {
-                    alert('Account deletion requested. You will receive a confirmation email. (This is a demo)');
-                    closeDeleteModal();
-                }
-            }
+.danger-card-header {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  background: var(--bg, #fafafa);
+}
 
-            // Enable/disable delete button based on form completion
-            const deleteTextInput = document.getElementById('deleteConfirmText');
-            const deletePasswordInput = document.getElementById('deletePassword');
-            const deleteCheckbox = document.getElementById('deleteConfirmCheck');
-            const deleteBtn = document.getElementById('finalDeleteBtn');
+.danger-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
 
-            function checkDeleteForm() {
-                const textValid = deleteTextInput?.value === 'DELETE';
-                const passwordValid = deletePasswordInput?.value.length > 0;
-                const checkboxValid = deleteCheckbox?.checked;
+.danger-card-icon.hibernate {
+  background: #fef3c7;
+  color: #92400e;
+}
 
-                if (deleteBtn) {
-                    deleteBtn.disabled = !(textValid && passwordValid && checkboxValid);
-                }
-            }
+.danger-card-icon.delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
-            deleteTextInput?.addEventListener('input', checkDeleteForm);
-            deletePasswordInput?.addEventListener('input', checkDeleteForm);
-            deleteCheckbox?.addEventListener('change', checkDeleteForm);
+.danger-card-info {
+  flex: 1;
+}
 
-            // OTP auto-advance for delete
-            document.querySelectorAll('.delete-otp-input').forEach((input, index, inputs) => {
-                input.addEventListener('input', (e) => {
-                    if (e.target.value.length === 1 && index < inputs.length - 1) {
-                        inputs[index + 1].focus();
-                    }
-                });
+.danger-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text-heading, #111827);
+}
 
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                        inputs[index - 1].focus();
-                    }
-                });
+.danger-card-desc {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-body, #6b7280);
+  line-height: 1.5;
+}
 
-                // Auto-paste support
-                input.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
-                    pastedData.split('').forEach((char, i) => {
-                        if (inputs[index + i]) {
-                            inputs[index + i].value = char;
-                        }
-                    });
-                });
-            });
+.danger-card-body {
+  padding: 24px;
+}
 
-            // Close modals on Escape
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeHibernateModal();
-                    closeDeleteModal();
-                }
-            });
+/* Info Box */
+.info-box {
+  background: var(--bg, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
 
-            // Close modals on overlay click
-            document.getElementById('hibernateModal')?.addEventListener('click', (e) => {
-                if (e.target.id === 'hibernateModal') {
-                    closeHibernateModal();
-                }
-            });
+.info-box-sm {
+  padding: 12px;
+  font-size: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
 
-            document.getElementById('deleteModal')?.addEventListener('click', (e) => {
-                if (e.target.id === 'deleteModal') {
-                    closeDeleteModal();
-                }
-            });
-        </script>
-    @endpush
+.info-box-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-heading, #111827);
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.info-list li {
+  position: relative;
+  padding-left: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-body, #4b5563);
+  line-height: 1.6;
+}
+
+.info-list li:before {
+  content: "•";
+  position: absolute;
+  left: -12px;
+  color: var(--text-muted, #9ca3af);
+}
+
+/* Warning Box */
+.warning-box {
+  display: flex;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.warning-box-modal {
+  margin-bottom: 24px;
+}
+
+.warning-icon {
+  font-size: 20px;
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-title {
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: 4px;
+}
+
+.warning-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #7f1d1d;
+  line-height: 1.5;
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-lg {
+  padding: 12px 24px;
+  font-size: 15px;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: var(--bg, #f3f4f6);
+  color: var(--text-heading, #111827);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-container {
+  position: relative;
+  background: var(--card, #fff);
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-heading, #111827);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #9ca3af);
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: var(--bg, #f3f4f6);
+  color: var(--text-heading, #111827);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.modal-text {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--text-body, #4b5563);
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading, #111827);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: var(--card, #fff);
+  color: var(--text-heading, #111827);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input-code {
+  font-size: 20px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.form-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.checkbox-label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-body, #4b5563);
+  line-height: 1.5;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .danger-card-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+// Modal functions
+function openHibernateModal() {
+  document.getElementById('hibernateModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeHibernateModal() {
+  document.getElementById('hibernateModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function openDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function openCancelDeleteModal() {
+  document.getElementById('cancelDeleteModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCancelDeleteModal() {
+  document.getElementById('cancelDeleteModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeHibernateModal();
+    closeDeleteModal();
+    closeCancelDeleteModal();
+  }
+});
+
+// Auto-open delete modal if verification code was sent
+@if(session('danger.challenge'))
+  document.addEventListener('DOMContentLoaded', function() {
+    openDeleteModal();
+  });
+@endif
+</script>
 @endsection

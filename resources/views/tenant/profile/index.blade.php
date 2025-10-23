@@ -1,5 +1,9 @@
 {{-- resources/views/tenant/profile/index.blade.php --}}
-@php use Illuminate\Support\Str; @endphp
+@php use Illuminate\Support\Str; 
+
+use Illuminate\Support\Facades\Auth;
+
+@endphp
 
 @php
     $LIMITS = [
@@ -511,7 +515,7 @@
                     {{-- Projects header (old UX, keeps new functionality) --}}
                     <div class="cards-header">
                         <div class="title-wrap" style="display:flex;align-items:center;gap:10px">
-                            <h2 class="portfolios-title">Projects</h2>
+                            <h2 class="portfolios-title">{{Auth::id()}}</h2>
                             {{-- keep this so your JS can still update the count --}}
                             <span class="pps-count">{{ $totalProjects }}</span>
                         </div>

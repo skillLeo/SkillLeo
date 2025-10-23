@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Jenssegers\Agent\Agent;
+use App\Support\Device;
 
 class UserDevice extends Model
 {
@@ -42,24 +43,37 @@ class UserDevice extends Model
         return $this->belongsTo(User::class);
     }
 
-    // ---------- Accessors ----------
+    // ── Accessors ────────────────────────────────────────────────────────────────
     public function getDeviceDisplayNameAttribute(): string
     {
-        $bits = array_filter([
+        $parts = array_filter([
             $this->browser,
             $this->platform,
-            $this->device_type !== 'desktop' ? ucfirst($this->device_type) : null,
+            $this->device_type && $this->device_type !== 'desktop'
+                ? ucfirst($this->device_type)
+                : null,
         ]);
 
-        return implode(' on ', $bits) ?: 'Unknown Device';
+        return $parts ? implode(' on ', $parts) : ($this->device_name ?: 'Unknown Device');
     }
 
+    /**
+     * ✅ FIXED: Check if this device record matches the current request's device
+     */
     public function getIsCurrentDeviceAttribute(): bool
     {
-        return request()->fingerprint() === $this->device_id;
+        // Use the same Device::id() method that DeviceTrackingService uses
+        $currentDeviceId = Device::id(request());
+        
+        // Also ensure it's the same user
+        $currentUserId = auth()->id();
+        
+        return $this->device_id === $currentDeviceId 
+            && $this->user_id === $currentUserId
+            && is_null($this->revoked_at);
     }
 
-    // ---------- Scopes / helpers ----------
+    // ── Scopes / Helpers ────────────────────────────────────────────────────────
     public function scopeActive($query)
     {
         return $query->whereNull('revoked_at')
@@ -73,7 +87,10 @@ class UserDevice extends Model
 
     public function revoke(): void
     {
-        $this->forceFill(['revoked_at' => now(), 'is_trusted' => false])->save();
+        $this->forceFill([
+            'revoked_at' => now(),
+            'is_trusted' => false,
+        ])->save();
     }
 
     public function markAsTrusted(): void

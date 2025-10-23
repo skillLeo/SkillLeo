@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Settings;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class SettingsController extends Controller
 {
@@ -50,46 +50,7 @@ class SettingsController extends Controller
     /**
      * Security settings page
      */
-    public function security($username)
-    {
-        $user = $this->getUser($username);
-        
-        // Mock data for sessions
-        $sessions = [
-            [
-                'device' => 'Chrome on Windows',
-                'location' => 'Sargodha, Pakistan',
-                'ip' => '192.168.1.1',
-                'last_active' => 'Active now',
-                'is_current' => true
-            ],
-            [
-                'device' => 'Safari on iPhone',
-                'location' => 'Lahore, Pakistan',
-                'ip' => '192.168.1.2',
-                'last_active' => '2 hours ago',
-                'is_current' => false
-            ],
-            [
-                'device' => 'Firefox on macOS',
-                'location' => 'Karachi, Pakistan',
-                'ip' => '192.168.1.3',
-                'last_active' => '3 days ago',
-                'is_current' => false
-            ]
-        ];
-        
-        return view('tenant.settings.security', [
-            'user' => $user,
-            'username' => $username,
-            'activeSection' => 'security',
-            'sessions' => $sessions,
-            'twoFactorEnabled' => false, // CRITICAL: This was missing
-            'smsBackupEnabled' => false,
-            'recoveryCodesGenerated' => false,
-            'trustedDevicesCount' => 2
-        ]);
-    }
+  
 
     /**
      * Privacy settings page
@@ -240,17 +201,5 @@ class SettingsController extends Controller
         ]);
     }
 
-    /**
-     * Danger zone settings page
-     */
-    public function danger($username)
-    {
-        $user = $this->getUser($username);
-        
-        return view('tenant.settings.danger', [
-            'user' => $user,
-            'username' => $username,
-            'activeSection' => 'danger'
-        ]);
-    }
+
 }

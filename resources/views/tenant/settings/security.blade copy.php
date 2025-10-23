@@ -86,157 +86,18 @@
         </div>
     </div>
 
-
-
-
-    {{-- Recovery Codes --}}
-<div class="security-card">
-    <div class="card-header">
-        <div>
-            <h3>Recovery Codes</h3>
-            <p>Use these one-time codes if you lose access to your authenticator</p>
-        </div>
-        <span class="count-badge">
-            {{ $recoveryCodesRemaining ?? 0 }} of 8 remaining
-        </span>
-    </div>
-
-    <div class="card-body">
-        <div class="info-box" style="margin-bottom:16px;">
-            <div class="info-icon">
-                <i class="fas fa-key"></i>
-            </div>
-            <div class="info-text">
-                <strong>Store these codes somewhere safe</strong>
-                <p>Each code can be used once. Keep them offline (e.g., printed or in a secure manager).</p>
-            </div>
-        </div>
-
-        <div class="button-group">
-            {{-- View Codes (opens modal) --}}
-            <button type="button" class="btn btn-secondary" onclick="openModal('recoveryCodesModal')">
-                <i class="fas fa-eye"></i> View Codes
-            </button>
-
-            {{-- Copy Codes (client-side) --}}
-            <button type="button" class="btn btn-secondary" onclick="copyRecoveryCodes()">
-                <i class="fas fa-copy"></i> Copy
-            </button>
-
-            {{-- Download Codes (client-side .txt) --}}
-            <button type="button" class="btn btn-secondary" onclick="downloadRecoveryCodesTxt()">
-                <i class="fas fa-download"></i> Download
-            </button>
-
-            {{-- Regenerate (POST) --}}
-            <form method="POST" action="{{ route('tenant.settings.security.regenerateRecoveryCodes', $username) }}" style="display:inline;">
-                @csrf
-                <button type="submit" class="btn btn-secondary" onclick="return confirm('Regenerate recovery codes? Old codes will stop working.')">
-                    <i class="fas fa-sync"></i> Regenerate
-                </button>
-            </form>
-        </div>
-
-        @if(!empty($recoveryCodesDate))
-            <div style="margin-top:12px;color:#6b7280;font-size:13px;">
-                Generated {{ $recoveryCodesDate }}
-            </div>
-        @endif
-    </div>
-</div>
-
-{{-- Recovery Codes Modal --}}
-<div class="modal" id="recoveryCodesModal">
-    <div class="modal-backdrop" onclick="closeModal('recoveryCodesModal')"></div>
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Your Recovery Codes</h3>
-            <button onclick="closeModal('recoveryCodesModal')" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-
-            @php
-                // Expecting $recoveryCodes as an array of strings like ['ABCD-1234', ...]
-                $codes = $recoveryCodes ?? [];
-            @endphp
-
-            @if(count($codes))
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
-                    @foreach($codes as $code)
-                        <div style="background:#f9fafb;border:2px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center;font-weight:700;letter-spacing:1px;">
-                            <code style="font-family:'Courier New',monospace;font-size:15px;color:#111827;">{{ $code }}</code>
-                        </div>
-                    @endforeach
-                </div>
-
-                <div class="button-group">
-                    <button type="button" class="btn btn-secondary" onclick="copyRecoveryCodes()">
-                        <i class="fas fa-copy"></i> Copy All
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="downloadRecoveryCodesTxt()">
-                        <i class="fas fa-download"></i> Download .txt
-                    </button>
-                </div>
-            @else
-                <div class="empty-state">
-                    <i class="fas fa-key"></i>
-                    <p>No recovery codes available. Generate a new set.</p>
-                </div>
-            @endif
-
-            {{-- Hidden holder to feed copy/download (keeps design unchanged) --}}
-            <textarea id="__recovery_codes_blob" style="position:absolute;left:-9999px;top:-9999px;">@if(count($codes)){{ implode("\n", $codes) }}@endif</textarea>
-        </div>
-    </div>
-</div>
-
-
-
-
-@push('scripts')
-<script>
-function copyRecoveryCodes() {
-    var ta = document.getElementById('__recovery_codes_blob');
-    if (!ta) return alert('No recovery codes to copy.');
-    ta.select();
-    ta.setSelectionRange(0, ta.value.length);
-    try {
-        document.execCommand('copy');
-        // Optional: lightweight toast using your flash style
-        alert('Recovery codes copied to clipboard.');
-    } catch(e) {
-        alert('Copy failed. Please select and copy manually.');
-    }
-}
-
-function downloadRecoveryCodesTxt() {
-    var ta = document.getElementById('__recovery_codes_blob');
-    if (!ta || !ta.value.trim()) return alert('No recovery codes to download.');
-    var blob = new Blob([ta.value], { type: 'text/plain;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'recovery-codes.txt';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-}
-</script>
-@endpush
-
-
     <!-- Active Sessions -->
     <div class="settings-card">
         <div class="settings-card-header">
             <h3 class="settings-card-title">Active Sessions</h3>
             <p class="settings-card-desc">Manage devices where you're currently signed in</p>
         </div>
-    
+
         <div class="settings-card-body">
             <div id="devicesContainer" style="display:flex;flex-direction:column;gap:16px;">
                 @forelse($devices as $device)
-                    <div class="session-card {{ $device->is_current_device ? 'current' : '' }}">
+                    <div class="session-card {{ $device->is_current_device ? 'current' : '' }}"
+                        data-device-id="{{ $device->id }}">
                         <div class="session-icon">
                             @if ($device->device_type === 'mobile')
                                 <i class="fas fa-mobile-alt"></i>
@@ -246,27 +107,27 @@ function downloadRecoveryCodesTxt() {
                                 <i class="fas fa-desktop"></i>
                             @endif
                         </div>
-    
+
                         <div class="session-details">
                             <div class="session-header">
                                 <span class="session-name">{{ $device->device_display_name }}</span>
-    
+
                                 @if ($device->is_current_device)
                                     <span class="session-badge">Current</span>
                                 @endif
-    
+
                                 @if ($device->is_trusted)
                                     <span class="session-badge" style="background:#10b981;">Trusted</span>
                                 @endif
                             </div>
-    
+
                             <div class="session-location">
                                 @if ($device->location_city && $device->location_country)
                                     {{ $device->location_city }}, {{ $device->location_country }} •
                                 @endif
                                 {{ $device->ip_address }}
                             </div>
-    
+
                             <div class="session-status">
                                 @if ($device->last_activity_at && $device->last_activity_at->diffInMinutes(now()) < 5)
                                     <i class="fas fa-circle"></i> Active now
@@ -275,41 +136,26 @@ function downloadRecoveryCodesTxt() {
                                 @endif
                             </div>
                         </div>
-    
+
                         <div class="session-actions">
                             @if (!$device->is_trusted)
-                                {{-- Trust (POST) --}}
-                                <form method="POST" action="{{ route('tenant.settings.devices.trust', [$username, $device->id]) }}" style="display:inline;">
-                                    @csrf
-                                    <button type="submit"
-                                            class="session-revoke-btn trust-device-btn"
-                                            style="background:#d1fae5;color:#065f46;border-color:#10b981;">
-                                        <i class="fas fa-shield-alt"></i> Trust
-                                    </button>
-                                </form>
+                                <button class="session-revoke-btn trust-device-btn" data-device-id="{{ $device->id }}"
+                                    style="background:#d1fae5;color:#065f46;border-color:#10b981;">
+                                    <i class="fas fa-shield-alt"></i> Trust
+                                </button>
                             @else
-                                {{-- Remove Trust (POST) --}}
-                                <form method="POST" action="{{ route('tenant.settings.security.trusted.untrust', [$username, $device->id]) }}" style="display:inline;">
-                                    @csrf
-                                    <button type="submit"
-                                            class="session-revoke-btn untrust-device-btn"
-                                            style="background:#fff;border-color:#86efac;color:#065f46;">
-                                        <i class="fas fa-shield-alt"></i> Remove Trust
-                                    </button>
-                                </form>
+                                <button class="session-revoke-btn untrust-device-btn"
+                                    data-device-id="{{ $device->id }}"
+                                    style="background:#fff;border-color:#86efac;color:#065f46;">
+                                    <i class="fas fa-shield-alt"></i> Remove Trust
+                                </button>
                             @endif
-    
+
                             @if (!$device->is_current_device)
-                                {{-- Revoke (POST) --}}
-                                <form method="POST"
-                                      action="{{ route('tenant.settings.devices.revoke', [$username, $device->id]) }}"
-                                      onsubmit="return confirm('Revoke this device? This will sign it out immediately.');"
-                                      style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="session-revoke-btn revoke-device-btn">
-                                        <i class="fas fa-times"></i> Revoke
-                                    </button>
-                                </form>
+                                <button class="session-revoke-btn revoke-device-btn"
+                                    data-device-id="{{ $device->id }}">
+                                    <i class="fas fa-times"></i> Revoke
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -321,25 +167,16 @@ function downloadRecoveryCodesTxt() {
                 @endforelse
             </div>
         </div>
-    
+
         <div class="settings-card-footer">
             <span class="settings-card-meta">{{ $devices->count() }} active session(s)</span>
-            @if ($devices->where('is_current_device', false)->count() > 0)
-                {{-- Revoke All Other Sessions (POST) --}}
-                <form method="POST"
-                      action="{{ route('tenant.settings.devices.revoke_others', $username) }}"
-                      onsubmit="return confirm('This will log out all other devices. Continue?');"
-                      style="display:inline;">
-                    @csrf
-                    <button type="submit" class="settings-btn settings-btn-danger">
-                        <i class="fas fa-sign-out-alt"></i> Revoke All Other Sessions
-                    </button>
-                </form>
+            @if ($devices->count() > 1)
+                <button class="settings-btn settings-btn-danger" id="revokeAllBtn">
+                    <i class="fas fa-sign-out-alt"></i> Revoke All Other Sessions
+                </button>
             @endif
         </div>
     </div>
-    
-    
 
     <!-- Security Options -->
     <div class="security-card">
@@ -351,7 +188,39 @@ function downloadRecoveryCodesTxt() {
         </div>
 
         <div class="card-body">
-            
+            <div class="option-item">
+                <div class="option-info">
+                    <i class="fas fa-globe"></i>
+                    <div>
+                        <h4>Require 2FA for new locations</h4>
+                        <p>Always ask for verification from new cities or countries</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('tenant.settings.security.toggle2FANewLocation', $username) }}">
+                    @csrf
+                    <input type="hidden" name="enabled" value="{{ $userSecurity->require_2fa_new_location ? '0' : '1' }}">
+                    <button type="submit" class="toggle-switch {{ $userSecurity->require_2fa_new_location ? 'active' : '' }}">
+                        <span></span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="option-item">
+                <div class="option-info">
+                    <i class="fas fa-lock"></i>
+                    <div>
+                        <h4>Require 2FA for sensitive actions</h4>
+                        <p>Request verification when changing security settings</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('tenant.settings.security.toggle2FASensitive', $username) }}">
+                    @csrf
+                    <input type="hidden" name="enabled" value="{{ $userSecurity->require_2fa_sensitive_actions ? '0' : '1' }}">
+                    <button type="submit" class="toggle-switch {{ $userSecurity->require_2fa_sensitive_actions ? 'active' : '' }}">
+                        <span></span>
+                    </button>
+                </form>
+            </div>
 
             <div class="option-item">
                 <div class="option-info">
@@ -450,178 +319,6 @@ function downloadRecoveryCodesTxt() {
 
 @push('styles')
 <style>
-    /* Session Actions */
-    .session-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .session-revoke-btn {
-        padding: 8px 16px;
-        font-size: 13px;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border);
-        background: var(--card);
-        color: var(--text-body);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition-base);
-    }
-
-    .session-revoke-btn:hover {
-        background: #fee;
-        border-color: #fca5a5;
-        color: #dc2626;
-        transform: translateY(-1px);
-    }
-.session-card {
-        display: flex;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 20px;
-        background: var(--bg);
-        border-radius: var(--radius-lg);
-        border: 2px solid transparent;
-        transition: all var(--transition-base);
-        margin-bottom: 16px;
-    }
-
-    .session-card:hover {
-        border-color: rgba(19, 81, 216, 0.1);
-        box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
-    }
-
-    .session-card.current {
-        border-color: var(--accent);
-        background: linear-gradient(135deg, rgba(19, 81, 216, 0.05) 0%, rgba(19, 81, 216, 0.02) 100%);
-        box-shadow: 0 0 0 4px rgba(19, 81, 216, 0.08);
-    }
-
-    /* Session Device Icon */
-    .session-icon {
-        width: 52px;
-        height: 52px;
-        background: var(--accent-light, rgba(19, 81, 216, 0.1));
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: all var(--transition-base);
-    }
-
-    .session-card:hover .session-icon {
-        transform: scale(1.05);
-    }
-
-    .session-icon i {
-        color: var(--accent);
-        font-size: 22px;
-    }
-
-    .session-card.current .session-icon {
-        background: var(--accent);
-        box-shadow: 0 4px 12px rgba(19, 81, 216, 0.3);
-    }
-
-    .session-card.current .session-icon i {
-        color: white;
-    }
-
-    /* Session Details */
-    .session-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .session-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 6px;
-        flex-wrap: wrap;
-    }
-
-    .session-name {
-        font-weight: 600;
-        color: var(--text-heading);
-        font-size: 15px;
-    }
-
-    .session-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: var(--accent);
-        color: white;
-        padding: 3px 10px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .session-location {
-        font-size: 14px;
-        color: var(--text-muted);
-        margin-bottom: 4px;
-    }
-
-    .session-status {
-        font-size: 12px;
-        color: var(--text-muted);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .session-status i.fa-circle {
-        font-size: 6px;
-        color: #10b981;
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.5;
-        }
-    }
-
-    /* Session Actions */
-    .session-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .session-revoke-btn {
-        padding: 8px 16px;
-        font-size: 13px;
-        border-radius: var(--radius-md);
-        border: 1px solid var(--border);
-        background: var(--card);
-        color: var(--text-body);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--transition-base);
-    }
-
-    .session-revoke-btn:hover {
-        background: #fee;
-        border-color: #fca5a5;
-        color: #dc2626;
-        transform: translateY(-1px);
-    }
-
 * { box-sizing: border-box; }
 
 .security-container {
@@ -1319,6 +1016,179 @@ function downloadRecoveryCodesTxt() {
         align-items: flex-start;
     }
 }
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+    
+ 
+    .session-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px;
+        background: var(--bg);
+        border-radius: var(--radius-lg);
+        border: 2px solid transparent;
+        transition: all var(--transition-base);
+        margin-bottom: 16px;
+    }
+
+    .session-card:hover {
+        border-color: rgba(19, 81, 216, 0.1);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .session-card.current {
+        border-color: var(--accent);
+        background: linear-gradient(135deg, rgba(19, 81, 216, 0.05) 0%, rgba(19, 81, 216, 0.02) 100%);
+        box-shadow: 0 0 0 4px rgba(19, 81, 216, 0.08);
+    }
+
+    /* Session Device Icon */
+    .session-icon {
+        width: 52px;
+        height: 52px;
+        background: var(--accent-light, rgba(19, 81, 216, 0.1));
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all var(--transition-base);
+    }
+
+    .session-card:hover .session-icon {
+        transform: scale(1.05);
+    }
+
+    .session-icon i {
+        color: var(--accent);
+        font-size: 22px;
+    }
+
+    .session-card.current .session-icon {
+        background: var(--accent);
+        box-shadow: 0 4px 12px rgba(19, 81, 216, 0.3);
+    }
+
+    .session-card.current .session-icon i {
+        color: white;
+    }
+
+    /* Session Details */
+    .session-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .session-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+    }
+
+    .session-name {
+        font-weight: 600;
+        color: var(--text-heading);
+        font-size: 15px;
+    }
+
+    .session-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--accent);
+        color: white;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .session-location {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .session-status {
+        font-size: 12px;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .session-status i.fa-circle {
+        font-size: 6px;
+        color: #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    /* Session Actions */
+    .session-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .session-revoke-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text-body);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+
+    .session-revoke-btn:hover {
+        background: #fee;
+        border-color: #fca5a5;
+        color: #dc2626;
+        transform: translateY(-1px);
+    }
+
+   
+   
 </style>
 @endpush
 

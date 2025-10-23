@@ -6,10 +6,14 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Services\Auth\AuthRedirectService;
+use App\Services\Auth\AuthService;
 use App\Services\Auth\DeviceTrackingService;
 use App\Services\Auth\OnlineStatusService;
+use App\Services\Auth\OtpService;
 use App\Services\TimezoneService;
+use App\Support\Device;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,11 +27,13 @@ class OAuthController extends Controller
     public function __construct(
         protected AuthRedirectService $redirects,
         protected DeviceTrackingService $deviceTracking,
-        protected OnlineStatusService $onlineStatus
+        protected OnlineStatusService $onlineStatus,
+        protected AuthService $authService,
+        protected OtpService $otpService
     ) {}
 
     private const DRIVER_PROVIDERS = ['google', 'github', 'linkedin-openid'];
-    private const URL_PROVIDERS = ['google', 'github', 'linkedin', 'linkedin-openid'];
+    private const URL_PROVIDERS    = ['google', 'github', 'linkedin', 'linkedin-openid'];
 
     private function asDriver(string $provider): string
     {
@@ -43,7 +49,7 @@ class OAuthController extends Controller
 
         Log::info('OAuth Redirect', [
             'url_provider' => $provider,
-            'driver' => $driverName,
+            'driver'       => $driverName,
             'redirect_url' => $this->callbackUrl($driverName),
         ]);
 
@@ -58,125 +64,211 @@ class OAuthController extends Controller
 
         if ($request->filled('error')) {
             $error = $request->query('error');
-            $desc = $request->query('error_description', 'Authorization failed');
+            $desc  = $request->query('error_description', 'Authorization failed');
             Log::error("OAuth Error - {$driverName}", ['error' => $error, 'desc' => $desc]);
             return redirect()->route('auth.login')
                 ->withErrors(['oauth' => ucfirst($provider) . ': ' . urldecode($desc)]);
         }
 
         try {
-            $social = $this->driver($driverName, $request)->user();
+            $social      = $this->driver($driverName, $request)->user();
             $providerUid = (string) ($social->getId() ?? '');
-            
             if ($providerUid === '') {
                 throw new \Exception(ucfirst($provider) . ' did not return a user ID.');
             }
 
-            $email = $this->normalizedEmail($driverName, $social);
-            $name = $this->displayName($social);
+            $email    = $this->normalizedEmail($driverName, $social);
+            $name     = $this->displayName($social);
             $nickname = $social->getNickname();
-            $avatar = $social->getAvatar();
-            $now = now();
-
-            // ✅ Get timezone from request (captured by frontend JS)
+            $avatar   = $social->getAvatar();
+            $now      = now();
             $timezone = $request->input('timezone', 'UTC');
 
             $user = DB::transaction(function () use (
-                $driverName, $providerUid, $email, $name, $nickname, $avatar, $social, $now, $timezone
+                $driverName,
+                $providerUid,
+                $email,
+                $name,
+                $nickname,
+                $avatar,
+                $social,
+                $now,
+                $timezone
             ) {
                 $identity = OAuthIdentity::where([
-                    'provider' => $driverName,
+                    'provider'         => $driverName,
                     'provider_user_id' => $providerUid,
                 ])->first();
 
                 if ($identity) {
-                    // Existing user - update profile
                     $user = $identity->user;
                     $this->refreshUserProfile($user, $name, $email, $avatar);
-                    
+
                     $identity->update([
                         'provider_username' => $nickname ?? $identity->provider_username,
-                        'avatar_url' => $avatar ?? $identity->avatar_url,
-                        'access_token' => $social->token ?? null,
-                        'refresh_token' => $social->refreshToken ?? null,
-                        'token_expires_at' => isset($social->expiresIn) 
-                            ? $now->copy()->addSeconds((int) $social->expiresIn) 
+                        'avatar_url'        => $avatar ?? $identity->avatar_url,
+                        'access_token'      => $social->token ?? null,
+                        'refresh_token'     => $social->refreshToken ?? null,
+                        'token_expires_at'  => isset($social->expiresIn)
+                            ? $now->copy()->addSeconds((int) $social->expiresIn)
                             : null,
-                        'provider_raw' => $social->user ?? [],
+                        'provider_raw'      => $social->user ?? [],
                     ]);
-                    
+
                     $user->update([
                         'last_login_at' => $now,
-                        'login_count' => ($user->login_count ?? 0) + 1,
+                        'login_count'   => ($user->login_count ?? 0) + 1,
                     ]);
-                    
+
                     return $user;
                 }
 
-                // Check if user exists by email
+                // find user by email or create
                 $user = $email ? User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first() : null;
 
                 if (!$user) {
-                    // ✅ Create new user with timezone
                     $user = User::create([
-                        'tenant_id' => null,
-                        'name' => $name ?: ($nickname ?: 'User'),
-                        'email' => $email ?: "oauth_{$providerUid}@users.noreply.local",
-                        'avatar_url' => $avatar,
-                        'email_verified_at' => $email ? $now : null,
-                        'password' => null,
-                        'username' => $this->uniqueUsername($nickname ?: ($name ?: 'user')),
-                        'locale' => 'en',
-                        'timezone' => $timezone, // ✅ Set detected timezone
-                        'is_active' => 'active',
+                        'tenant_id'           => null,
+                        'name'                => $name ?: ($nickname ?: 'User'),
+                        'email'               => $email ?: "oauth_{$providerUid}@users.noreply.local",
+                        'avatar_url'          => $avatar,
+                        'email_verified_at'   => $email ? $now : null,
+                        'password'            => null, // OAuth-only signup
+                        'username'            => $this->uniqueUsername($nickname ?: ($name ?: 'user')),
+                        'locale'              => 'en',
+                        'timezone'            => $timezone,
+                        'is_active'           => 'active',
                         'is_profile_complete' => 'start',
-                        'account_status' => 'pending_onboarding',
-                        'last_login_at' => $now,
-                        'login_count' => 1,
-                        'meta' => ['created_via' => $driverName],
+                        'account_status'      => 'pending_onboarding',
+                        'last_login_at'       => $now,
+                        'login_count'         => 1,
+                        'meta'                => ['created_via' => $driverName],
                     ]);
                 } else {
-                    // Existing user - update profile
                     $this->refreshUserProfile($user, $name, $email, $avatar);
                     $user->update([
                         'last_login_at' => $now,
-                        'login_count' => ($user->login_count ?? 0) + 1,
+                        'login_count'   => ($user->login_count ?? 0) + 1,
                     ]);
                 }
 
-                // ✅ Store timezone in session
                 TimezoneService::storeViewerTimezone($timezone);
 
-                // Create OAuth identity
                 OAuthIdentity::updateOrCreate(
+                    ['provider' => $driverName, 'provider_user_id' => $providerUid],
                     [
-                        'provider' => $driverName, 
-                        'provider_user_id' => $providerUid
-                    ],
-                    [
-                        'user_id' => $user->id,
+                        'user_id'           => $user->id,
                         'provider_username' => $nickname,
-                        'avatar_url' => $avatar,
-                        'access_token' => $social->token ?? null,
-                        'refresh_token' => $social->refreshToken ?? null,
-                        'token_expires_at' => isset($social->expiresIn) 
-                            ? $now->copy()->addSeconds((int) $social->expiresIn) 
+                        'avatar_url'        => $avatar,
+                        'access_token'      => $social->token ?? null,
+                        'refresh_token'     => $social->refreshToken ?? null,
+                        'token_expires_at'  => isset($social->expiresIn)
+                            ? $now->copy()->addSeconds((int) $social->expiresIn)
                             : null,
-                        'provider_raw' => $social->user ?? [],
+                        'provider_raw'      => $social->user ?? [],
                     ]
                 );
 
                 return $user;
             });
 
-            // Track device for OAuth login
-            $this->deviceTracking->recordDevice($user, $request);
+            // 🔐 CRITICAL FIX: Check trusted device FIRST (before any 2FA checks)
+            $currentDeviceId = Device::id($request);
+            $trustedDevice = UserDevice::where('user_id', $user->id)
+                ->where('device_id', $currentDeviceId)
+                ->where('is_trusted', true)
+                ->whereNull('revoked_at')
+                ->first();
 
-            // Login user
+            if ($trustedDevice) {
+                // ✅ Trusted device - refresh and login immediately (NO 2FA, NO OTP)
+                $trustedDevice->forceFill([
+                    'ip_address'       => $request->ip(),
+                    'user_agent'       => (string) $request->userAgent(),
+                    'last_seen_at'     => now(),
+                    'last_activity_at' => now(),
+                ])->save();
+
+                Auth::login($user, true);
+                $request->session()->regenerate();
+                $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
+                $this->onlineStatus->markOnline($user);
+
+                Log::info('OAuth trusted device login - bypassing all challenges', [
+                    'user_id' => $user->id,
+                    'provider' => $driverName,
+                    'device_id' => $currentDeviceId
+                ]);
+
+                return redirect()->to($this->redirects->url($user));
+            }
+
+            // 🛡️ NOT trusted → Check if 2FA is enabled
+            $userSecurity = $user->userSecurity;
+            if ($userSecurity && $userSecurity->two_factor_enabled) {
+                $request->session()->put('2fa.pending_user_id', $user->id);
+                $request->session()->put('2fa.remember', true);
+                $request->session()->put('2fa.started_at', now()->timestamp);
+
+                Log::info('2FA required for OAuth login (untrusted device)', [
+                    'user_id'  => $user->id,
+                    'provider' => $driverName,
+                ]);
+
+                return redirect()->route('auth.2fa.show');
+            }
+
+            // 📧 Email OTP for accounts WITH local password
+            if ($this->hasLocalPassword($user) && $this->hasDeliverableEmail($user)) {
+                $challengeId = $this->otpService->beginLogin(
+                    $user,
+                    $request->session()->getId(),
+                    $request->ip(),
+                    (string) $request->userAgent()
+                );
+
+                $request->session()->put('login.pending_user_id', $user->id);
+                $request->session()->put('login.challenge_id', $challengeId);
+                $request->session()->put('login.remember', true);
+                $request->session()->put('login.started_at', now()->timestamp);
+
+                Log::info('Email OTP required for OAuth login (has local password, untrusted device)', [
+                    'user_id' => $user->id,
+                    'provider' => $driverName,
+                ]);
+
+                return redirect()->route('auth.otp.show', ['email' => $user->email]);
+            }
+
+            // 🚀 OAuth-only users (no local password) → track device and login
+            Log::info('OAuth-only login: tracking device and logging in', [
+                'user_id'  => $user->id,
+                'provider' => $driverName,
+            ]);
+
+            // ✅ CRITICAL: Track device BEFORE login for OAuth-only users
+            try {
+                $device = $this->deviceTracking->recordDevice($user, $request);
+                Log::info('Device tracked for OAuth-only login', [
+                    'user_id' => $user->id,
+                    'device_id' => $device->device_id,
+                    'device_name' => $device->device_name,
+                    'provider' => $driverName,
+                    'was_new' => $device->wasRecentlyCreated,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to track device for OAuth login', [
+                    'user_id' => $user->id,
+                    'provider' => $driverName,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                // Don't fail login due to device tracking error
+            }
+
             Auth::login($user, true);
             $request->session()->regenerate();
-
-            // Mark user as online after OAuth login
+            $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
             $this->onlineStatus->markOnline($user);
 
             return redirect()->to($this->redirects->url($user));
@@ -186,7 +278,7 @@ class OAuthController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return redirect()->route('auth.login')
                 ->withErrors(['oauth' => 'Authentication with ' . ucfirst($provider) . ' failed.']);
         }
@@ -196,22 +288,18 @@ class OAuthController extends Controller
     {
         $driver = Socialite::driver($driverName);
         $driver->redirectUrl($this->callbackUrl($driverName));
-        
+
         if ($driverName !== 'linkedin-openid' && filter_var(env('OAUTH_STATELESS', false), FILTER_VALIDATE_BOOLEAN)) {
             $driver->stateless();
         }
-        
+
         return $driver;
     }
 
     private function callbackUrl(string $driverName): string
     {
         $configured = config("services.$driverName.redirect");
-        if ($configured) {
-            return $configured;
-        }
-        
-        return rtrim(config('app.url'), '/') . "/auth/{$driverName}/callback";
+        return $configured ?: rtrim(config('app.url'), '/') . "/auth/{$driverName}/callback";
     }
 
     private function normalizedEmail(string $provider, SocialiteUser $s): ?string
@@ -222,44 +310,28 @@ class OAuthController extends Controller
 
     private function displayName(SocialiteUser $s): ?string
     {
-        if ($name = $s->getName()) {
-            return $name;
-        }
-        
+        if ($name = $s->getName()) return $name;
         $raw = $s->user ?? [];
-        
-        if (isset($raw['name'])) {
-            return $raw['name'];
-        }
-        
+        if (isset($raw['name'])) return $raw['name'];
         $first = $raw['given_name'] ?? $raw['localizedFirstName'] ?? null;
         $last  = $raw['family_name'] ?? $raw['localizedLastName'] ?? null;
-        
         return trim(($first ?: '') . ' ' . ($last ?: '')) ?: null;
     }
 
     private function refreshUserProfile(User $user, ?string $name, ?string $email, ?string $avatar): void
     {
         $changes = [];
-        
-        if (!$user->name && $name) {
-            $changes['name'] = $name;
-        }
-        
-        if (!$user->avatar_url && $avatar) {
-            $changes['avatar_url'] = $avatar;
-        }
-        
+        if (!$user->name && $name)          $changes['name'] = $name;
+        if (!$user->avatar_url && $avatar)  $changes['avatar_url'] = $avatar;
+
         if (!$user->email_verified_at && $email && str_contains($email, '@')) {
             if (empty($user->email) || str_contains($user->email, '@users.noreply.local')) {
                 $changes['email'] = strtolower($email);
             }
             $changes['email_verified_at'] = Carbon::now();
         }
-        
-        if ($changes) {
-            $user->update($changes);
-        }
+
+        if ($changes) $user->update($changes);
     }
 
     private function uniqueUsername(string $seed): string
@@ -268,17 +340,24 @@ class OAuthController extends Controller
         $base = (string) Str::limit($base ?: 'user', 40, '');
         $username = $base;
         $n = 0;
-        
         while (User::where('username', $username)->exists()) {
             $n++;
             $username = Str::limit($base, 40, '') . "_{$n}";
-            
             if ($n > 5000) {
                 $username = 'user_' . Str::random(8);
                 break;
             }
         }
-        
         return $username;
+    }
+
+    private function hasLocalPassword(User $user): bool
+    {
+        return !empty($user->password);
+    }
+
+    private function hasDeliverableEmail(User $user): bool
+    {
+        return !empty($user->email) && !str_ends_with($user->email, '@users.noreply.local');
     }
 }

@@ -884,6 +884,7 @@
     </style>
 @endpush
 
+
 @section('content')
     @stack('styles')
 
@@ -920,21 +921,27 @@
                     <ul class="settings-nav-list">
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.account', $username) }}"
-                                class="settings-nav-link {{ $activeSection === 'account' ? 'active' : '' }}">
+                                class="settings-nav-link 
+                                {{ $activeSection === 'account' ? 'active' : '' }}"
+                                 >
                                 <i class="fas fa-user"></i>
                                 <span>Account</span>
                             </a>
                         </li>
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.security', $username) }}"
-                                class="settings-nav-link {{ $activeSection === 'security' ? 'active' : '' }}">
+                                class="settings-nav-link 
+                                {{ $activeSection === 'security' ? 'active' : '' }}"
+                                 >
                                 <i class="fas fa-shield-alt"></i>
                                 <span>Security</span>
                             </a>
                         </li>
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.privacy', $username) }}"
-                                class="settings-nav-link {{ $activeSection === 'privacy' ? 'active' : '' }}">
+                                class="settings-nav-link
+                                 {{ $activeSection === 'privacy' ? 'active' : '' }}"
+                                  >
                                 <i class="fas fa-lock"></i>
                                 <span>Privacy & Visibility</span>
                             </a>
@@ -947,7 +954,8 @@
                     <ul class="settings-nav-list">
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.notifications', $username) }}"
-                                class="settings-nav-link {{ $activeSection === 'notifications' ? 'active' : '' }}">
+                                class="settings-nav-link 
+                                {{ $activeSection === 'notifications' ? 'active' : '' }}">
                                 <i class="fas fa-bell"></i>
                                 <span>Notifications</span>
                             </a>

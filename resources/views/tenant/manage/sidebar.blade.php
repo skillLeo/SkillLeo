@@ -190,9 +190,9 @@
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <ul class="nav-menu">
-                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="{{route('tenant.settings.account',$username)}}"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="#"><i class="fas fa-user-circle"></i> Profile</a></li>
-                <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li  onclick="document.getElementById('logoutForm').submit()"><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
 

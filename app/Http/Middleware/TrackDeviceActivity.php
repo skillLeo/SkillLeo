@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\Auth\DeviceTrackingService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\Auth\DeviceTrackingService;
 
 class TrackDeviceActivity
 {
@@ -14,14 +14,21 @@ class TrackDeviceActivity
     ) {}
 
     /**
-     * Handle an incoming request and track device activity
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
+        $response = $next($request);
+
+        // Only track authenticated users
         if (Auth::check()) {
             $this->deviceTracking->updateActivity(Auth::user(), $request);
         }
 
-        return $next($request);
+        return $response;
     }
 }

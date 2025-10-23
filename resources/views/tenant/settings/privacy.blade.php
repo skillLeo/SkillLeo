@@ -1,5 +1,4 @@
-## 6. Privacy Settings (resources/views/tenant/settings/privacy.blade.php)
-```blade
+
 @extends('tenant.settings.layout')
 
 @section('settings-content')

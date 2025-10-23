@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use App\Services\Auth\OtpService;
 use App\Services\Auth\AuthService;
-use App\Services\Auth\AuthRedirectService;
-use App\Services\Auth\DeviceTrackingService;
-use App\Services\Auth\OnlineStatusService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
+use App\Services\Auth\AuthRedirectService;
+use App\Services\Auth\OnlineStatusService;
+use App\Services\Auth\DeviceTrackingService;
 
 class OtpController extends Controller
 {
+
     public function __construct(
         protected OtpService $otp,
         protected AuthService $authService,
@@ -22,6 +26,62 @@ class OtpController extends Controller
         protected DeviceTrackingService $deviceTracking,
         protected OnlineStatusService $onlineStatus
     ) {}
+
+
+
+
+
+
+
+    public function beginAction(User $user, string $sessionId, string $action, int $ttl = 300): string
+    {
+        $challengeId = \Illuminate\Support\Str::uuid()->toString();
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $hash = password_hash($code, PASSWORD_BCRYPT);
+    
+        $payload = [
+            'user_id'   => $user->id,
+            'hash'      => $hash,
+            'expires_at'=> now()->addSeconds($ttl)->getTimestamp(),
+            'attempts'  => 0,
+            'max_attempts' => 5,
+            'session'   => $sessionId,
+            'action'    => $action,
+        ];
+    
+        Cache::put("otp:{$action}:{$challengeId}", $payload, $ttl + 60);
+    
+        // email the code
+        Mail::to($user->email)->queue(new \App\Mail\OtpCodeMail($user->name ?? 'there', $code, $ttl));
+    
+        return $challengeId;
+    }
+    
+    public function verifyAction(string $action, string $challengeId, string $code, string $sessionId): bool
+    {
+        $key = "otp:{$action}:{$challengeId}";
+        $payload = Cache::get($key);
+        if (! $payload) return false;
+        if ($payload['session'] !== $sessionId) return false;
+        if (time() > $payload['expires_at']) { Cache::forget($key); return false; }
+        if ($payload['attempts'] >= ($payload['max_attempts'] ?? 5)) { Cache::forget($key); return false; }
+    
+        $payload['attempts']++;
+        Cache::put($key, $payload, 60);
+    
+        $ok = password_verify($code, $payload['hash']);
+        if ($ok) Cache::forget($key);
+        return $ok;
+    }
+    
+
+
+
+
+
+
+
+
 
     public function show(Request $request)
     {

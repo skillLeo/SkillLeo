@@ -30,6 +30,8 @@ use App\Http\Controllers\Tenant\Manage\DashboardController;
 use App\Http\Controllers\Tenant\Manage\ManageProfileController;
 use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\AccountController;
+use App\Http\Controllers\Settings\DangerController;
+use App\Http\Controllers\Settings\SecurityController;
 
 
 
@@ -42,9 +44,18 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
     Route::get('/cv-output',       [CvUploadController::class, 'output'])->name('cv.output');
     Route::post('/cv-save', [CvUploadController::class, 'save'])->name('cv.save');
 });
-// Route::post('/cv-upload.json', [CvUploadController::class, 'uploadJson'])->name('cv.upload.json');
-// Route::post('/cv-upload', [CvUploadController::class, 'upload'])->name('cv.upload');
-// Route::get('/cv-output', [CvUploadController::class, 'output'])->name('cv.output');
+
+
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+
+
+
+
+// NOT in auth group:
+Route::get('/settings/account/password/confirm/{token}', [AccountController::class, 'confirmPasswordChange'])
+    ->name('tenant.settings.password.confirm')
+    ->middleware('signed');
 
 
 
@@ -57,17 +68,11 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+// keep these in auth group
+Route::middleware(['auth'])->group(function () {
+    Route::post('/{username}/settings/account/password', [AccountController::class, 'updatePassword'])
+        ->name('tenant.settings.password.update');
+    // ... other authenticated settings routes
 
 
 
@@ -76,14 +81,13 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
     Route::prefix('{username}')
     ->name('tenant.')
+    ->middleware(['auth', 'verified'])
     ->group(function () {
 
         Route::get('/', [ProfileController::class, 'index'])->name('profile');
 
-
         Route::prefix('manage')->name('manage.')->group(function () {
             Route::get('',            [DashboardController::class,     'index'])->name('dashboard');
-
             Route::get('personal',    [ManageProfileController::class, 'personal'])->name('personal');
             Route::get('skills',      [ManageProfileController::class, 'skills'])->name('skills');
             Route::get('education',   [ManageProfileController::class, 'education'])->name('education');
@@ -92,64 +96,77 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
             Route::get('languages',   [ManageProfileController::class, 'languages'])->name('languages');
         });
 
-        Route::put('skills/update',    [ProfileController::class, 'updateSkills'])->name('skills.update');
-        Route::put('education/update', [ProfileController::class, 'updateEducation'])->name('education.update');
-        Route::put('experience/update', [ProfileController::class, 'updateExperience'])->name('experience.update');
-        Route::put('portfolio/update', [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
-        Route::put('languages/update', [ProfileController::class, 'updateLanguages'])->name('language.update');
+        // Profile updates
+        Route::put('skills/update',      [ProfileController::class, 'updateSkills'])->name('skills.update');
+        Route::put('education/update',   [ProfileController::class, 'updateEducation'])->name('education.update');
+        Route::put('experience/update',  [ProfileController::class, 'updateExperience'])->name('experience.update');
+        Route::put('portfolio/update',   [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
+        Route::put('languages/update',   [ProfileController::class, 'updateLanguages'])->name('language.update');
+        Route::put('profile/update',     [ProfileController::class, 'updatePersonal'])->name('profile.update');
 
-
-
-        Route::put('profile/update', [ProfileController::class, 'updatePersonal'])->name('profile.update');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Settings hub
         Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/', [SettingsController::class, 'index'])->name('index');
-            Route::get('/security', [SettingsController::class, 'security'])->name('security');
-            Route::get('/privacy', [SettingsController::class, 'privacy'])->name('privacy');
-            Route::get('/notifications', [SettingsController::class, 'notifications'])->name('notifications');
-            Route::get('/appearance', [SettingsController::class, 'appearance'])->name('appearance');
-            Route::get('/billing', [SettingsController::class, 'billing'])->name('billing');
-            Route::get('/data', [SettingsController::class, 'data'])->name('data');
-            Route::get('/advanced', [SettingsController::class, 'advanced'])->name('advanced');
-            Route::get('/danger', [SettingsController::class, 'danger'])->name('danger');
+            Route::get('/',               [SettingsController::class, 'index'])->name('index');
+            Route::get('/privacy',        [SettingsController::class, 'privacy'])->name('privacy');
+            Route::get('/notifications',  [SettingsController::class, 'notifications'])->name('notifications');
+            Route::get('/appearance',     [SettingsController::class, 'appearance'])->name('appearance');
+            Route::get('/billing',        [SettingsController::class, 'billing'])->name('billing');
+            Route::get('/data',           [SettingsController::class, 'data'])->name('data');
+            Route::get('/advanced',       [SettingsController::class, 'advanced'])->name('advanced');
 
+            // Account (profile/email/password/devices)
+            Route::get('/account',                            [AccountController::class, 'account'])->name('account');
+            Route::post('/account/profile',                   [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::post('/account/password',                  [AccountController::class, 'updatePassword'])->name('password.update');
+            Route::get('/account/password/confirm/{token}',   [AccountController::class, 'confirmPasswordChange'])->name('password.confirm');
+            Route::post('/account/email/verification/send',   [AccountController::class, 'sendVerification'])->name('account.email.verify.send');
 
+            // Devices (Account page) - Using POST for all actions
+            Route::post('/account/devices/revoke-others',     [AccountController::class, 'revokeOtherSessions'])->name('devices.revoke_others');
+            Route::post('/account/devices/{device}/trust',    [AccountController::class, 'trustDevice'])->name('devices.trust');
+            Route::post('/account/devices/{device}/revoke',   [AccountController::class, 'revokeDevice'])->name('devices.revoke');
 
+            // Danger Zone
+            Route::get('/danger',                              [DangerController::class, 'danger'])->name('danger');
+            Route::post('/danger/hibernate',                   [DangerController::class, 'hibernate'])->name('danger.hibernate');
+            Route::post('/danger/delete/start',                [DangerController::class, 'deleteStart'])->name('danger.delete.start');
+            Route::post('/danger/delete/resend',               [DangerController::class, 'deleteResend'])->name('danger.delete.resend');
+            Route::post('/danger/delete/verify',               [DangerController::class, 'deleteVerify'])->name('danger.delete.verify');
+            Route::post('/danger/delete/cancel',               [DangerController::class, 'deleteCancel'])->name('danger.delete.cancel');
 
+            // Security Settings - Main Page
+            Route::get('/security', [SecurityController::class, 'security'])->name('security');
 
+            // Security - 2FA & Trusted Devices - Using POST for all actions
+            Route::prefix('security')->name('security.')->group(function () {
+                // Authenticator App
+                Route::post('/enable-2fa-step1',  [SecurityController::class, 'enable2FAStep1'])->name('enable2fa.step1');
+                Route::post('/enable-2fa-verify', [SecurityController::class, 'enable2FAVerify'])->name('enable2fa.verify');
+                Route::post('/disable-2fa',       [SecurityController::class, 'disable2FA'])->name('disable2fa');
 
+                // Email OTP
+                Route::post('/send-email-otp',    [SecurityController::class, 'sendEmailOtp'])->name('sendEmailOtp');
+                Route::post('/verify-email-otp',  [SecurityController::class, 'verifyEmailOtp'])->name('verifyEmailOtp');
+                Route::post('/disable-email-otp', [SecurityController::class, 'disableEmailOtp'])->name('disableEmailOtp');
 
+                // Phone/SMS OTP
+                Route::post('/send-phone-otp',    [SecurityController::class, 'sendPhoneOtp'])->name('sendPhoneOtp');
+                Route::post('/verify-phone-otp',  [SecurityController::class, 'verifyPhoneOtp'])->name('verifyPhoneOtp');
+                Route::post('/disable-phone-otp', [SecurityController::class, 'disablePhoneOtp'])->name('disablePhoneOtp');
 
+                // Recovery Codes
+                Route::post('/regenerate-recovery-codes', [SecurityController::class, 'regenerateRecoveryCodes'])->name('regenerateRecoveryCodes');
 
+                // Advanced Security Settings
+                Route::post('/toggle-2fa-new-location',   [SecurityController::class, 'toggle2FANewLocation'])->name('toggle2FANewLocation');
+                Route::post('/toggle-2fa-sensitive',      [SecurityController::class, 'toggle2FASensitive'])->name('toggle2FASensitive');
+                Route::post('/toggle-login-notifications',[SecurityController::class, 'toggleLoginNotifications'])->name('toggleLoginNotifications');
 
-
-
-
-
-            Route::get('/account', [AccountController::class, 'account'])->name('account');
-            Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
-            Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
-            Route::post('/account/email/verification/send', [AccountController::class, 'sendVerification'])
-                ->name('account.email.verify.send');
-            Route::delete('/account/devices/{device}', [AccountController::class, 'revokeDevice'])
-                ->name('account.devices.revoke');
-            Route::post('/account/devices/{device}/trust', [AccountController::class, 'trustDevice'])
-                ->name('account.devices.trust');
-            Route::post('/account/devices/revoke-others', [AccountController::class, 'revokeOtherSessions'])
-                ->name('account.devices.revoke_others');
+                // Trusted Devices (Security page) - Using POST for all actions
+                Route::get ('/trusted-devices',            [SecurityController::class, 'trustedDevices'])->name('trustedDevices');
+                Route::post('/trusted/{device}/untrust',   [SecurityController::class, 'untrustDevice'])->name('trusted.untrust');
+                Route::post('/trusted/untrust-all',        [SecurityController::class, 'untrustAllDevices'])->name('trusted.untrust_all');
+            });
         });
     });
 
@@ -158,63 +175,27 @@ Route::prefix('tenant/onboarding')->name('tenant.onboarding.')->group(function (
 
 
 
+    Route::put('reviews', [ProfileController::class, 'updateReviews'])
+        ->name('tenant.reviews.update');
+
+    Route::put('services', [ProfileController::class, 'updateServices'])
+        ->name('tenant.services.update');
+
+    Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
+        ->name('tenant.why.update');
 
 
 
 
+    Route::post('/filter-preferences', [ProfileController::class, 'updateFilterPreferences'])
+        ->name('tenant.filter-preferences')
+        ->middleware('auth');
 
 
-
-
-
-
-
- 
-
-Route::put('reviews', [ProfileController::class, 'updateReviews'])
-    ->name('tenant.reviews.update');
-
-Route::put('services', [ProfileController::class, 'updateServices'])
-    ->name('tenant.services.update');
-
-Route::put('why-choose-me', [ProfileController::class, 'updateWhyChoose'])
-    ->name('tenant.why.update');
-
-
-
-
-Route::post('/filter-preferences', [ProfileController::class, 'updateFilterPreferences'])
-    ->name('tenant.filter-preferences')
-    ->middleware('auth');
-
-
-Route::post('/banner', [ProfileController::class, 'updateBanner'])
-    ->name('tenant.banner.update')
-    ->middleware(['auth']);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Route::post('/banner', [ProfileController::class, 'updateBanner'])
+        ->name('tenant.banner.update')
+        ->middleware(['auth']);
+});
 
 
 
@@ -283,8 +264,6 @@ Route::get('/admin/institutions', function () {
 
 
 
-// Logout
-Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 // OAuth
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])
@@ -308,11 +287,21 @@ Route::middleware('guest.only')->group(function () {
 // Guest-only (login/register/otp/email verify)
 Route::middleware('guest.only')->prefix('auth')->name('auth.')->group(function () {
 
+
+    // 2FA (Authenticator) gate
+    Route::get('/2fa',               [AuthController::class, 'show2FA'])->name('2fa.show');
+    Route::post('/2fa',              [AuthController::class, 'verify2FA'])->name('2fa.verify')->middleware('throttle:6,1');
+    Route::get('/2fa/recovery',      [AuthController::class, 'show2FARecovery'])->name('2fa.recovery');
+    Route::post('/2fa/recovery',     [AuthController::class, 'verify2FARecovery'])->name('2fa.recovery.verify')->middleware('throttle:6,1');
+
+
+
+
     Route::get('login', [AuthController::class, 'loginshow'])->name('login');
     Route::post('login', [AuthController::class, 'submitLogin'])->name('login.submit');
 
     Route::get('register', [RegisterController::class, 'register'])->name('register');
-    Route::post('register', [PreSignupController::class, 'sendLink'])->name('register.submit');
+    Route::post('register/post', [PreSignupController::class, 'sendLink'])->name('register.submit');
     Route::get('register/confirm/{token}', [PreSignupController::class, 'confirm'])->name('register.confirm');
     Route::get('register/existing', [RegisterController::class, 'existing'])->name('register.existing');
     Route::post('register/resend', [PreSignupController::class, 'resend'])->name('register.resend');

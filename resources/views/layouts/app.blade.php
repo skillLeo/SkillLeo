@@ -17,6 +17,10 @@
     <link href="{{ asset('css/components.css') }}" rel="stylesheet">
     <link href="{{ asset('css/responsive.css') }}" rel="stylesheet">
 
+
+    <style>
+        *{box-sizing: border-box}
+    </style>
     <x-timezone-detector />
 
 
@@ -384,6 +388,10 @@
 
 
     <body class="ui-pro">
+        <form id="logoutForm" action="{{ route('auth.logout') }}" method="POST" style="display:none;">
+            @csrf
+        </form>
+    
         @yield('content')
 
 

@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('user_security', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-
+            $table->text('two_factor_secret')->nullable();  // ← ADDED THIS
             $table->boolean('two_factor_email')->default(false);
             $table->boolean('two_factor_phone')->default(false);
             $table->boolean('two_factor_enabled')->default(false);
