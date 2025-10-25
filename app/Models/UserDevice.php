@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Jenssegers\Agent\Agent;
 use App\Support\Device;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class UserDevice extends Model
 {
@@ -66,7 +68,7 @@ class UserDevice extends Model
         $currentDeviceId = Device::id(request());
         
         // Also ensure it's the same user
-        $currentUserId = auth()->id();
+        $currentUserId = Auth::id();
         
         return $this->device_id === $currentDeviceId 
             && $this->user_id === $currentUserId

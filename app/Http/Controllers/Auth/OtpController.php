@@ -15,10 +15,11 @@ use Illuminate\Support\Facades\Cache;
 use App\Services\Auth\AuthRedirectService;
 use App\Services\Auth\OnlineStatusService;
 use App\Services\Auth\DeviceTrackingService;
+use App\Mail\LoginNotificationMail;
+use Jenssegers\Agent\Agent;
 
 class OtpController extends Controller
 {
-
     public function __construct(
         protected OtpService $otp,
         protected AuthService $authService,
@@ -27,15 +28,9 @@ class OtpController extends Controller
         protected OnlineStatusService $onlineStatus
     ) {}
 
-
-
-
-
-
-
     public function beginAction(User $user, string $sessionId, string $action, int $ttl = 300): string
     {
-        $challengeId = \Illuminate\Support\Str::uuid()->toString();
+        $challengeId = Str::uuid()->toString();
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $hash = password_hash($code, PASSWORD_BCRYPT);
     
@@ -51,7 +46,7 @@ class OtpController extends Controller
     
         Cache::put("otp:{$action}:{$challengeId}", $payload, $ttl + 60);
     
-        // email the code
+        // Email the code
         Mail::to($user->email)->queue(new \App\Mail\OtpCodeMail($user->name ?? 'there', $code, $ttl));
     
         return $challengeId;
@@ -61,10 +56,16 @@ class OtpController extends Controller
     {
         $key = "otp:{$action}:{$challengeId}";
         $payload = Cache::get($key);
-        if (! $payload) return false;
+        if (!$payload) return false;
         if ($payload['session'] !== $sessionId) return false;
-        if (time() > $payload['expires_at']) { Cache::forget($key); return false; }
-        if ($payload['attempts'] >= ($payload['max_attempts'] ?? 5)) { Cache::forget($key); return false; }
+        if (time() > $payload['expires_at']) { 
+            Cache::forget($key); 
+            return false; 
+        }
+        if ($payload['attempts'] >= ($payload['max_attempts'] ?? 5)) { 
+            Cache::forget($key); 
+            return false; 
+        }
     
         $payload['attempts']++;
         Cache::put($key, $payload, 60);
@@ -73,15 +74,6 @@ class OtpController extends Controller
         if ($ok) Cache::forget($key);
         return $ok;
     }
-    
-
-
-
-
-
-
-
-
 
     public function show(Request $request)
     {
@@ -125,10 +117,14 @@ class OtpController extends Controller
 
         // Login user
         Auth::login($user, $remember);
+        $request->session()->regenerate();
         $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
 
-        // Mark user as online immediately after login
+        // Mark user as online
         $this->onlineStatus->markOnline($user);
+
+        // ✅ Send login notification if enabled
+        $this->sendLoginNotificationIfEnabled($user, $request);
 
         // Clear session data
         $request->session()->forget([
@@ -158,5 +154,50 @@ class OtpController extends Controller
         $request->session()->put('login.challenge_id', $challengeId);
 
         return back()->with('status', 'New code sent.');
+    }
+
+    /**
+     * ✅ Send login notification email if enabled
+     */
+    protected function sendLoginNotificationIfEnabled(User $user, Request $request): void
+    {
+        try {
+            $security = $user->security;
+            
+            // Check if login notifications are enabled
+            if (!$security || !$security->login_notifications) {
+                return;
+            }
+
+            $agent = new Agent();
+            $agent->setUserAgent($request->header('User-Agent'));
+
+            $loginDetails = [
+                'device' => $agent->device() ?: ($agent->isMobile() ? 'Mobile Device' : 'Desktop'),
+                'browser' => $agent->browser() . ' ' . $agent->version($agent->browser()),
+                'platform' => $agent->platform() . ' ' . $agent->version($agent->platform()),
+                'ip' => $request->ip(),
+                'location' => $this->getLocationFromIp($request->ip()),
+                'timestamp' => now(),
+            ];
+
+            Mail::to($user->email)->queue(new LoginNotificationMail($user, $loginDetails));
+            
+            Log::info('Login notification sent', ['user_id' => $user->id]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send login notification', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get location from IP address
+     */
+    protected function getLocationFromIp(string $ip): string
+    {
+        // Integrate services like ipinfo.io, ipapi.co, etc.
+        return 'Location Available';
     }
 }

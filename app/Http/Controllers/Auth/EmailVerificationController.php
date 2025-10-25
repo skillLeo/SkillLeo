@@ -14,7 +14,9 @@ class EmailVerificationController extends Controller
 
     public function notice(Request $request)
     {
-        $email = $request->session()->get('verify_email');
+        $email = $request->session()->get('verify_email') 
+              ?? $request->session()->get('signup_email');
+        
         return view('auth.verify-notice', compact('email'));
     }
 
@@ -22,16 +24,16 @@ class EmailVerificationController extends Controller
     {
         $user = User::findOrFail($id);
 
-        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             abort(403, 'Invalid verification link.');
         }
 
-        if (! $user->hasVerifiedEmail()) {
+        if (!$user->hasVerifiedEmail()) {
             $user->markEmailAsVerified();
             event(new Verified($user));
         }
 
         return redirect()->to($this->redirects->url($user))
-            ->with('status', 'Welcome! Please complete your onboarding.');
+            ->with('status', 'Email verified! Welcome to ' . config('app.name') . '.');
     }
 }

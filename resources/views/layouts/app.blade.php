@@ -396,6 +396,8 @@
 
 
         <script src="{{ asset('js/profile.js') }}"></script>
+
+        
         @stack('scripts')
         @section('scripts')
 
@@ -422,6 +424,12 @@
                 });
             });
         </script>
+
+
+
+
+
+
     </body>
 
     </html>

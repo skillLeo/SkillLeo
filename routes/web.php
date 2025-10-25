@@ -175,6 +175,128 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+
+
+    Route::get('/client/accept-invitation/{token}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'acceptInvitation'])
+    ->name('client.accept-invitation');
+
+
+    Route::prefix('{username}/manage/projects')
+    ->name('tenant.manage.projects.')
+    ->middleware(['auth', 'verified'])
+    ->group(function () {
+       // Search users endpoint
+       Route::get('/search-users', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchUsers'])
+       ->name('search-users');
+       Route::get('/search-clients', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchClients'])
+       ->name('search-clients');
+       Route::post('/invite-client', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'inviteClient'])
+       ->name('invite-client');
+
+
+
+
+        // Team
+        Route::prefix('/team')->name('team.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Tenant\Project\TeamController::class, 'index'])->name('index');
+            Route::get('/workload', [App\Http\Controllers\Tenant\Project\TeamController::class, 'workload'])->name('workload');
+        });
+
+        // Reports
+        Route::prefix('/reports')->name('reports.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Tenant\Project\ReportController::class, 'index'])->name('index');
+            Route::get('/velocity', [App\Http\Controllers\Tenant\Project\ReportController::class, 'velocity'])->name('velocity');
+            Route::get('/burndown', [App\Http\Controllers\Tenant\Project\ReportController::class, 'burndown'])->name('burndown');
+            Route::get('/time-tracking', [App\Http\Controllers\Tenant\Project\ReportController::class, 'timeTracking'])->name('time-tracking');
+        });
+
+        // Clients
+        Route::get('/clients', [App\Http\Controllers\Tenant\Project\ClientController::class, 'index'])
+            ->name('clients.index');
+
+        // Dashboard / overview
+        Route::get('/', [App\Http\Controllers\Tenant\Manage\DashboardController::class, 'index'])
+            ->name('dashboard');
+ 
+
+        // save draft, list, create, etc.
+        Route::post('/draft', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'saveDraft'])
+            ->name('draft');
+
+        Route::get('/list', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'index'])
+            ->name('list');
+
+        Route::post('/store', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'store'])
+            ->name('store');
+
+        // project-specific pages
+        Route::get('/{project}/board', [App\Http\Controllers\Tenant\Project\BoardController::class, 'show'])
+            ->name('board');
+
+        Route::get('/{project}/backlog', [App\Http\Controllers\Tenant\Project\BacklogController::class, 'index'])
+            ->name('backlog');
+
+        Route::get('/{project}/timeline', [App\Http\Controllers\Tenant\Project\TimelineController::class, 'show'])
+            ->name('timeline');
+
+        Route::prefix('/{project}/issues')->name('issues.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Tenant\Project\IssueController::class, 'index'])->name('index');
+            Route::get('/{issue}', [App\Http\Controllers\Tenant\Project\IssueController::class, 'show'])->name('show');
+        });
+
+        Route::prefix('/{project}/sprints')->name('sprints.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Tenant\Project\SprintController::class, 'index'])->name('index');
+            Route::get('/active', [App\Http\Controllers\Tenant\Project\SprintController::class, 'active'])->name('active');
+            Route::get('/planning', [App\Http\Controllers\Tenant\Project\SprintController::class, 'planning'])->name('planning');
+        });
+
+        Route::prefix('/{project}/milestones')->name('milestones.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'index'])->name('index');
+            Route::get('/{milestone}', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'show'])->name('show');
+        });
+
+        // MUST BE LAST: catch-all single project view
+        Route::get('/{project}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'show'])
+            ->name('show');
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     Route::put('reviews', [ProfileController::class, 'updateReviews'])
         ->name('tenant.reviews.update');
 

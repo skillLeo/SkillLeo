@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->boolean('two_factor_email')->default(false);
             $table->boolean('two_factor_phone')->default(false);
             $table->boolean('two_factor_enabled')->default(false);
+            $table->boolean('login_notifications')->default(true);
 
             $table->string('recovery_code')->nullable();
             $table->timestamp('last_verified_at')->nullable();

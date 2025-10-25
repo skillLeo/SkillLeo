@@ -18,9 +18,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
+use App\Mail\WelcomeMail;
+use App\Mail\LoginNotificationMail;
+use Jenssegers\Agent\Agent;
 
 class OAuthController extends Controller
 {
@@ -84,6 +88,8 @@ class OAuthController extends Controller
             $now      = now();
             $timezone = $request->input('timezone', 'UTC');
 
+            $isNewUser = false;
+
             $user = DB::transaction(function () use (
                 $driverName,
                 $providerUid,
@@ -93,7 +99,8 @@ class OAuthController extends Controller
                 $avatar,
                 $social,
                 $now,
-                $timezone
+                $timezone,
+                &$isNewUser
             ) {
                 $identity = OAuthIdentity::where([
                     'provider'         => $driverName,
@@ -127,13 +134,15 @@ class OAuthController extends Controller
                 $user = $email ? User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first() : null;
 
                 if (!$user) {
+                    $isNewUser = true; // ✅ Mark as new registration
+                    
                     $user = User::create([
                         'tenant_id'           => null,
                         'name'                => $name ?: ($nickname ?: 'User'),
                         'email'               => $email ?: "oauth_{$providerUid}@users.noreply.local",
                         'avatar_url'          => $avatar,
                         'email_verified_at'   => $email ? $now : null,
-                        'password'            => null, // OAuth-only signup
+                        'password'            => null,
                         'username'            => $this->uniqueUsername($nickname ?: ($name ?: 'user')),
                         'locale'              => 'en',
                         'timezone'            => $timezone,
@@ -172,7 +181,12 @@ class OAuthController extends Controller
                 return $user;
             });
 
-            // 🔐 CRITICAL FIX: Check trusted device FIRST (before any 2FA checks)
+            // ✅ Send welcome email for new registrations
+            if ($isNewUser) {
+                $this->sendWelcomeEmail($user, $request);
+            }
+
+            // 🔐 Check trusted device FIRST
             $currentDeviceId = Device::id($request);
             $trustedDevice = UserDevice::where('user_id', $user->id)
                 ->where('device_id', $currentDeviceId)
@@ -181,7 +195,7 @@ class OAuthController extends Controller
                 ->first();
 
             if ($trustedDevice) {
-                // ✅ Trusted device - refresh and login immediately (NO 2FA, NO OTP)
+                // ✅ Trusted device - login immediately
                 $trustedDevice->forceFill([
                     'ip_address'       => $request->ip(),
                     'user_agent'       => (string) $request->userAgent(),
@@ -194,7 +208,10 @@ class OAuthController extends Controller
                 $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
                 $this->onlineStatus->markOnline($user);
 
-                Log::info('OAuth trusted device login - bypassing all challenges', [
+                // ✅ Send login notification if enabled
+                $this->sendLoginNotificationIfEnabled($user, $request);
+
+                Log::info('OAuth trusted device login', [
                     'user_id' => $user->id,
                     'provider' => $driverName,
                     'device_id' => $currentDeviceId
@@ -204,13 +221,13 @@ class OAuthController extends Controller
             }
 
             // 🛡️ NOT trusted → Check if 2FA is enabled
-            $userSecurity = $user->userSecurity;
+            $userSecurity = $user->security;
             if ($userSecurity && $userSecurity->two_factor_enabled) {
                 $request->session()->put('2fa.pending_user_id', $user->id);
                 $request->session()->put('2fa.remember', true);
                 $request->session()->put('2fa.started_at', now()->timestamp);
 
-                Log::info('2FA required for OAuth login (untrusted device)', [
+                Log::info('2FA required for OAuth login', [
                     'user_id'  => $user->id,
                     'provider' => $driverName,
                 ]);
@@ -232,7 +249,7 @@ class OAuthController extends Controller
                 $request->session()->put('login.remember', true);
                 $request->session()->put('login.started_at', now()->timestamp);
 
-                Log::info('Email OTP required for OAuth login (has local password, untrusted device)', [
+                Log::info('Email OTP required for OAuth login', [
                     'user_id' => $user->id,
                     'provider' => $driverName,
                 ]);
@@ -240,13 +257,7 @@ class OAuthController extends Controller
                 return redirect()->route('auth.otp.show', ['email' => $user->email]);
             }
 
-            // 🚀 OAuth-only users (no local password) → track device and login
-            Log::info('OAuth-only login: tracking device and logging in', [
-                'user_id'  => $user->id,
-                'provider' => $driverName,
-            ]);
-
-            // ✅ CRITICAL: Track device BEFORE login for OAuth-only users
+            // 🚀 OAuth-only users - track device and login
             try {
                 $device = $this->deviceTracking->recordDevice($user, $request);
                 Log::info('Device tracked for OAuth-only login', [
@@ -254,22 +265,22 @@ class OAuthController extends Controller
                     'device_id' => $device->device_id,
                     'device_name' => $device->device_name,
                     'provider' => $driverName,
-                    'was_new' => $device->wasRecentlyCreated,
                 ]);
             } catch (\Exception $e) {
                 Log::error('Failed to track device for OAuth login', [
                     'user_id' => $user->id,
                     'provider' => $driverName,
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
                 ]);
-                // Don't fail login due to device tracking error
             }
 
             Auth::login($user, true);
             $request->session()->regenerate();
             $this->authService->recordLogin($user, $request->ip(), (string) $request->userAgent());
             $this->onlineStatus->markOnline($user);
+
+            // ✅ Send login notification if enabled
+            $this->sendLoginNotificationIfEnabled($user, $request);
 
             return redirect()->to($this->redirects->url($user));
 
@@ -360,4 +371,74 @@ class OAuthController extends Controller
     {
         return !empty($user->email) && !str_ends_with($user->email, '@users.noreply.local');
     }
+
+    /**
+     * ✅ Send welcome email
+     */
+    protected function sendWelcomeEmail(User $user, Request $request): void
+    {
+        try {
+            $agent = new Agent();
+            $agent->setUserAgent($request->header('User-Agent'));
+
+            $registrationDetails = [
+                'device' => $agent->device() ?: ($agent->isMobile() ? 'Mobile Device' : 'Desktop'),
+                'ip' => $request->ip(),
+                'timestamp' => now(),
+            ];
+
+            Mail::to($user->email)->queue(new WelcomeMail($user, $registrationDetails));
+            
+            Log::info('Welcome email sent', ['user_id' => $user->id]);
+        } catch (\Exception $e) {Log::error('Failed to send welcome email', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * ✅ Send login notification email if enabled
+ */
+protected function sendLoginNotificationIfEnabled(User $user, Request $request): void
+{
+    try {
+        $security = $user->security;
+        
+        // Check if login notifications are enabled
+        if (!$security || !$security->login_notifications) {
+            return;
+        }
+
+        $agent = new Agent();
+        $agent->setUserAgent($request->header('User-Agent'));
+
+        $loginDetails = [
+            'device' => $agent->device() ?: ($agent->isMobile() ? 'Mobile Device' : 'Desktop'),
+            'browser' => $agent->browser() . ' ' . $agent->version($agent->browser()),
+            'platform' => $agent->platform() . ' ' . $agent->version($agent->platform()),
+            'ip' => $request->ip(),
+            'location' => $this->getLocationFromIp($request->ip()),
+            'timestamp' => now(),
+        ];
+
+        Mail::to($user->email)->queue(new LoginNotificationMail($user, $loginDetails));
+        
+        Log::info('Login notification sent', ['user_id' => $user->id]);
+    } catch (\Exception $e) {
+        Log::error('Failed to send login notification', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Get location from IP address
+ */
+protected function getLocationFromIp(string $ip): string
+{
+    // Integrate services like ipinfo.io, ipapi.co, etc.
+    return 'Location Available';
+}
 }

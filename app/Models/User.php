@@ -630,7 +630,30 @@ public function getBannerPositionAttribute(): string
                $security->two_factor_email || 
                $security->two_factor_phone;
     }
-    }
+
+
+
+
+
+
+
+
+
+
+    public function projectsAsTeamMember()
+{
+    return $this->belongsToMany(\App\Models\Project::class, 'project_team')
+        ->withTimestamps();
+}
+
+public function assignedTasks()
+{
+    return $this->hasMany(\App\Models\Task::class, 'assigned_to');
+}
+
+
+
+}
     
 
 

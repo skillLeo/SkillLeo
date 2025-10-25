@@ -51,26 +51,7 @@
             --input-bg: var(--card);
             --input-text: var(--ink);
             --input-border: var(--border);
-        }
 
-        body {
-            font-family: "Inter", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            background: linear-gradient(180deg, rgba(19, 81, 216, 0.04) 0%, rgba(19, 81, 216, 0.02) 150px, rgba(255, 255, 255, 0) 300px);
-            background-color: var(--bg);
-            background-attachment: fixed;
-            min-height: 100vh;
-            color: var(--text-body);
-            font-size: var(--fs-body);
-            padding-top: var(--nav-height-desktop);
-            -webkit-text-size-adjust: 100%;
-            -moz-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-        }
-
-        :root {
             /* Layout Variables */
             --settings-sidebar-width: 280px;
             --settings-content-max: 920px;
@@ -107,11 +88,171 @@
             --z-toggle-btn: 1003;
         }
 
-        /* ============================================
-                2. BASE LAYOUT & CONTAINER
-                ============================================ */
+
+
+        [data-theme="dark"] {
+            /* Core Background Colors */
+            --bg: #000000;
+            --card: #1b1f23;
+            --ink: #ffffff;
+
+            /* Base text colors */
+            --muted: #c0c0c0;
+            --muted2: #888888;
+
+            /* Border & Dividers */
+            --border: #2d3135;
+
+            /* Accent Colors */
+            --accent: #4a8fff;
+            --accent-dark: #2e6fd9;
+            --accent-light: #4a8fff25;
+
+            /* AI Widget */
+            --apc-bg: #1b1f23;
+
+            /* Gradients remain same */
+            --gradient-border: linear-gradient(135deg,
+                    #667eea 0%,
+                    #764ba2 35%,
+                    #f093fb 70%,
+                    #4facfe 100%);
+            --gradient-button: linear-gradient(90deg, #5b86e5 0%, #36d1dc 100%);
+
+            /* Text Colors by Size/Context - Dark Mode */
+            --text-primary: #ffffff;
+            --text-heading: #ffffff;
+            --text-body: #c0c0c0;
+            --text-muted: #9ca3af;
+            --text-subtle: #6b7280;
+            --text-disabled: #4b5563;
+            --text-link: #60a5fa;
+            --text-accent: #4a8fff;
+
+            /* Nav specific */
+            --nav-bg: #1b1f23;
+            --nav-border: #2d3135;
+            --nav-text: #c0c0c0;
+            --nav-icon: #c0c0c0;
+
+            /* Input/Form colors */
+            --input-bg: #1b1f23;
+            --input-border: #2d3135;
+            --input-text: #ffffff;
+            --input-placeholder: #6b7280;
+
+            /* Card specific text */
+            --card-title: #ffffff;
+            --card-subtitle: #9ca3af;
+            --card-desc: #c0c0c0;
+            --card-meta: #6b7280;
+
+            /* Button text */
+            --btn-text-primary: #ffffff;
+            --btn-text-secondary: #c0c0c0;
+
+            /* Special elements */
+            --tag-text: #c0c0c0;
+            --tag-bg: #1b1f23;
+            --tag-border: #4a8fff;
+            --badge-bg: #4a8fff;
+            --badge-text: #ffffff;
+
+            /* Section headers */
+            --section-title: #ffffff;
+            --section-text: #c0c0c0;
+
+            /* Avatar/Photo placeholder */
+            --photo-placeholder-bg: #2d3135;
+            --photo-placeholder-text: #6b7280;
+            --photo-circle-bg: #2d3135;
+            --photo-circle-text: #6b7280;
+
+            /* Skill items */
+            --skill-text: #c0c0c0;
+            --skill-divider: #2d3135;
+
+            /* Review card */
+            --review-card-bg: #1b1f23;
+            --review-card-border: #2d3135;
+            --review-name: #ffffff;
+            --review-location: #9ca3af;
+            --review-text: #c0c0c0;
+            --quote-icon: #374151;
+
+            /* Education */
+            --edu-text: #9ca3af;
+            --edu-date: #6b7280;
+
+            /* About section */
+            --about-text: #c0c0c0;
+
+            /* Upload box */
+            --upload-text: #ffffff;
+            --upload-placeholder: #6b7280;
+            --or-text: #6b7280;
+            --or-line: #2d3135;
+
+            /* AI Creator */
+            --ai-title: #ffffff;
+            --ai-desc: #9ca3af;
+
+            /* Social icons */
+            --social-icon: #9ca3af;
+
+            /* Navigation Dark Mode */
+            --nav-bg-dark: rgba(27, 31, 35, 0.95);
+            --nav-bg-gradient: linear-gradient(to bottom,
+                    rgba(27, 31, 35, 0.98) 0%,
+                    rgba(27, 31, 35, 0.92) 100%);
+            --nav-border-dark: rgba(255, 255, 255, 0.08);
+            --nav-shadow-dark: 0 1px 3px rgba(0, 0, 0, 0.4),
+                0 4px 12px rgba(0, 0, 0, 0.25);
+
+            /* Search Dark */
+            --search-bg-dark: rgba(45, 49, 53, 0.8);
+            --search-border-dark: rgba(255, 255, 255, 0.12);
+            --search-icon-dark: #9ca3af;
+            --search-text-dark: #ffffff;
+            --search-placeholder-dark: #6b7280;
+
+            /* Icons & Buttons Dark */
+            --icon-btn-bg-dark: rgba(45, 49, 53, 0.6);
+            --icon-btn-hover-dark: rgba(74, 143, 255, 0.15);
+            --icon-color-dark: #c0c0c0;
+
+            /* Share Button Dark */
+            --share-btn-bg-dark: linear-gradient(135deg, #4a8fff 0%, #2e6fd9 100%);
+            --share-btn-hover-dark: linear-gradient(135deg, #5b9fff 0%, #3e7fe9 100%);
+
+            /* Badge Dark */
+            --badge-bg-dark: #ef4444;
+            --badge-border-dark: rgba(27, 31, 35, 0.95);
+        }
+
         body {
-            background: var(--bg);
+            font-family: "Inter", -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(180deg, rgba(19, 81, 216, 0.04) 0%, rgba(19, 81, 216, 0.02) 150px, rgba(255, 255, 255, 0) 300px);
+            background-color: var(--bg);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-body);
+            font-size: var(--fs-body);
+            padding-top: var(--nav-height-desktop);
+            -webkit-text-size-adjust: 100%;
+            -moz-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+
+        /* ============================================
+                    2. BASE LAYOUT & CONTAINER
+                    ============================================ */
+        body {
+
             padding-top: var(--nav-height-desktop);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
         }
@@ -125,8 +266,8 @@
         }
 
         /* ============================================
-                3. LEFT SIDEBAR STYLING
-                ============================================ */
+                    3. LEFT SIDEBAR STYLING
+                    ============================================ */
         .settings-sidebar {
             width: var(--settings-sidebar-width);
             background: var(--card);
@@ -180,8 +321,8 @@
         }
 
         /* ============================================
-                4. SEARCH BAR IN SIDEBAR
-                ============================================ */
+                    4. SEARCH BAR IN SIDEBAR
+                    ============================================ */
         .settings-search {
             padding: var(--space-lg);
             border-bottom: 1px solid var(--border);
@@ -231,8 +372,8 @@
         }
 
         /* ============================================
-                5. NAVIGATION MENU
-                ============================================ */
+                    5. NAVIGATION MENU
+                    ============================================ */
         .settings-nav {
             padding: var(--space-lg) 0;
         }
@@ -316,8 +457,8 @@
         }
 
         /* ============================================
-                6. MAIN CONTENT AREA
-                ============================================ */
+                    6. MAIN CONTENT AREA
+                    ============================================ */
         .settings-content {
             flex: 1;
             padding: var(--space-2xl);
@@ -347,8 +488,8 @@
         }
 
         /* ============================================
-                7. CARDS - MODERN DESIGN
-                ============================================ */
+                    7. CARDS - MODERN DESIGN
+                    ============================================ */
         .settings-card {
             background: var(--card);
             border: 1px solid var(--border);
@@ -412,8 +553,8 @@
         }
 
         /* ============================================
-                8. FORM ELEMENTS - PROFESSIONAL STYLE
-                ============================================ */
+                    8. FORM ELEMENTS - PROFESSIONAL STYLE
+                    ============================================ */
         .settings-form-group {
             margin-bottom: var(--space-xl);
         }
@@ -475,8 +616,8 @@
         }
 
         /* ============================================
-                9. TOGGLE SWITCHES - MODERN IOS STYLE
-                ============================================ */
+                    9. TOGGLE SWITCHES - MODERN IOS STYLE
+                    ============================================ */
         .settings-toggle {
             display: flex;
             align-items: center;
@@ -555,8 +696,8 @@
         }
 
         /* ============================================
-                10. BUTTONS - MODERN & ENGAGING
-                ============================================ */
+                    10. BUTTONS - MODERN & ENGAGING
+                    ============================================ */
         .settings-btn {
             padding: 11px 22px;
             border-radius: var(--radius-md);
@@ -621,8 +762,8 @@
         }
 
         /* ============================================
-                11. RIGHT SIDEBAR (OPTIONAL)
-                ============================================ */
+                    11. RIGHT SIDEBAR (OPTIONAL)
+                    ============================================ */
         .settings-right-sidebar {
             width: var(--settings-right-width);
             padding: var(--space-2xl) var(--space-lg);
@@ -654,8 +795,8 @@
         }
 
         /* ============================================
-                12. MOBILE TOGGLE BUTTON
-                ============================================ */
+                    12. MOBILE TOGGLE BUTTON
+                    ============================================ */
         .settings-toggle-btn {
             position: fixed;
             bottom: 24px;
@@ -686,8 +827,8 @@
         }
 
         /* ============================================
-                13. RESPONSIVE BREAKPOINTS
-                ============================================ */
+                    13. RESPONSIVE BREAKPOINTS
+                    ============================================ */
 
         /* Large Screens (1200px+) */
         @media (max-width: 1200px) {
@@ -791,8 +932,8 @@
         }
 
         /* ============================================
-                14. UTILITY CLASSES
-                ============================================ */
+                    14. UTILITY CLASSES
+                    ============================================ */
 
         /* Spacing Utilities */
         .mb-0 {
@@ -902,15 +1043,9 @@
             <div class="settings-search">
                 <div class="settings-search-wrapper">
                     <i class="fas fa-search settings-search-icon"></i>
-                    <input type="search" class="settings-search-input" placeholder="Search settings..." id="settingsSearch"  
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    aria-autocomplete="none"
-                    inputmode="text"
-                    
-                    >
+                    <input type="search" class="settings-search-input" placeholder="Search settings..." id="settingsSearch"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                        aria-autocomplete="none" inputmode="text">
                 </div>
             </div>
 
@@ -922,8 +1057,7 @@
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.account', $username) }}"
                                 class="settings-nav-link 
-                                {{ $activeSection === 'account' ? 'active' : '' }}"
-                                 >
+                                {{ $activeSection === 'account' ? 'active' : '' }}">
                                 <i class="fas fa-user"></i>
                                 <span>Account</span>
                             </a>
@@ -931,8 +1065,7 @@
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.security', $username) }}"
                                 class="settings-nav-link 
-                                {{ $activeSection === 'security' ? 'active' : '' }}"
-                                 >
+                                {{ $activeSection === 'security' ? 'active' : '' }}">
                                 <i class="fas fa-shield-alt"></i>
                                 <span>Security</span>
                             </a>
@@ -940,8 +1073,7 @@
                         <li class="settings-nav-item">
                             <a href="{{ route('tenant.settings.privacy', $username) }}"
                                 class="settings-nav-link
-                                 {{ $activeSection === 'privacy' ? 'active' : '' }}"
-                                  >
+                                 {{ $activeSection === 'privacy' ? 'active' : '' }}">
                                 <i class="fas fa-lock"></i>
                                 <span>Privacy & Visibility</span>
                             </a>
