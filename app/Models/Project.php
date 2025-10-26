@@ -26,27 +26,13 @@ protected $guarded = [];
         'estimated_hours' => 'decimal:2',
     ];
 
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
+ 
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class)->orderBy('order');
-    }
-
-    public function team(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'project_team')
-            ->withPivot(['role', 'tech_stack', 'position'])
-            ->withTimestamps();
-    }
+ 
 
     protected static function boot()
     {
@@ -57,5 +43,40 @@ protected $guarded = [];
                 $project->user_id = Auth::id();
             }
         });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function user()
+    {
+        // owner (workspace owner / seller)
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function team()
+    {
+        return $this->belongsToMany(User::class, 'project_team')
+            ->withPivot(['role','tech_stack','position'])
+            ->withTimestamps();
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class)
+            ->orderBy('order')
+            ->orderBy('id');
     }
 }

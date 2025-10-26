@@ -12,11 +12,15 @@ class Subtask extends Model
         'task_id',
         'title',
         'completed',
+        'postponed_until',
+        'completed_at',
         'order',
     ];
 
     protected $casts = [
         'completed' => 'boolean',
+        'postponed_until' => 'date',
+        'completed_at' => 'datetime',
     ];
 
     public function task(): BelongsTo

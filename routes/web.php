@@ -32,6 +32,7 @@ use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\DangerController;
 use App\Http\Controllers\Settings\SecurityController;
+use \App\Http\Controllers\Tenant\Project\Task\TaskController;
 
 
 
@@ -80,95 +81,95 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::prefix('{username}')
-    ->name('tenant.')
-    ->middleware(['auth', 'verified'])
-    ->group(function () {
+        ->name('tenant.')
+        ->middleware(['auth', 'verified'])
+        ->group(function () {
 
-        Route::get('/', [ProfileController::class, 'index'])->name('profile');
+            Route::get('/', [ProfileController::class, 'index'])->name('profile');
 
-        Route::prefix('manage')->name('manage.')->group(function () {
-            Route::get('',            [DashboardController::class,     'index'])->name('dashboard');
-            Route::get('personal',    [ManageProfileController::class, 'personal'])->name('personal');
-            Route::get('skills',      [ManageProfileController::class, 'skills'])->name('skills');
-            Route::get('education',   [ManageProfileController::class, 'education'])->name('education');
-            Route::get('experience',  [ManageProfileController::class, 'experience'])->name('experience');
-            Route::get('portfolio',   [ManageProfileController::class, 'portfolio'])->name('portfolio');
-            Route::get('languages',   [ManageProfileController::class, 'languages'])->name('languages');
-        });
+            Route::prefix('manage')->name('manage.')->group(function () {
+                Route::get('',            [DashboardController::class,     'index'])->name('dashboard');
+                Route::get('personal',    [ManageProfileController::class, 'personal'])->name('personal');
+                Route::get('skills',      [ManageProfileController::class, 'skills'])->name('skills');
+                Route::get('education',   [ManageProfileController::class, 'education'])->name('education');
+                Route::get('experience',  [ManageProfileController::class, 'experience'])->name('experience');
+                Route::get('portfolio',   [ManageProfileController::class, 'portfolio'])->name('portfolio');
+                Route::get('languages',   [ManageProfileController::class, 'languages'])->name('languages');
+            });
 
-        // Profile updates
-        Route::put('skills/update',      [ProfileController::class, 'updateSkills'])->name('skills.update');
-        Route::put('education/update',   [ProfileController::class, 'updateEducation'])->name('education.update');
-        Route::put('experience/update',  [ProfileController::class, 'updateExperience'])->name('experience.update');
-        Route::put('portfolio/update',   [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
-        Route::put('languages/update',   [ProfileController::class, 'updateLanguages'])->name('language.update');
-        Route::put('profile/update',     [ProfileController::class, 'updatePersonal'])->name('profile.update');
+            // Profile updates
+            Route::put('skills/update',      [ProfileController::class, 'updateSkills'])->name('skills.update');
+            Route::put('education/update',   [ProfileController::class, 'updateEducation'])->name('education.update');
+            Route::put('experience/update',  [ProfileController::class, 'updateExperience'])->name('experience.update');
+            Route::put('portfolio/update',   [ProfileController::class, 'updatePortfolio'])->name('portfolio.update');
+            Route::put('languages/update',   [ProfileController::class, 'updateLanguages'])->name('language.update');
+            Route::put('profile/update',     [ProfileController::class, 'updatePersonal'])->name('profile.update');
 
-        // Settings hub
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/',               [SettingsController::class, 'index'])->name('index');
-            Route::get('/privacy',        [SettingsController::class, 'privacy'])->name('privacy');
-            Route::get('/notifications',  [SettingsController::class, 'notifications'])->name('notifications');
-            Route::get('/appearance',     [SettingsController::class, 'appearance'])->name('appearance');
-            Route::get('/billing',        [SettingsController::class, 'billing'])->name('billing');
-            Route::get('/data',           [SettingsController::class, 'data'])->name('data');
-            Route::get('/advanced',       [SettingsController::class, 'advanced'])->name('advanced');
+            // Settings hub
+            Route::prefix('settings')->name('settings.')->group(function () {
+                Route::get('/',               [SettingsController::class, 'index'])->name('index');
+                Route::get('/privacy',        [SettingsController::class, 'privacy'])->name('privacy');
+                Route::get('/notifications',  [SettingsController::class, 'notifications'])->name('notifications');
+                Route::get('/appearance',     [SettingsController::class, 'appearance'])->name('appearance');
+                Route::get('/billing',        [SettingsController::class, 'billing'])->name('billing');
+                Route::get('/data',           [SettingsController::class, 'data'])->name('data');
+                Route::get('/advanced',       [SettingsController::class, 'advanced'])->name('advanced');
 
-            // Account (profile/email/password/devices)
-            Route::get('/account',                            [AccountController::class, 'account'])->name('account');
-            Route::post('/account/profile',                   [AccountController::class, 'updateProfile'])->name('account.profile.update');
-            Route::post('/account/password',                  [AccountController::class, 'updatePassword'])->name('password.update');
-            Route::get('/account/password/confirm/{token}',   [AccountController::class, 'confirmPasswordChange'])->name('password.confirm');
-            Route::post('/account/email/verification/send',   [AccountController::class, 'sendVerification'])->name('account.email.verify.send');
+                // Account (profile/email/password/devices)
+                Route::get('/account',                            [AccountController::class, 'account'])->name('account');
+                Route::post('/account/profile',                   [AccountController::class, 'updateProfile'])->name('account.profile.update');
+                Route::post('/account/password',                  [AccountController::class, 'updatePassword'])->name('password.update');
+                Route::get('/account/password/confirm/{token}',   [AccountController::class, 'confirmPasswordChange'])->name('password.confirm');
+                Route::post('/account/email/verification/send',   [AccountController::class, 'sendVerification'])->name('account.email.verify.send');
 
-            // Devices (Account page) - Using POST for all actions
-            Route::post('/account/devices/revoke-others',     [AccountController::class, 'revokeOtherSessions'])->name('devices.revoke_others');
-            Route::post('/account/devices/{device}/trust',    [AccountController::class, 'trustDevice'])->name('devices.trust');
-            Route::post('/account/devices/{device}/revoke',   [AccountController::class, 'revokeDevice'])->name('devices.revoke');
+                // Devices (Account page) - Using POST for all actions
+                Route::post('/account/devices/revoke-others',     [AccountController::class, 'revokeOtherSessions'])->name('devices.revoke_others');
+                Route::post('/account/devices/{device}/trust',    [AccountController::class, 'trustDevice'])->name('devices.trust');
+                Route::post('/account/devices/{device}/revoke',   [AccountController::class, 'revokeDevice'])->name('devices.revoke');
 
-            // Danger Zone
-            Route::get('/danger',                              [DangerController::class, 'danger'])->name('danger');
-            Route::post('/danger/hibernate',                   [DangerController::class, 'hibernate'])->name('danger.hibernate');
-            Route::post('/danger/delete/start',                [DangerController::class, 'deleteStart'])->name('danger.delete.start');
-            Route::post('/danger/delete/resend',               [DangerController::class, 'deleteResend'])->name('danger.delete.resend');
-            Route::post('/danger/delete/verify',               [DangerController::class, 'deleteVerify'])->name('danger.delete.verify');
-            Route::post('/danger/delete/cancel',               [DangerController::class, 'deleteCancel'])->name('danger.delete.cancel');
+                // Danger Zone
+                Route::get('/danger',                              [DangerController::class, 'danger'])->name('danger');
+                Route::post('/danger/hibernate',                   [DangerController::class, 'hibernate'])->name('danger.hibernate');
+                Route::post('/danger/delete/start',                [DangerController::class, 'deleteStart'])->name('danger.delete.start');
+                Route::post('/danger/delete/resend',               [DangerController::class, 'deleteResend'])->name('danger.delete.resend');
+                Route::post('/danger/delete/verify',               [DangerController::class, 'deleteVerify'])->name('danger.delete.verify');
+                Route::post('/danger/delete/cancel',               [DangerController::class, 'deleteCancel'])->name('danger.delete.cancel');
 
-            // Security Settings - Main Page
-            Route::get('/security', [SecurityController::class, 'security'])->name('security');
+                // Security Settings - Main Page
+                Route::get('/security', [SecurityController::class, 'security'])->name('security');
 
-            // Security - 2FA & Trusted Devices - Using POST for all actions
-            Route::prefix('security')->name('security.')->group(function () {
-                // Authenticator App
-                Route::post('/enable-2fa-step1',  [SecurityController::class, 'enable2FAStep1'])->name('enable2fa.step1');
-                Route::post('/enable-2fa-verify', [SecurityController::class, 'enable2FAVerify'])->name('enable2fa.verify');
-                Route::post('/disable-2fa',       [SecurityController::class, 'disable2FA'])->name('disable2fa');
+                // Security - 2FA & Trusted Devices - Using POST for all actions
+                Route::prefix('security')->name('security.')->group(function () {
+                    // Authenticator App
+                    Route::post('/enable-2fa-step1',  [SecurityController::class, 'enable2FAStep1'])->name('enable2fa.step1');
+                    Route::post('/enable-2fa-verify', [SecurityController::class, 'enable2FAVerify'])->name('enable2fa.verify');
+                    Route::post('/disable-2fa',       [SecurityController::class, 'disable2FA'])->name('disable2fa');
 
-                // Email OTP
-                Route::post('/send-email-otp',    [SecurityController::class, 'sendEmailOtp'])->name('sendEmailOtp');
-                Route::post('/verify-email-otp',  [SecurityController::class, 'verifyEmailOtp'])->name('verifyEmailOtp');
-                Route::post('/disable-email-otp', [SecurityController::class, 'disableEmailOtp'])->name('disableEmailOtp');
+                    // Email OTP
+                    Route::post('/send-email-otp',    [SecurityController::class, 'sendEmailOtp'])->name('sendEmailOtp');
+                    Route::post('/verify-email-otp',  [SecurityController::class, 'verifyEmailOtp'])->name('verifyEmailOtp');
+                    Route::post('/disable-email-otp', [SecurityController::class, 'disableEmailOtp'])->name('disableEmailOtp');
 
-                // Phone/SMS OTP
-                Route::post('/send-phone-otp',    [SecurityController::class, 'sendPhoneOtp'])->name('sendPhoneOtp');
-                Route::post('/verify-phone-otp',  [SecurityController::class, 'verifyPhoneOtp'])->name('verifyPhoneOtp');
-                Route::post('/disable-phone-otp', [SecurityController::class, 'disablePhoneOtp'])->name('disablePhoneOtp');
+                    // Phone/SMS OTP
+                    Route::post('/send-phone-otp',    [SecurityController::class, 'sendPhoneOtp'])->name('sendPhoneOtp');
+                    Route::post('/verify-phone-otp',  [SecurityController::class, 'verifyPhoneOtp'])->name('verifyPhoneOtp');
+                    Route::post('/disable-phone-otp', [SecurityController::class, 'disablePhoneOtp'])->name('disablePhoneOtp');
 
-                // Recovery Codes
-                Route::post('/regenerate-recovery-codes', [SecurityController::class, 'regenerateRecoveryCodes'])->name('regenerateRecoveryCodes');
+                    // Recovery Codes
+                    Route::post('/regenerate-recovery-codes', [SecurityController::class, 'regenerateRecoveryCodes'])->name('regenerateRecoveryCodes');
 
-                // Advanced Security Settings
-                Route::post('/toggle-2fa-new-location',   [SecurityController::class, 'toggle2FANewLocation'])->name('toggle2FANewLocation');
-                Route::post('/toggle-2fa-sensitive',      [SecurityController::class, 'toggle2FASensitive'])->name('toggle2FASensitive');
-                Route::post('/toggle-login-notifications',[SecurityController::class, 'toggleLoginNotifications'])->name('toggleLoginNotifications');
+                    // Advanced Security Settings
+                    Route::post('/toggle-2fa-new-location',   [SecurityController::class, 'toggle2FANewLocation'])->name('toggle2FANewLocation');
+                    Route::post('/toggle-2fa-sensitive',      [SecurityController::class, 'toggle2FASensitive'])->name('toggle2FASensitive');
+                    Route::post('/toggle-login-notifications', [SecurityController::class, 'toggleLoginNotifications'])->name('toggleLoginNotifications');
 
-                // Trusted Devices (Security page) - Using POST for all actions
-                Route::get ('/trusted-devices',            [SecurityController::class, 'trustedDevices'])->name('trustedDevices');
-                Route::post('/trusted/{device}/untrust',   [SecurityController::class, 'untrustDevice'])->name('trusted.untrust');
-                Route::post('/trusted/untrust-all',        [SecurityController::class, 'untrustAllDevices'])->name('trusted.untrust_all');
+                    // Trusted Devices (Security page) - Using POST for all actions
+                    Route::get('/trusted-devices',            [SecurityController::class, 'trustedDevices'])->name('trustedDevices');
+                    Route::post('/trusted/{device}/untrust',   [SecurityController::class, 'untrustDevice'])->name('trusted.untrust');
+                    Route::post('/trusted/untrust-all',        [SecurityController::class, 'untrustAllDevices'])->name('trusted.untrust_all');
+                });
             });
         });
-    });
 
 
 
@@ -178,91 +179,123 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/client/accept-invitation/{token}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'acceptInvitation'])
-    ->name('client.accept-invitation');
+        ->name('client.accept-invitation');
 
 
-    Route::prefix('{username}/manage/projects')
-    ->name('tenant.manage.projects.')
-    ->middleware(['auth', 'verified'])
-    ->group(function () {
-       // Search users endpoint
-       Route::get('/search-users', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchUsers'])
-       ->name('search-users');
-       Route::get('/search-clients', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchClients'])
-       ->name('search-clients');
-       Route::post('/invite-client', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'inviteClient'])
-       ->name('invite-client');
-
-
-
-
-        // Team
-        Route::prefix('/team')->name('team.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Tenant\Project\TeamController::class, 'index'])->name('index');
-            Route::get('/workload', [App\Http\Controllers\Tenant\Project\TeamController::class, 'workload'])->name('workload');
+        Route::prefix('{username}/manage/projects')
+        ->name('tenant.manage.projects.')
+        ->middleware(['auth', 'verified'])
+        ->group(function () {
+    
+            // Search users endpoint
+            Route::get('/search-users', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchUsers'])
+                ->name('search-users');
+            Route::get('/search-clients', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchClients'])
+                ->name('search-clients');
+            Route::post('/invite-client', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'inviteClient'])
+                ->name('invite-client');
+    
+            // Team
+            Route::prefix('/team')->name('team.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\Project\TeamController::class, 'index'])->name('index');
+                Route::get('/workload', [App\Http\Controllers\Tenant\Project\TeamController::class, 'workload'])->name('workload');
+            });
+    
+            // Reports
+            Route::prefix('/reports')->name('reports.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\Project\ReportController::class, 'index'])->name('index');
+                Route::get('/velocity', [App\Http\Controllers\Tenant\Project\ReportController::class, 'velocity'])->name('velocity');
+                Route::get('/burndown', [App\Http\Controllers\Tenant\Project\ReportController::class, 'burndown'])->name('burndown');
+                Route::get('/time-tracking', [App\Http\Controllers\Tenant\Project\ReportController::class, 'timeTracking'])->name('time-tracking');
+            });
+    
+            // Clients
+            Route::get('/clients', [App\Http\Controllers\Tenant\Project\ClientController::class, 'index'])
+                ->name('clients.index');
+    
+            // Dashboard / overview
+            Route::get('/', [App\Http\Controllers\Tenant\Manage\DashboardController::class, 'index'])
+                ->name('dashboard');
+    
+            // save draft, list, create, etc.
+            Route::post('/draft', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'saveDraft'])
+                ->name('draft');
+    
+            Route::get('/list', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'index'])
+                ->name('list');
+    
+            Route::post('/store', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'store'])
+                ->name('store');
+    
+            // project-specific pages
+            Route::get('/{project}/board', [App\Http\Controllers\Tenant\Project\BoardController::class, 'show'])
+                ->name('board');
+    
+            Route::get('/{project}/backlog', [App\Http\Controllers\Tenant\Project\BacklogController::class, 'index'])
+                ->name('backlog');
+    
+            Route::get('/{project}/timeline', [App\Http\Controllers\Tenant\Project\TimelineController::class, 'show'])
+                ->name('timeline');
+    
+            Route::prefix('/{project}/issues')->name('issues.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\Project\IssueController::class, 'index'])->name('index');
+                Route::get('/{issue}', [App\Http\Controllers\Tenant\Project\IssueController::class, 'show'])->name('show');
+            });
+    
+            Route::prefix('/{project}/sprints')->name('sprints.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\Project\SprintController::class, 'index'])->name('index');
+                Route::get('/active', [App\Http\Controllers\Tenant\Project\SprintController::class, 'active'])->name('active');
+                Route::get('/planning', [App\Http\Controllers\Tenant\Project\SprintController::class, 'planning'])->name('planning');
+            });
+    
+            Route::prefix('/{project}/milestones')->name('milestones.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'index'])->name('index');
+                Route::get('/{milestone}', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'show'])->name('show');
+            });
+    
+            //
+            // TASKS ROUTES (moved BEFORE the catch-all /{project})
+            //
+            Route::prefix('/tasks')->name('tasks.')->group(function () {
+                // page: my cockpit
+                Route::get('/', [TaskController::class, 'index'])->name('index');
+    
+                // reorder (drag) the main task list
+                Route::post('/reorder-mylist', [TaskController::class, 'reorderMyList'])
+                    ->name('reorder');
+    
+                Route::post('/{task}/subtasks/reorder', [TaskController::class, 'reorderSubtasks'])
+                    ->name('subtasks.reorder');
+    
+                // mark a TASK status quickly (done, in-progress, etc.) - returns updated project progress JSON
+                Route::post('/{task}/status', [TaskController::class, 'quickStatus'])
+                    ->name('quick-status');
+    
+                // toggle a SUBTASK checkbox complete / incomplete - returns updated project progress JSON
+                Route::post('/{task}/subtasks/{subtask}/toggle-complete', [TaskController::class, 'toggleSubtaskComplete'])
+                    ->name('subtasks.toggle-complete');
+    
+                // lightweight postpone from inline UI
+                Route::post('/{task}/postpone-quick', [TaskController::class, 'quickPostpone'])
+                    ->name('quick-postpone');
+    
+                // rest of your task routes...
+                Route::get('/all', [TaskController::class, 'allTasks'])->name('all');
+                Route::get('/approvals', [TaskController::class, 'approvals'])->name('approvals');
+                Route::post('/{task}/complete', [TaskController::class, 'submitForReview'])->name('complete');
+                Route::post('/{task}/postpone', [TaskController::class, 'postpone'])->name('postpone');
+                Route::post('/{task}/block', [TaskController::class, 'block'])->name('block');
+                Route::post('/{task}/approve', [TaskController::class, 'approve'])->name('approve');
+                Route::post('/{task}/request-changes', [TaskController::class, 'requestChanges'])->name('request_changes');
+                Route::post('/{task}/remind', [TaskController::class, 'sendReminder'])->name('remind');
+                Route::get('/{task}/drawer', [TaskController::class, 'drawer'])->name('drawer');
+            });
+    
+            // MUST BE LAST: catch-all single project view
+            Route::get('/{project}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'show'])
+                ->name('show');
         });
-
-        // Reports
-        Route::prefix('/reports')->name('reports.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Tenant\Project\ReportController::class, 'index'])->name('index');
-            Route::get('/velocity', [App\Http\Controllers\Tenant\Project\ReportController::class, 'velocity'])->name('velocity');
-            Route::get('/burndown', [App\Http\Controllers\Tenant\Project\ReportController::class, 'burndown'])->name('burndown');
-            Route::get('/time-tracking', [App\Http\Controllers\Tenant\Project\ReportController::class, 'timeTracking'])->name('time-tracking');
-        });
-
-        // Clients
-        Route::get('/clients', [App\Http\Controllers\Tenant\Project\ClientController::class, 'index'])
-            ->name('clients.index');
-
-        // Dashboard / overview
-        Route::get('/', [App\Http\Controllers\Tenant\Manage\DashboardController::class, 'index'])
-            ->name('dashboard');
- 
-
-        // save draft, list, create, etc.
-        Route::post('/draft', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'saveDraft'])
-            ->name('draft');
-
-        Route::get('/list', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'index'])
-            ->name('list');
-
-        Route::post('/store', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'store'])
-            ->name('store');
-
-        // project-specific pages
-        Route::get('/{project}/board', [App\Http\Controllers\Tenant\Project\BoardController::class, 'show'])
-            ->name('board');
-
-        Route::get('/{project}/backlog', [App\Http\Controllers\Tenant\Project\BacklogController::class, 'index'])
-            ->name('backlog');
-
-        Route::get('/{project}/timeline', [App\Http\Controllers\Tenant\Project\TimelineController::class, 'show'])
-            ->name('timeline');
-
-        Route::prefix('/{project}/issues')->name('issues.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Tenant\Project\IssueController::class, 'index'])->name('index');
-            Route::get('/{issue}', [App\Http\Controllers\Tenant\Project\IssueController::class, 'show'])->name('show');
-        });
-
-        Route::prefix('/{project}/sprints')->name('sprints.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Tenant\Project\SprintController::class, 'index'])->name('index');
-            Route::get('/active', [App\Http\Controllers\Tenant\Project\SprintController::class, 'active'])->name('active');
-            Route::get('/planning', [App\Http\Controllers\Tenant\Project\SprintController::class, 'planning'])->name('planning');
-        });
-
-        Route::prefix('/{project}/milestones')->name('milestones.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'index'])->name('index');
-            Route::get('/{milestone}', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'show'])->name('show');
-        });
-
-        // MUST BE LAST: catch-all single project view
-        Route::get('/{project}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'show'])
-            ->name('show');
-    });
-
-
-
-
+    
 
 
 

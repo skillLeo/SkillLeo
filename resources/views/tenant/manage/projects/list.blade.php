@@ -1,3 +1,4 @@
+{{-- resources/views/tenant/manage/projects/list.blade.php --}}
 @extends('tenant.manage.app')
 
 @section('main')

@@ -26,6 +26,7 @@
     use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     use Illuminate\Support\Facades\Storage;
     use App\Support\Device;
+    use Illuminate\Support\Facades\DB;
 
  
     
@@ -651,6 +652,68 @@ public function assignedTasks()
     return $this->hasMany(\App\Models\Task::class, 'assigned_to');
 }
 
+    /**
+     * Is this user the workspace owner whose profile/dashboard we're viewing?
+     */
+    public function isWorkspaceOwner(User $workspaceOwner): bool
+    {
+        return $this->id === $workspaceOwner->id;
+    }
+
+    /**
+     * Very light "manager" check.
+     * In real life you'd check pivot role = 'project_manager' or similar.
+     */
+    public function isProjectManagerFor(User $workspaceOwner): bool
+    {
+        if ($this->isWorkspaceOwner($workspaceOwner)) {
+            return true;
+        }
+
+        // Example heuristic: user is on at least one project_team row
+        // for a project owned by $workspaceOwner with role containing 'manager'.
+        return \DB::table('project_team')
+            ->join('projects', 'project_team.project_id', '=', 'projects.id')
+            ->where('projects.user_id', $workspaceOwner->id)
+            ->where('project_team.user_id', $this->id)
+            ->where('project_team.role', 'like', '%manager%')
+            ->exists();
+    }
+
+    /**
+     * Is this user a client of this workspace owner?
+     */
+    public function isClientFor(User $workspaceOwner): bool
+    {
+        return DB::table('clients')
+            ->where('user_id', $workspaceOwner->id)
+            ->where('client_user_id', $this->id)
+            ->exists();
+    }
+
+    /**
+     * Can this user view all tasks across the workspace?
+     */
+    public function canSeeAllTasks(User $workspaceOwner): bool
+    {
+        return $this->isWorkspaceOwner($workspaceOwner) ||
+               $this->isProjectManagerFor($workspaceOwner);
+    }
+
+    /**
+     * Can this user approve work / mark final done?
+     * (workspace owner, PM, OR the client tied to that project for client_approval tasks)
+     */
+    public function canApproveTasksFor(User $workspaceOwner): bool
+    {
+        if ($this->isWorkspaceOwner($workspaceOwner) ||
+            $this->isProjectManagerFor($workspaceOwner)) {
+            return true;
+        }
+
+        // clients can "approve" only if they are client of that workspace
+        return $this->isClientFor($workspaceOwner);
+    }
 
 
 }

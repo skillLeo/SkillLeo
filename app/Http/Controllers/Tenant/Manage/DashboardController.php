@@ -128,88 +128,94 @@ class DashboardController extends Controller
          * Limit 4 to keep UI tight.
          */
         $dueSoonTasks = (clone $tasksQuery)
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<=', now()->copy()->addDays(7)->toDateString())
-            ->orderBy('due_date', 'asc')
-            ->with(['project', 'assignedTo'])
-            ->limit(4)
-            ->get()
-            ->map(function ($task) {
-                $dueDiffHuman = $task->due_date
-                    ? Carbon::parse($task->due_date)->diffForHumans([
-                        'parts' => 2,
-                        'short' => true,
-                        'syntax' => Carbon::DIFF_RELATIVE_TO_NOW
-                    ])
-                    : null;
-
-                return [
-                    'title'         => $task->title,
-                    'project_name'  => optional($task->project)->name ?? '—',
-                    'amount'        => optional($task->project)->budget
-                        ? '$' . number_format(optional($task->project)->budget,2)
-                        : null,
-                    'is_overdue'    => $task->due_date && $task->due_date->isPast() && $task->status !== 'done',
-                    'due_human'     => $dueDiffHuman ?? 'No due date',
-                    'assignee_name' => optional($task->assignedTo)->name ?? 'Unassigned',
-                ];
-            })
-            ->values();
-
-        /**
-         * RECENT ACTIVITY FEED
-         * We'll use recent task updates as "activity".
-         */
+        ->whereNotNull('due_date')
+        ->whereDate('due_date', '<=', now()->copy()->addDays(7)->toDateString())
+        ->orderBy('due_date', 'asc')
+        ->with(['project', 'assignee'])   // ← change here
+        ->limit(4)
+        ->get()
+        ->map(function ($task) {
+            $dueDiffHuman = $task->due_date
+                ? \Carbon\Carbon::parse($task->due_date)->diffForHumans([
+                    'parts'  => 2,
+                    'short'  => true,
+                    'syntax' => \Carbon\Carbon::DIFF_RELATIVE_TO_NOW,
+                ])
+                : null;
+    
+            return [
+                'title'         => $task->title,
+                'project_name'  => optional($task->project)->name ?? '—',
+                'amount'        => optional($task->project)->budget
+                                    ? '$' . number_format(optional($task->project)->budget, 2)
+                                    : null,
+                'is_overdue'    => $task->due_date && $task->due_date->isPast() && $task->status !== 'done',
+                'due_human'     => $dueDiffHuman ?? 'No due date',
+                'assignee_name' => optional($task->assignee)->name ?? 'Unassigned',  // ← and here
+            ];
+        })
+        ->values();
+    
+   
+      
+      
+      
         $recentActivities = (clone $tasksQuery)
-            ->with(['project', 'assignedTo'])
-            ->orderBy('updated_at','desc')
-            ->limit(6)
-            ->get()
-            ->map(function ($task) {
-                $user   = $task->assignedTo;
-                $avatarBg = $this->colorHexFromName($user?->name ?? 'X');
-                $when   = Carbon::parse($task->updated_at)->diffForHumans();
-                $action = match(true){
-                    $task->status === 'done' => 'completed task',
-                    $task->status === 'review' => 'sent task for review',
-                    default => 'updated task',
-                };
-
-                return [
-                    'user_name'     => $user?->name ?? 'Unassigned',
-                    'avatar_url'    => "https://ui-avatars.com/api/?name=" . urlencode($user?->name ?? 'NA') . "&background={$avatarBg}&color=fff",
-                    'when'          => $when,
-                    'action'        => $action,
-                    'task_title'    => $task->title,
-                    'project_label' => optional($task->project)->name ?? '—',
-                ];
-            })
-            ->values();
+        ->with(['project', 'assignee']) // <-- fix
+        ->orderBy('updated_at', 'desc')
+        ->limit(6)
+        ->get()
+        ->map(function ($task) {
+            $user = $task->assignee; // <-- fix
+    
+            $avatarBg = $this->colorHexFromName($user?->name ?? 'X');
+            $when     = Carbon::parse($task->updated_at)->diffForHumans();
+    
+            $action = match (true) {
+                $task->status === Task::STATUS_DONE        => 'completed task',
+                $task->status === Task::STATUS_REVIEW      => 'sent task for review',
+                default                                    => 'updated task',
+            };
+    
+            return [
+                'user_name'     => $user?->name ?? 'Unassigned',
+                'avatar_url'    => "https://ui-avatars.com/api/?name=" . urlencode($user?->name ?? 'NA') . "&background={$avatarBg}&color=fff",
+                'when'          => $when,
+                'action'        => $action,
+                'task_title'    => $task->title,
+                'project_label' => optional($task->project)->name ?? '—',
+            ];
+        })
+        ->values();
+    
 
         /**
          * TIMELINE TODAY
          * (We show "what happened today" similar to sprint timeline)
          */
         $todayTimeline = (clone $tasksQuery)
-            ->whereDate('updated_at', now()->toDateString())
-            ->orderBy('updated_at', 'asc')
-            ->with(['project', 'assignedTo'])
-            ->limit(8)
-            ->get()
-            ->map(function ($task) {
-                return [
-                    'time'       => Carbon::parse($task->updated_at)->format('h:i A'),
-                    'duration'   => $task->estimated_hours
-                        ? round($task->estimated_hours,1) . 'h est'
-                        : null,
-                    'task'       => $task->title,
-                    'project'    => optional($task->project)->name ?? '—',
-                    'member'     => optional($task->assignedTo)->name
-                        ? Str::limit(optional($task->assignedTo)->name, 18, '')
-                        : '—',
-                ];
-            })
-            ->values();
+        ->whereDate('updated_at', now()->toDateString())
+        ->orderBy('updated_at', 'asc')
+        ->with(['project', 'assignee']) // <-- fix
+        ->limit(8)
+        ->get()
+        ->map(function ($task) {
+            $assigneeName = optional($task->assignee)->name;
+    
+            return [
+                'time'       => Carbon::parse($task->updated_at)->format('h:i A'),
+                'duration'   => $task->estimated_hours
+                    ? round($task->estimated_hours, 1) . 'h est'
+                    : null,
+                'task'       => $task->title,
+                'project'    => optional($task->project)->name ?? '—',
+                'member'     => $assigneeName
+                    ? Str::limit($assigneeName, 18, '')
+                    : '—',
+            ];
+        })
+        ->values();
+    
 
         /**
          * DATA PASSED TO VIEW

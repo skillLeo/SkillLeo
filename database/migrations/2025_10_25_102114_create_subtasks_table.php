@@ -15,6 +15,9 @@ return new class extends Migration
             
             $table->string('title');
             $table->boolean('completed')->default(false);
+            $table->date('postponed_until')->nullable();
+            $table->timestamp('completed_at')->nullable();
+      
             $table->integer('order')->default(0);
             
             $table->timestamps();

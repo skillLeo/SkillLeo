@@ -76,6 +76,15 @@
     // Clients belonging to this owner
     $sidebarCounts['clients'] = Client::where('user_id', $ownerId)->count();
 @endphp
+@php
+    /** @var \App\Models\User $viewer */
+    $viewer = Auth::user();
+    $workspaceOwnerUser = $owner ?? Auth::user(); // same logic you already use
+    // helper booleans
+    $canSeeAllTasks = $viewer->canSeeAllTasks($workspaceOwnerUser);
+    $canApproveTasks = $viewer->canApproveTasksFor($workspaceOwnerUser);
+    $isClient = $viewer->isClientFor($workspaceOwnerUser);
+@endphp
 
 
 
@@ -165,6 +174,50 @@
                 </a>
             </nav>
         </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{{-- ===== NEW WORK SECTION (Tasks / Approvals) ===== --}}
+<div class="sidebar-nav-group">
+    <div class="sidebar-nav-group-label">WORK</div>
+
+    <nav class="sidebar-nav-menu">
+
+        {{-- My Tasks: visible to everyone (owner, teammate, client) --}}
+        <a href="{{ route('tenant.manage.projects.tasks.index', $username) }}"
+           class="sidebar-nav-item {{ request()->routeIs('tenant.manage.projects.tasks.index') ? 'active' : '' }}">
+            <i class="fas fa-check-square"></i>
+            <span>Tasks</span>
+        </a>
+ 
+    </nav>
+</div>
+{{-- ===== /WORK SECTION ===== --}}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <div class="sidebar-nav-group">
             <div class="sidebar-nav-group-label">MANAGE</div>

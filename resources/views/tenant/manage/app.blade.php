@@ -30,6 +30,34 @@
     
     @stack('modals')
     
+
+
+    <script>
+        function openTaskDrawer(taskId) {
+            // fetch drawer HTML and append to body
+            fetch(window.location.pathname.replace(/\/tasks\/.*/, '') + '/tasks/' + taskId + '/drawer', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.text())
+            .then(html => {
+                const existing = document.querySelector('.task-drawer');
+                if (existing) existing.remove();
+                document.body.insertAdjacentHTML('beforeend', html);
+            })
+            .catch(err => console.error(err));
+        }
+        
+        // These just open modals you will build:
+        // Submit Work / Postpone / Block / Request Changes / Reminder.
+        function openSubmitWorkModal(taskId){ console.log('openSubmitWorkModal', taskId); }
+        function openPostponeModal(taskId){ console.log('openPostponeModal', taskId); }
+        function openBlockedModal(taskId){ console.log('openBlockedModal', taskId); }
+        function openRequestChangesModal(taskId){ console.log('openRequestChangesModal', taskId); }
+        function openReminderModal(taskId){ console.log('openReminderModal', taskId); }
+        
+        function openTaskActions(taskId){ console.log('openTaskActions menu', taskId); }
+        </script>
+        
     <script>
         'use strict';
 
