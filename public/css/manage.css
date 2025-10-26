@@ -47,6 +47,22 @@
     /* Layout */
     --manage-sidebar-width: 260px;
     --manage-nav-height: 64px;
+
+
+ --status-todo: #F4F5F7 / #5E6C84;
+--status-in-progress: #DEEBFF / #0052CC;
+--status-review: #FFF0B3 / #FF8B00;
+--status-blocked: #FFEBE6 / #DE350B;
+--status-done: #E3FCEF / #00875A;
+
+/* Priority Colors */
+--priority-low: #E3FCEF / #00875A;
+--priority-medium: #FFFAE6 / #FF8B00;
+--priority-high: #FFEBE6 / #FF5630;
+--priority-urgent: #DE350B / white;
+--alert-today: #FFFAE6;
+--alert-review: #E3FCEF;
+--alert-blocked: #FFEBE6;
 }
 
 :root {

@@ -9,7 +9,10 @@
     $status = $statusColors[$project['status']] ?? $statusColors['active'];
 @endphp
 
-<div class="project-card-item" onclick="window.location.href='{{ route('tenant.manage.projects.show', [$username, $project['id']]) }}'">
+<div class="project-card-item"      onclick="window.location.href='{{ route('tenant.manage.projects.project.show', [
+    'username' => $username,
+    'project'  => $project['id'],
+ ]) }}'">
     <!-- Header -->
     <div class="project-card-item-header">
         <div class="project-card-item-key-type">

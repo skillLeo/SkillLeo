@@ -3,6 +3,10 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/manage.css') }}">
+
+<style>
+    
+</style>
 @endpush
 
 @section('content')

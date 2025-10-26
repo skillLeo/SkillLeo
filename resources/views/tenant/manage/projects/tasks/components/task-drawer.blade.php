@@ -1,223 +1,436 @@
-<div class="task-drawer"
-     style="position:fixed;right:0;top:0;height:100vh;width:400px;max-width:90%;
-            background:var(--card);border-left:1px solid var(--border);
-            box-shadow:-4px 0 24px rgba(0,0,0,.2);z-index:9999;
-            display:flex;flex-direction:column;">
-
-    <!-- Header -->
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-        <div style="min-width:0;">
-            <div style="font-size:var(--fs-micro);font-family:monospace;color:var(--text-muted);margin-bottom:4px;">
-                {{ $task->project?->key ?? 'TASK' }}-{{ $task->id }}
+<div class="task-drawer">
+    <div class="task-drawer-header">
+        <div class="task-drawer-title">
+            <div class="task-drawer-project">
+                {{ $task->project?->name ?? 'Project' }}
             </div>
-            <div style="font-size:var(--fs-body);font-weight:var(--fw-semibold);color:var(--text-heading);line-height:1.4;word-break:break-word;">
-                {{ $task->title }}
-            </div>
-
-            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                @include('tenant.manage.projects.tasks.components.task-status-badge', ['status' => $task->status])
-
-                <div style="font-size:var(--fs-subtle);color:var(--text-muted);display:flex;align-items:center;gap:4px;">
-                    <i class="fas fa-calendar"></i>
-                    <span>Due {{ $task->due_date?->format('M d, Y') ?? '—' }}</span>
-                </div>
-
-                @if($task->assignee)
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <img src="{{ $task->assignee->avatar_url ?? asset('images/avatar-fallback.png') }}"
-                         alt="{{ $task->assignee->name }}"
-                         style="width:24px;height:24px;border-radius:50%;border:2px solid var(--bg);object-fit:cover;">
-                    <span style="font-size:var(--fs-subtle);color:var(--text-body);font-weight:var(--fw-medium);">
-                        {{ $task->assignee->name }}
-                    </span>
-                </div>
-                @endif
-            </div>
+            <h2 class="task-drawer-name">{{ $task->title }}</h2>
         </div>
 
-        <button onclick="closeTaskDrawer()" class="project-icon-btn">
+        <div class="task-drawer-close" onclick="window.close()">
             <i class="fas fa-times"></i>
-        </button>
+        </div>
     </div>
 
-    <!-- Body scroll -->
-    <div style="flex:1 1 auto;overflow-y:auto;padding:16px 20px;">
-
-        {{-- Description / notes --}}
-        @if($task->notes)
-            <div style="margin-bottom:20px;">
-                <div style="font-size:var(--fs-subtle);color:var(--text-muted);font-weight:var(--fw-semibold);margin-bottom:6px;">
-                    Description
-                </div>
-                <div style="font-size:var(--fs-body);color:var(--text-body);line-height:1.5;white-space:pre-line;">
-                    {{ $task->notes }}
-                </div>
-            </div>
-        @endif
-
-        {{-- Subtasks checklist --}}
-        @if($task->subtasks->count())
-            <div style="margin-bottom:20px;">
-                <div style="font-size:var(--fs-subtle);color:var(--text-muted);font-weight:var(--fw-semibold);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                    <i class="fas fa-list-check"></i>
-                    <span>Subtasks ({{ $task->subtasks->where('completed',true)->count() }}/{{ $task->subtasks->count() }})</span>
+    <div class="task-drawer-body">
+        <section class="drawer-section">
+            <div class="drawer-field-row">
+                <div class="drawer-field-col">
+                    <label class="drawer-label">Assignee</label>
+                    <div class="drawer-value">
+                        {{ $task->assignee?->name ?? 'Unassigned' }}
+                    </div>
                 </div>
 
-                <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
-                    @foreach($task->subtasks as $sub)
-                        <li style="display:flex;align-items:flex-start;gap:8px;">
-                            <input type="checkbox" disabled @checked($sub->completed)
-                                   style="margin-top:2px;">
-                            <span style="font-size:var(--fs-body);color:var(--text-body);line-height:1.4;">
-                                {{ $sub->title }}
-                            </span>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+                <div class="drawer-field-col">
+                    <label class="drawer-label">Reporter</label>
+                    <div class="drawer-value">
+                        {{ $task->reporter?->name ?? '—' }}
+                    </div>
+                </div>
 
-        {{-- Attachments --}}
-        <div style="margin-bottom:20px;">
-            <div style="font-size:var(--fs-subtle);color:var(--text-muted);font-weight:var(--fw-semibold);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                <i class="fas fa-paperclip"></i>
-                <span>Attachments ({{ $task->attachments->count() }})</span>
-            </div>
+                <div class="drawer-field-col">
+                    <label class="drawer-label">Status</label>
+                    <div class="drawer-value">
+                        <form method="POST"
+                              action="{{ route('tenant.manage.projects.tasks.quick-status', [$workspaceOwner->username, $task->id]) }}">
+                            @csrf
+                            <select name="status" class="drawer-inline-select" onchange="this.form.submit()">
+                                @foreach(\App\Models\Task::statusOptions() as $statusOption)
+                                    <option value="{{ $statusOption }}" @selected($task->status === $statusOption)>
+                                        {{ ucfirst(str_replace('_',' ', $statusOption)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                    </div>
+                </div>
 
+                <div class="drawer-field-col">
+                    <label class="drawer-label">Due date</label>
+                    <div class="drawer-value">
+                        @if($task->due_date)
+                            {{ $task->due_date->format('M d, Y') }}
+                            @if($task->due_date->isPast() && $task->status !== \App\Models\Task::STATUS_DONE)
+                                <span class="chip chip-overdue">Overdue</span>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="drawer-section">
+            <label class="drawer-label">Description</label>
+            <div class="drawer-desc">
+                {!! nl2br(e($task->description ?? 'No description')) !!}
+            </div>
+        </section>
+
+        <section class="drawer-section">
+            <label class="drawer-label">Subtasks</label>
+            <ul class="drawer-subtasks">
+                @foreach($task->subtasks->sortBy('order') as $sub)
+                    <li class="drawer-subtask">
+                        <form class="drawer-subtask-check"
+                              method="POST"
+                              action="{{ route('tenant.manage.projects.tasks.subtasks.toggle-complete', [$workspaceOwner->username, $task->id, $sub->id]) }}">
+                            @csrf
+                            <input type="hidden" name="completed" value="{{ $sub->completed ? 0 : 1 }}">
+                            <button type="submit" class="check-btn">
+                                <i class="far {{ $sub->completed ? 'fa-check-square' : 'fa-square' }}"></i>
+                            </button>
+                        </form>
+                        <div class="drawer-subtask-text {{ $sub->completed ? 'done' : '' }}">
+                            {{ $sub->title }}
+                        </div>
+                        @if($sub->completed && $sub->completed_at)
+                            <div class="drawer-subtask-meta">
+                                done {{ $sub->completed_at->diffForHumans() }}
+                            </div>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+
+        <section class="drawer-section">
+            <label class="drawer-label">Attachments</label>
             @if($task->attachments->count() === 0)
-                <div style="font-size:var(--fs-subtle);color:var(--text-muted);">No files yet</div>
+                <div class="drawer-muted">No files uploaded</div>
             @else
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    @foreach($task->attachments as $att)
-                        <div style="display:flex;align-items:flex-start;gap:8px;font-size:var(--fs-body);color:var(--text-body);">
-                            <div style="
-                                width:32px;height:32px;border-radius:8px;
-                                background:var(--bg);border:1px solid var(--border);
-                                display:flex;align-items:center;justify-content:center;
-                                color:var(--text-muted);flex-shrink:0;
-                            ">
-                                <i class="fas {{ $att->type === 'image' ? 'fa-image' : 'fa-file' }}"></i>
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-weight:var(--fw-medium);color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                    {{ $att->label ?? basename($att->path_or_url) }}
-                                </div>
-                                <div style="font-size:var(--fs-subtle);color:var(--text-muted);">
-                                    Uploaded by {{ $att->uploader?->name ?? 'Unknown' }}
-                                    • {{ $att->created_at->diffForHumans() }}
-                                </div>
-                            </div>
+                <div class="drawer-files">
+                    @foreach($task->attachments as $file)
+                        <div class="drawer-file">
+                            <i class="fas {{ $file->type === 'image' ? 'fa-image' : 'fa-paperclip' }}"></i>
+                            <span class="drawer-file-name">{{ $file->label }}</span>
+                            <span class="drawer-file-meta">by {{ $file->uploader?->name ?? '—' }}</span>
                         </div>
                     @endforeach
                 </div>
             @endif
-        </div>
+        </section>
 
-        {{-- Activity feed --}}
-        <div style="margin-bottom:20px;">
-            <div style="font-size:var(--fs-subtle);color:var(--text-muted);font-weight:var(--fw-semibold);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                <i class="fas fa-history"></i>
-                <span>Activity</span>
-            </div>
-
-            @if($task->activity->count() === 0)
-                <div style="font-size:var(--fs-subtle);color:var(--text-muted);">No activity yet</div>
-            @else
-                <div style="display:flex;flex-direction:column;gap:12px;">
-                    @foreach($task->activity as $log)
-                        <div style="display:flex;gap:8px;align-items:flex-start;">
-                            <div style="
-                                width:32px;height:32px;border-radius:50%;
-                                background:var(--bg);border:1px solid var(--border);
-                                display:flex;align-items:center;justify-content:center;
-                                font-size:12px;color:var(--text-muted);flex-shrink:0;
-                                overflow:hidden;
-                            ">
-                                @if($log->actor && $log->actor->avatar_url)
-                                    <img src="{{ $log->actor->avatar_url }}"
-                                         alt="{{ $log->actor->name }}"
-                                         style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-                                @else
-                                    <i class="fas fa-user"></i>
-                                @endif
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-size:var(--fs-body);color:var(--text-body);line-height:1.4;">
-                                    <strong>{{ $log->actor?->name ?? 'System' }}</strong>
-                                    <span style="color:var(--text-muted);font-weight:var(--fw-medium);">
-                                        {{ $log->type }}
-                                    </span>
-                                </div>
-                                @if($log->body)
-                                    <div style="font-size:var(--fs-body);color:var(--text-heading);white-space:pre-line;">
-                                        {{ $log->body }}
-                                    </div>
-                                @endif
-                                <div style="font-size:var(--fs-micro);color:var(--text-muted);margin-top:2px;">
-                                    {{ $log->created_at->diffForHumans() }}
-                                </div>
-                            </div>
+        <section class="drawer-section">
+            <label class="drawer-label">Activity</label>
+            <ul class="drawer-activity">
+                @foreach($task->activity->sortByDesc('created_at') as $entry)
+                    <li class="drawer-activity-item">
+                        <div class="drawer-activity-head">
+                            <span class="drawer-activity-actor">{{ $entry->actor?->name ?? 'System' }}</span>
+                            <span class="drawer-activity-time">{{ $entry->created_at->diffForHumans() }}</span>
                         </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
+                        <div class="drawer-activity-body">{{ $entry->body }}</div>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
 
     </div>
 
-    <!-- Footer Actions -->
-    <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;">
-        {{-- Assignee quick actions --}}
-        @if($task->assigned_to === $viewer->id)
-            @if(!in_array($task->status, ['review','done']))
-                <button class="project-btn project-btn-primary" onclick="openSubmitWorkModal({{ $task->id }})">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>Submit Work</span>
-                </button>
+    <div class="task-drawer-footer">
+        {{-- Assignee actions --}}
+        @php $isAssignee = $task->assigned_to === $viewer->id; @endphp
+        @php $isReporter = $task->reporter_id === $viewer->id; @endphp
+        @php $isOwner = $workspaceOwner->id === $viewer->id; @endphp
+        @php $canDelete = $isReporter || $isOwner; @endphp
+
+        <div class="drawer-actions-left">
+            @if($isAssignee)
+                <form method="POST"
+                      action="{{ route('tenant.manage.projects.tasks.complete', [$workspaceOwner->username, $task->id]) }}"
+                      style="display:inline-block;">
+                    @csrf
+                    <button class="drawer-btn success">
+                        <i class="fas fa-check-circle"></i>
+                        Submit For Review
+                    </button>
+                </form>
+
+                <form method="POST"
+                      action="{{ route('tenant.manage.projects.tasks.postpone', [$workspaceOwner->username, $task->id]) }}"
+                      style="display:inline-block;">
+                    @csrf
+                    <input type="hidden" name="postponed_until" value="{{ now()->addDay()->toDateString() }}">
+                    <input type="hidden" name="reason" value="Need more time">
+                    <button class="drawer-btn warn">
+                        <i class="fas fa-clock"></i>
+                        Postpone
+                    </button>
+                </form>
+
+                <form method="POST"
+                      action="{{ route('tenant.manage.projects.tasks.block', [$workspaceOwner->username, $task->id]) }}"
+                      style="display:inline-block;">
+                    @csrf
+                    <input type="hidden" name="reason" value="Blocked by dependency">
+                    <button class="drawer-btn danger">
+                        <i class="fas fa-ban"></i>
+                        Blocked
+                    </button>
+                </form>
             @endif
-            <button class="project-btn project-btn-secondary" onclick="openPostponeModal({{ $task->id }})">
-                <i class="fas fa-clock"></i>
-                <span>Postpone</span>
-            </button>
-            <button class="project-btn project-btn-secondary" onclick="openBlockedModal({{ $task->id }})">
-                <i class="fas fa-ban"></i>
-                <span>Blocked</span>
-            </button>
-        @endif
+        </div>
 
-        {{-- Approver actions --}}
-        @if($viewer->canApproveTasksFor($workspaceOwner) && $task->status === 'review')
-            <form method="POST"
-                  action="{{ route('tenant.manage.projects.tasks.approve', [$workspaceOwner->username, $task->id]) }}">
-                @csrf
-                <button class="project-btn project-btn-primary">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Approve</span>
-                </button>
-            </form>
-
-            <button class="project-btn project-btn-secondary"
-                    onclick="openRequestChangesModal({{ $task->id }})">
-                <i class="fas fa-undo-alt"></i>
-                <span>Request Changes</span>
+        <div class="drawer-actions-right">
+            @if($canDelete)
+                <form method="POST"
+                      action="{{ route('tenant.manage.projects.tasks.index', $workspaceOwner->username) . '/' . $task->id }}"
+                      onsubmit="return confirm('Delete this task?')"
+                      style="display:inline-block;">
+                    @csrf
+                    @method('DELETE')
+                    <button class="drawer-btn danger-outline">
+                        <i class="fas fa-trash"></i>
+                        Delete Task
+                    </button>
+                </form>
+            @endif
+            <button class="drawer-btn" onclick="window.close()">
+                Close
             </button>
-        @endif
-
-        {{-- Reminder (lead / PM only) --}}
-        @if($viewer->canSeeAllTasks($workspaceOwner))
-            <button class="project-btn project-btn-ghost"
-                    onclick="openReminderModal({{ $task->id }})">
-                <i class="fas fa-bell"></i>
-                <span>Send Reminder</span>
-            </button>
-        @endif
+        </div>
     </div>
 </div>
 
-<script>
-    // basic JS hooks (you'll implement modals / ajax yourself)
-    function closeTaskDrawer() {
-        const drawer = document.querySelector('.task-drawer');
-        if (drawer) drawer.remove();
-    }
-</script>
+<style>
+.task-drawer {
+    max-width:480px;
+    min-height:100vh;
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    border-left:1px solid var(--border);
+    font-size:14px;
+    color:var(--text-body);
+}
+.task-drawer-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:20px;
+    border-bottom:1px solid var(--border);
+}
+.task-drawer-project {
+    font-size:12px;
+    color:var(--text-muted);
+    font-weight:500;
+}
+.task-drawer-name {
+    margin:2px 0 0 0;
+    font-size:16px;
+    font-weight:600;
+    color:var(--text-heading);
+    line-height:1.3;
+}
+.task-drawer-close {
+    cursor:pointer;
+    color:var(--text-muted);
+}
+.task-drawer-body {
+    flex:1;
+    overflow-y:auto;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+}
+.drawer-section { display:block; }
+.drawer-label {
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    margin-bottom:6px;
+    display:block;
+}
+.drawer-value {
+    font-size:14px;
+    color:var(--text-body);
+    font-weight:500;
+}
+.drawer-inline-select {
+    font-size:13px;
+    padding:4px 8px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    background:white;
+}
+.drawer-inline-select:focus {
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(19,81,216,0.1);
+}
+.drawer-desc {
+    background:#f9fafb;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    font-size:13px;
+    color:var(--text-body);
+    white-space:pre-line;
+}
+.drawer-field-row {
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+}
+.drawer-field-col {
+    flex:1;
+    min-width:140px;
+}
+.chip-overdue {
+    background:#fee2e2;
+    color:#dc2626;
+    border:1px solid #dc2626;
+    font-size:11px;
+    font-weight:600;
+    border-radius:999px;
+    padding:2px 8px;
+    margin-left:6px;
+}
+.drawer-subtasks {
+    list-style:none;
+    margin:0;
+    padding:0;
+    border:1px solid var(--border);
+    border-radius:6px;
+}
+.drawer-subtask {
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    font-size:13px;
+}
+.drawer-subtask:last-child {
+    border-bottom:none;
+}
+.drawer-subtask-text.done {
+    text-decoration:line-through;
+    color:#9ca3af;
+}
+.drawer-subtask-meta {
+    font-size:12px;
+    color:#9ca3af;
+}
+.check-btn {
+    background:none;
+    border:none;
+    font-size:16px;
+    color:var(--accent);
+    cursor:pointer;
+    padding:0;
+    line-height:1;
+}
+.drawer-files {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:13px;
+}
+.drawer-file {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    background:#f9fafb;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:8px 10px;
+}
+.drawer-file-name {
+    font-weight:500;
+    color:var(--text-heading);
+}
+.drawer-file-meta {
+    color:var(--text-muted);
+    font-size:12px;
+}
+.drawer-activity {
+    list-style:none;
+    margin:0;
+    padding:0;
+    font-size:12px;
+    color:var(--text-muted);
+    border:1px solid var(--border);
+    border-radius:6px;
+}
+.drawer-activity-item {
+    border-bottom:1px solid var(--border);
+    padding:10px 12px;
+}
+.drawer-activity-item:last-child {
+    border-bottom:none;
+}
+.drawer-activity-head {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:4px;
+}
+.drawer-activity-actor {
+    color:var(--text-heading);
+    font-weight:600;
+    font-size:12px;
+}
+.drawer-activity-time {
+    font-size:12px;
+    color:#9ca3af;
+}
+.drawer-activity-body {
+    color:var(--text-body);
+    font-size:13px;
+}
+.task-drawer-footer {
+    border-top:1px solid var(--border);
+    padding:16px 20px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    justify-content:space-between;
+}
+.drawer-actions-left,
+.drawer-actions-right {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+.drawer-btn {
+    background:#f9fafb;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    padding:8px 12px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text-heading);
+    font-weight:500;
+}
+.drawer-btn.success {
+    background:#10b981;
+    border-color:#10b981;
+    color:#fff;
+}
+.drawer-btn.warn {
+    background:#facc15;
+    border-color:#facc15;
+    color:#1f2937;
+}
+.drawer-btn.danger {
+    background:#dc2626;
+    border-color:#dc2626;
+    color:#fff;
+}
+.drawer-btn.danger-outline {
+    background:#fff;
+    border-color:#dc2626;
+    color:#dc2626;
+}
+</style>

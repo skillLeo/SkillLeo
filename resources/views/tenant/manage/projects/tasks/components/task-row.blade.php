@@ -1,3 +1,4 @@
+{{-- resources/views/tenant/manage/projects/tasks/components/task-row.blade.php --}}
 @php
 /**
  * Props:

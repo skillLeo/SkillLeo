@@ -1,3 +1,4 @@
+{{-- resources/views/tenant/manage/projects/tasks/components/task-status-badge.blade.php --}}
 @php
 /**
  * Prop:

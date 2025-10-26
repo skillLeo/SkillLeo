@@ -35,6 +35,18 @@ use App\Http\Controllers\Settings\SecurityController;
 use \App\Http\Controllers\Tenant\Project\Task\TaskController;
 
 
+ 
+use App\Http\Controllers\Tenant\Project\ProjectController;
+use App\Http\Controllers\Tenant\Project\ClientController;
+use App\Http\Controllers\Tenant\Project\TeamController;
+use App\Http\Controllers\Tenant\Project\ReportController;
+use App\Http\Controllers\Tenant\Project\BoardController;
+use App\Http\Controllers\Tenant\Project\BacklogController;
+use App\Http\Controllers\Tenant\Project\ProjectTaskListController;
+use App\Http\Controllers\Tenant\Project\TimelineController;
+use App\Http\Controllers\Tenant\Project\IssueController;
+use App\Http\Controllers\Tenant\Project\SprintController;
+use App\Http\Controllers\Tenant\Project\MilestoneController;
 
 
 // In routes/web.php
@@ -182,126 +194,145 @@ Route::middleware(['auth'])->group(function () {
         ->name('client.accept-invitation');
 
 
+        
+
         Route::prefix('{username}/manage/projects')
         ->name('tenant.manage.projects.')
         ->middleware(['auth', 'verified'])
         ->group(function () {
     
-            // Search users endpoint
-            Route::get('/search-users', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchUsers'])
+            //
+            // ── helper / ajax style routes ─────────────────────────────
+            //
+            Route::get('/search-users',   [ProjectController::class, 'searchUsers'])
                 ->name('search-users');
-            Route::get('/search-clients', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'searchClients'])
+    
+            Route::get('/search-clients', [ProjectController::class, 'searchClients'])
                 ->name('search-clients');
-            Route::post('/invite-client', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'inviteClient'])
+    
+            Route::post('/invite-client', [ProjectController::class, 'inviteClient'])
                 ->name('invite-client');
     
-            // Team
-            Route::prefix('/team')->name('team.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Tenant\Project\TeamController::class, 'index'])->name('index');
-                Route::get('/workload', [App\Http\Controllers\Tenant\Project\TeamController::class, 'workload'])->name('workload');
-            });
-    
-            // Reports
-            Route::prefix('/reports')->name('reports.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Tenant\Project\ReportController::class, 'index'])->name('index');
-                Route::get('/velocity', [App\Http\Controllers\Tenant\Project\ReportController::class, 'velocity'])->name('velocity');
-                Route::get('/burndown', [App\Http\Controllers\Tenant\Project\ReportController::class, 'burndown'])->name('burndown');
-                Route::get('/time-tracking', [App\Http\Controllers\Tenant\Project\ReportController::class, 'timeTracking'])->name('time-tracking');
-            });
-    
-            // Clients
-            Route::get('/clients', [App\Http\Controllers\Tenant\Project\ClientController::class, 'index'])
+            Route::get('/clients', [ClientController::class, 'index'])
                 ->name('clients.index');
     
-            // Dashboard / overview
-            Route::get('/', [App\Http\Controllers\Tenant\Manage\DashboardController::class, 'index'])
-                ->name('dashboard');
     
-            // save draft, list, create, etc.
-            Route::post('/draft', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'saveDraft'])
-                ->name('draft');
-    
-            Route::get('/list', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'index'])
+            //
+            // ── projects listing / create ──────────────────────────────
+            //
+            // all projects grid (your list.blade.php)
+            Route::get('/list', [ProjectController::class, 'index'])
                 ->name('list');
     
-            Route::post('/store', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'store'])
+            // create project
+            Route::post('/store', [ProjectController::class, 'store'])
                 ->name('store');
     
-            // project-specific pages
-            Route::get('/{project}/board', [App\Http\Controllers\Tenant\Project\BoardController::class, 'show'])
-                ->name('board');
+            // save draft
+            Route::post('/draft', [ProjectController::class, 'saveDraft'])
+                ->name('draft');
     
-            Route::get('/{project}/backlog', [App\Http\Controllers\Tenant\Project\BacklogController::class, 'index'])
-                ->name('backlog');
-    
-            Route::get('/{project}/timeline', [App\Http\Controllers\Tenant\Project\TimelineController::class, 'show'])
-                ->name('timeline');
-    
-            Route::prefix('/{project}/issues')->name('issues.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Tenant\Project\IssueController::class, 'index'])->name('index');
-                Route::get('/{issue}', [App\Http\Controllers\Tenant\Project\IssueController::class, 'show'])->name('show');
-            });
-    
-            Route::prefix('/{project}/sprints')->name('sprints.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Tenant\Project\SprintController::class, 'index'])->name('index');
-                Route::get('/active', [App\Http\Controllers\Tenant\Project\SprintController::class, 'active'])->name('active');
-                Route::get('/planning', [App\Http\Controllers\Tenant\Project\SprintController::class, 'planning'])->name('planning');
-            });
-    
-            Route::prefix('/{project}/milestones')->name('milestones.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'index'])->name('index');
-                Route::get('/{milestone}', [App\Http\Controllers\Tenant\Project\MilestoneController::class, 'show'])->name('show');
-            });
     
             //
-            // TASKS ROUTES (moved BEFORE the catch-all /{project})
+            // ── team area ──────────────────────────────────────────────
             //
-            Route::prefix('/tasks')->name('tasks.')->group(function () {
-                // page: my cockpit
-                Route::get('/', [TaskController::class, 'index'])->name('index');
+            Route::prefix('team')
+                ->name('team.')
+                ->group(function () {
+                    Route::get('/',         [TeamController::class, 'index'])->name('index');
+                    Route::get('/workload', [TeamController::class, 'workload'])->name('workload');
+                });
     
-                // reorder (drag) the main task list
-                Route::post('/reorder-mylist', [TaskController::class, 'reorderMyList'])
-                    ->name('reorder');
     
-                Route::post('/{task}/subtasks/reorder', [TaskController::class, 'reorderSubtasks'])
-                    ->name('subtasks.reorder');
+            //
+            // ── reports area ───────────────────────────────────────────
+            //
+            Route::prefix('reports')
+                ->name('reports.')
+                ->group(function () {
+                    Route::get('/',              [ReportController::class, 'index'])->name('index');
+                    Route::get('/velocity',      [ReportController::class, 'velocity'])->name('velocity');
+                    Route::get('/burndown',      [ReportController::class, 'burndown'])->name('burndown');
+                    Route::get('/time-tracking', [ReportController::class, 'timeTracking'])->name('time-tracking');
+                });
     
-                // mark a TASK status quickly (done, in-progress, etc.) - returns updated project progress JSON
-                Route::post('/{task}/status', [TaskController::class, 'quickStatus'])
-                    ->name('quick-status');
     
-                // toggle a SUBTASK checkbox complete / incomplete - returns updated project progress JSON
-                Route::post('/{task}/subtasks/{subtask}/toggle-complete', [TaskController::class, 'toggleSubtaskComplete'])
-                    ->name('subtasks.toggle-complete');
+            //
+            // ── personal task views (assigned to me / by me) ───────────
+            //
+            Route::prefix('tasks')
+                ->name('tasks.')
+                ->group(function () {
+                    Route::get('/my-tasks', [TaskController::class, 'assignedToMe'])
+                        ->name('my-tasks');
     
-                // lightweight postpone from inline UI
-                Route::post('/{task}/postpone-quick', [TaskController::class, 'quickPostpone'])
-                    ->name('quick-postpone');
+                    Route::get('/assigned-out', [TaskController::class, 'assignedByMe'])
+                        ->name('assigned-out');
+                });
     
-                // rest of your task routes...
-                Route::get('/all', [TaskController::class, 'allTasks'])->name('all');
-                Route::get('/approvals', [TaskController::class, 'approvals'])->name('approvals');
-                Route::post('/{task}/complete', [TaskController::class, 'submitForReview'])->name('complete');
-                Route::post('/{task}/postpone', [TaskController::class, 'postpone'])->name('postpone');
-                Route::post('/{task}/block', [TaskController::class, 'block'])->name('block');
-                Route::post('/{task}/approve', [TaskController::class, 'approve'])->name('approve');
-                Route::post('/{task}/request-changes', [TaskController::class, 'requestChanges'])->name('request_changes');
-                Route::post('/{task}/remind', [TaskController::class, 'sendReminder'])->name('remind');
-                Route::get('/{task}/drawer', [TaskController::class, 'drawer'])->name('drawer');
-            });
     
-            // MUST BE LAST: catch-all single project view
-            Route::get('/{project}', [App\Http\Controllers\Tenant\Project\ProjectController::class, 'show'])
-                ->name('show');
+            //
+            // ── projects dashboard (global dashboard, not specific project) ──
+            //
+            Route::get('/dashboard', [DashboardController::class, 'index'])
+                ->name('dashboard');
+    
+    
+            //
+            // ── SINGLE PROJECT SCOPE (must be LAST so it doesn't eat /dashboard etc) ──
+            //
+            Route::prefix('{project}')
+                ->name('project.')
+                ->group(function () {
+    
+                    // main overview page for this project
+                    // /{username}/manage/projects/{project}
+                    Route::get('/', [ProjectController::class, 'show'])
+                        ->name('show'); // route name: tenant.manage.projects.project.show
+    
+                    // kanban / board
+                    Route::get('/board', [BoardController::class, 'show'])
+                        ->name('board');
+    
+                    // backlog
+                    Route::get('/backlog', [BacklogController::class, 'index'])
+                        ->name('backlog');
+    
+                    // task list (inside this project)
+                    Route::get('/list', [ProjectTaskListController::class, 'index'])
+                        ->name('task-list');
+    
+                    // timeline / roadmap
+                    Route::get('/timeline', [TimelineController::class, 'show'])
+                        ->name('timeline');
+    
+    
+                    // issues
+                    Route::prefix('issues')
+                        ->name('issues.')
+                        ->group(function () {
+                            Route::get('/',        [IssueController::class, 'index'])->name('index');
+                            Route::get('/{issue}', [IssueController::class, 'show'])->name('show');
+                        });
+    
+                    // sprints
+                    Route::prefix('sprints')
+                        ->name('sprints.')
+                        ->group(function () {
+                            Route::get('/',         [SprintController::class, 'index'])->name('index');
+                            Route::get('/active',   [SprintController::class, 'active'])->name('active');
+                            Route::get('/planning', [SprintController::class, 'planning'])->name('planning');
+                        });
+    
+                    // milestones
+                    Route::prefix('milestones')
+                        ->name('milestones.')
+                        ->group(function () {
+                            Route::get('/',            [MilestoneController::class, 'index'])->name('index');
+                            Route::get('/{milestone}', [MilestoneController::class, 'show'])->name('show');
+                        });
+                });
         });
-    
-
-
-
-
-
-
 
 
 

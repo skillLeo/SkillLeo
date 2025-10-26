@@ -191,19 +191,25 @@
 
 {{-- ===== NEW WORK SECTION (Tasks / Approvals) ===== --}}
 <div class="sidebar-nav-group">
-    <div class="sidebar-nav-group-label">WORK</div>
+    <div class="sidebar-nav-group-label">Tasks</div>
 
     <nav class="sidebar-nav-menu">
-
-        {{-- My Tasks: visible to everyone (owner, teammate, client) --}}
-        <a href="{{ route('tenant.manage.projects.tasks.index', $username) }}"
-           class="sidebar-nav-item {{ request()->routeIs('tenant.manage.projects.tasks.index') ? 'active' : '' }}">
-            <i class="fas fa-check-square"></i>
-            <span>Tasks</span>
+        <a href="{{ route('tenant.manage.projects.tasks.my-tasks', $username) }}"
+           class="sidebar-nav-item {{ request()->routeIs('*.my-tasks') ? 'active' : '' }}">
+            <i class="fas fa-inbox"></i>
+            <span>My Tasks</span>
+            <span class="sidebar-badge">4</span>
         </a>
- 
+
+        <a href="{{ route('tenant.manage.projects.tasks.assigned-out', $username) }}"
+           class="sidebar-nav-item {{ request()->routeIs('*.assigned-out') ? 'active' : '' }}">
+            <i class="fas fa-user-check"></i>
+            <span>Assigned Out</span>
+            <span class="sidebar-badge">4</span>
+        </a>
     </nav>
 </div>
+
 {{-- ===== /WORK SECTION ===== --}}
 
 
