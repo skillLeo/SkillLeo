@@ -1,36 +1,37 @@
 {{-- resources/views/tenant/manage/projects/tasks/tabs/all.blade.php --}}
-@once
-    @push('styles')
-        <link rel="stylesheet" href="{{ asset('css/tasks-tabs-styles.css') }}">
-    @endpush
-@endonce
 
-<div class="task-section-header primary">
-    <div class="task-section-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-        </svg>
-    </div>
-    <div class="task-section-content">
-        <h3 class="task-section-title">All Tasks</h3>
-        <p class="task-section-description">{{ $tasks->count() }} tasks across all projects</p>
-    </div>
-</div>
+ 
 
-@if($tasks->count() > 0)
+<div class="tasks-grid-container">
     <div class="tasks-grid">
         @foreach($tasks as $task)
             @include('tenant.manage.projects.tasks.components.task-grid-card', ['task' => $task])
         @endforeach
     </div>
-@else
-    <div class="project-empty-state">
-        <div class="project-empty-state-icon" style="background: rgba(0, 82, 204, 0.1); color: #0052CC;">
-            <i class="fas fa-tasks"></i>
-        </div>
-        <h3 class="project-empty-state-title">No tasks found</h3>
-        <p class="project-empty-state-desc">Tasks will appear here once they're created and assigned.</p>
-    </div>
-@endif
+</div>
+
+<style>
+.tasks-grid-container {
+    width: 100%;
+}
+
+.tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .tasks-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .tasks-grid {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    }
+}
+</style>

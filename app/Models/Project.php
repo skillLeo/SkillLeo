@@ -79,4 +79,18 @@ protected $guarded = [];
             ->orderBy('order')
             ->orderBy('id');
     }
+
+
+ 
+
+public function notes(): HasMany
+{
+    return $this->hasMany(ProjectNote::class);
+}
+
+public function media(): HasMany
+{
+    return $this->hasMany(ProjectMedia::class);
+}
+
 }

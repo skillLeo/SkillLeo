@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Services\Projects\CreateProjectService;
 use App\Http\Controllers\Tenant\BaseTenantController;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends BaseTenantController
 {
@@ -72,14 +75,22 @@ class ProjectController extends BaseTenantController
             abort(403, 'Unauthorized access to this project.');
         }
 
-        // Load relationships
+        // Load all necessary relationships for comprehensive display
         $project->load([
             'client.clientUser',
             'tasks' => function ($query) {
-                $query->with(['subtasks', 'assignee', 'dependencies']);
+                $query->with(['subtasks', 'assignee', 'dependencies'])
+                      ->orderBy('order')
+                      ->orderBy('id');
             },
             'team',
             'user',
+            'media' => function ($query) {
+                $query->orderBy('sort_order')->orderBy('id');
+            },
+            'notes' => function ($query) {
+                $query->with('author')->latest();
+            }
         ]);
 
         return view('tenant.manage.projects.show', [
@@ -87,207 +98,169 @@ class ProjectController extends BaseTenantController
             'project'  => $project,
         ]);
     }
-
     /**
      * POST /{username}/manage/projects
      * Create new project
      */
-    public function store(Request $request, string $username)
-    {
-        Log::info('Project Create Request - START', [
-            'user_id' => $this->workspaceOwner->id,
-            'request_data' => $request->except(['tasks', 'team']),
-        ]);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'key' => 'required|string|max:10|unique:projects,key',
-            'type' => 'required|in:scrum,kanban,waterfall,custom',
-            'category' => 'nullable|string',
-            'priority' => 'required|in:low,medium,high,urgent',
-            'description' => 'nullable|string',
-            'start_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:start_date',
-            'budget' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|max:3',
-            'estimated_hours' => 'nullable|numeric|min:0',
-            'flags' => 'nullable|array',
-
-            'tasks' => 'nullable|array',
-            'tasks.*.title' => 'required_with:tasks|string|max:255',
-            'tasks.*.notes' => 'nullable|string',
-            'tasks.*.priority' => 'required_with:tasks|in:low,medium,high,urgent',
-            'tasks.*.due_date' => 'nullable|date',
-            'tasks.*.estimated_hours' => 'nullable|numeric|min:0',
-            'tasks.*.story_points' => 'nullable|integer|min:0',
-            'tasks.*.flags' => 'nullable|array',
-            'tasks.*.subtasks' => 'nullable|array',
-            'tasks.*.subtasks.*.title' => 'required_with:tasks.*.subtasks|string|max:255',
-            'tasks.*.subtasks.*.completed' => 'nullable|boolean',
-            'tasks.*.dependencies' => 'nullable|array',
-            'tasks.*.assigned_to' => 'nullable|exists:users,id',
-
-            'team' => 'nullable|array',
-            'team.*.user_id' => 'nullable|exists:users,id',
-            'team.*.role' => 'nullable|string',
-            'team.*.tech_stack' => 'nullable|string',
-            'team.*.position' => 'nullable|string',
-
-            'client_user_id' => 'nullable|exists:users,id',
-            'client_company' => 'nullable|string|max:255',
-            'client_phone' => 'nullable|string|max:50',
-            'order_value' => 'nullable|numeric|min:0',
-            'payment_terms' => 'nullable|in:milestone,upfront50,monthly,completion',
-            'special_requirements' => 'nullable|string|max:2000',
-            'portal_access' => 'nullable|boolean',
-            'can_comment' => 'nullable|boolean',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Handle client creation if provided
-            $clientId = null;
-            if (!empty($validated['client_user_id'])) {
-                $clientUser = User::findOrFail($validated['client_user_id']);
-
-                if ($clientUser->account_status !== 'client') {
-                    throw new \Exception('Selected user is not registered as a client.');
-                }
-
-                $client = Client::create([
-                    'user_id' => $this->workspaceOwner->id,
-                    'client_user_id' => $validated['client_user_id'],
-                    'company' => $validated['client_company'] ?? null,
-                    'phone' => $validated['client_phone'] ?? null,
-                    'order_value' => $validated['order_value'] ?? null,
-                    'currency' => $validated['currency'] ?? 'PKR',
-                    'payment_terms' => $validated['payment_terms'] ?? 'milestone',
-                    'portal_access' => $validated['portal_access'] ?? true,
-                    'can_comment' => $validated['can_comment'] ?? false,
-                    'special_requirements' => $validated['special_requirements'] ?? null,
-                ]);
-
-                $clientId = $client->id;
-                Log::info('Client created', ['client_id' => $clientId]);
-            }
-
-            // Create project
-            $project = Project::create([
-                'user_id' => $this->workspaceOwner->id,
-                'client_id' => $clientId,
-                'name' => $validated['name'],
-                'key' => strtoupper($validated['key']),
-                'type' => $validated['type'],
-                'category' => $validated['category'] ?? null,
-                'priority' => $validated['priority'],
-                'description' => $validated['description'] ?? null,
-                'start_date' => $validated['start_date'],
-                'due_date' => $validated['due_date'],
-                'budget' => $validated['budget'] ?? null,
-                'currency' => $validated['currency'] ?? 'PKR',
-                'estimated_hours' => $validated['estimated_hours'] ?? null,
-                'flags' => $validated['flags'] ?? [],
-                'status' => 'planning',
-            ]);
-
-            Log::info('Project created', [
-                'project_id' => $project->id,
-                'project_name' => $project->name
-            ]);
-
-            // Create tasks with mapping for dependencies
-            $taskIdMapping = [];
-
-            if (!empty($validated['tasks'])) {
-                foreach ($validated['tasks'] as $originalTaskId => $taskData) {
-                    $task = $project->tasks()->create([
-                        'title' => $taskData['title'],
-                        'notes' => $taskData['notes'] ?? null,
-                        'priority' => $taskData['priority'],
-                        'due_date' => $taskData['due_date'] ?? null,
-                        'estimated_hours' => $taskData['estimated_hours'] ?? null,
-                        'story_points' => $taskData['story_points'] ?? 0,
-                        'flags' => $taskData['flags'] ?? [],
-                        'order' => count($taskIdMapping),
-                        'assigned_to' => $taskData['assigned_to'] ?? null,
-                        'reporter_id' => $this->workspaceOwner->id,
-                        'status' => Task::STATUS_TODO,
-                    ]);
-
-                    $taskIdMapping[$originalTaskId] = $task->id;
-
-                    // Create subtasks
-                    if (!empty($taskData['subtasks'])) {
-                        foreach ($taskData['subtasks'] as $subtaskIndex => $subtaskData) {
-                            $task->subtasks()->create([
-                                'title' => $subtaskData['title'],
-                                'completed' => $subtaskData['completed'] ?? false,
-                                'order' => $subtaskIndex,
-                            ]);
-                        }
-                    }
-                }
-
-                // Attach task dependencies
-                foreach ($validated['tasks'] as $originalTaskId => $taskData) {
-                    if (!empty($taskData['dependencies']) && isset($taskIdMapping[$originalTaskId])) {
-                        $taskModel = Task::find($taskIdMapping[$originalTaskId]);
-
-                        foreach ($taskData['dependencies'] as $dependencyOriginalId) {
-                            if (isset($taskIdMapping[$dependencyOriginalId])) {
-                                $taskModel->dependencies()->attach(
-                                    $taskIdMapping[$dependencyOriginalId]
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add team members
-            if (!empty($validated['team'])) {
-                foreach ($validated['team'] as $member) {
-                    if (!empty($member['user_id'])) {
-                        $teamUser = User::find($member['user_id']);
-
-                        if ($teamUser && $teamUser->account_status === 'professional') {
-                            $project->team()->attach($member['user_id'], [
-                                'role' => $member['role'] ?? '',
-                                'tech_stack' => $member['tech_stack'] ?? '',
-                                'position' => $member['position'] ?? '',
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            DB::commit();
-
-            Log::info('Project creation SUCCESS', [
-                'project_id' => $project->id,
-                'total_tasks' => count($taskIdMapping),
-            ]);
-
-            return redirect()
-                ->route('tenant.manage.projects.show', [$username, $project->id])
-                ->with('success', '✅ Project created successfully!');
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            Log::error('Project creation FAILED', [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to create project: ' . $e->getMessage());
-        }
-    }
-
+   
+     public function store(Request $request, string $username, CreateProjectService $creator)
+     {
+         Log::info('ProjectController@store: Starting', [
+             'workspace_owner_id' => $this->workspaceOwner->id,
+             'viewer_id' => $this->viewer->id,
+             'request_data_keys' => array_keys($request->all()),
+         ]);
+     
+         // Normalize nullable fields
+         $request->merge([
+             'budget'          => $request->filled('budget') ? $request->input('budget') : null,
+             'estimated_hours' => $request->filled('estimated_hours') ? $request->input('estimated_hours') : null,
+             'order_value'     => $request->filled('order_value') ? $request->input('order_value') : null,
+         ]);
+     
+         // Normalize task fields
+         if ($request->has('tasks')) {
+             $tasks = $request->input('tasks');
+             foreach ($tasks as $i => $t) {
+                 $tasks[$i]['due_date'] = !empty($t['due_date']) ? $t['due_date'] : null;
+                 $tasks[$i]['estimated_hours'] = !empty($t['estimated_hours']) ? $t['estimated_hours'] : null;
+                 $tasks[$i]['story_points'] = isset($t['story_points']) ? (int)$t['story_points'] : 0;
+             }
+             $request->merge(['tasks' => $tasks]);
+         }
+     
+         // Validation rules
+         $validator = Validator::make($request->all(), [
+             'name'        => ['required','string','max:255'],
+             'key'         => ['required','string','max:10','unique:projects,key'],
+             'type'        => ['required', Rule::in(['scrum','kanban','waterfall','custom'])],
+             'category'    => ['nullable','string','max:255'],
+             'priority'    => ['required', Rule::in(['low','medium','high','urgent'])],
+             'description' => ['nullable','string','max:5000'],
+             'start_date'  => ['required','date'],
+             'due_date'    => ['required','date','after_or_equal:start_date'],
+             'budget'      => ['nullable','numeric','min:0'],
+             'currency'    => ['nullable','string','max:3'],
+             'estimated_hours' => ['nullable','numeric','min:0'],
+     
+             'flags' => ['nullable','array'],
+     
+             'tasks'                     => ['nullable','array'],
+             'tasks.*.title'             => ['required_with:tasks','string','max:255'],
+             'tasks.*.notes'             => ['nullable','string'],
+             'tasks.*.priority'          => ['required_with:tasks', Rule::in(['low','medium','high','urgent'])],
+             'tasks.*.due_date'          => ['nullable','date'],
+             'tasks.*.estimated_hours'   => ['nullable','numeric','min:0'],
+             'tasks.*.story_points'      => ['nullable','integer','min:0'],
+             'tasks.*.assigned_to'       => ['nullable','exists:users,id'],
+             'tasks.*.subtasks'          => ['nullable','array'],
+             'tasks.*.subtasks.*.title'  => ['required_with:tasks.*.subtasks','string','max:255'],
+             'tasks.*.subtasks.*.completed' => ['nullable','boolean'],
+     
+             'team'              => ['nullable','array'],
+             'team.*.user_id'    => ['nullable','exists:users,id'],
+             'team.*.role'       => ['nullable','string','max:255'],
+             'team.*.tech_stack' => ['nullable','string','max:255'],
+             'team.*.position'   => ['nullable','string','max:255'],
+     
+             'client_user_id'        => ['nullable','exists:users,id'],
+             'client_company'        => ['nullable','string','max:255'],
+             'client_phone'          => ['nullable','string','max:50'],
+             'order_value'           => ['nullable','numeric','min:0'],
+             'payment_terms'         => ['nullable', Rule::in(['milestone','upfront50','monthly','completion'])],
+             'special_requirements'  => ['nullable','string','max:2000'],
+             'portal_access'         => ['nullable','boolean'],
+             'can_comment'           => ['nullable','boolean'],
+     
+             'notes'                 => ['nullable','array'],
+             'notes.*.body'          => ['required_with:notes','string','max:5000'],
+             'notes.*.is_internal'   => ['nullable','boolean'],
+             'notes.*.pinned'        => ['nullable','boolean'],
+     
+             'media'                 => ['nullable','array'],
+             'media.*.file'          => ['nullable','file','max:51200'],
+             'media.*.visibility'    => ['nullable', Rule::in(['internal','client'])],
+             'media.*.note'          => ['nullable','string','max:2000'],
+             'media.*.sort_order'    => ['nullable','integer','min:0'],
+         ]);
+     
+         if ($validator->fails()) {
+             Log::warning('ProjectController@store: Validation failed', [
+                 'errors' => $validator->errors()->toArray()
+             ]);
+             
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Validation failed',
+                 'errors'  => $validator->errors(),
+             ], 422);
+         }
+     
+         $validated = $validator->validated();
+     
+         // Rebuild media array with actual file objects
+         $validated['media'] = [];
+         if ($request->has('media')) {
+             foreach ($request->input('media') as $i => $mediaData) {
+                 if ($request->hasFile("media.$i.file")) {
+                     $validated['media'][$i] = [
+                         'file'       => $request->file("media.$i.file"),
+                         'visibility' => $mediaData['visibility'] ?? 'internal',
+                         'note'       => $mediaData['note'] ?? null,
+                         'sort_order' => (int) ($mediaData['sort_order'] ?? $i),
+                     ];
+                 }
+             }
+         }
+     
+         Log::info('ProjectController@store: Validation passed', [
+             'validated_keys' => array_keys($validated),
+             'tasks_count' => count($validated['tasks'] ?? []),
+             'team_count' => count($validated['team'] ?? []),
+             'media_count' => count($validated['media'] ?? []),
+         ]);
+     
+         try {
+             $project = $creator->execute($validated, $this->workspaceOwner, $this->viewer);
+     
+             Log::info('ProjectController@store: Success', [
+                 'project_id' => $project->id,
+                 'project_name' => $project->name,
+             ]);
+     
+             return response()->json([
+                 'success'     => true,
+                 'project_id'  => $project->id,
+                 'redirect_to' => route('tenant.manage.projects.project.show', [$username, $project->id]),
+                 'message'     => '✅ Project created successfully!',
+             ], 201);
+     
+         } catch (\Illuminate\Validation\ValidationException $e) {
+             Log::error('ProjectController@store: Validation Exception', [
+                 'errors' => $e->errors(),
+             ]);
+     
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Validation error',
+                 'errors'  => $e->errors(),
+             ], 422);
+     
+         } catch (\Throwable $e) {
+             Log::error('ProjectController@store: Exception', [
+                 'error' => $e->getMessage(),
+                 'file' => $e->getFile(),
+                 'line' => $e->getLine(),
+                 'trace' => $e->getTraceAsString(),
+             ]);
+     
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Failed to create project: ' . $e->getMessage(),
+                 'errors'  => ['server' => [$e->getMessage()]],
+             ], 500);
+         }
+     }
     /**
      * Search users for team assignment
      */
@@ -500,3 +473,6 @@ class ProjectController extends BaseTenantController
             ->with('info', 'Please complete your registration to accept the invitation.');
     }
 }
+
+
+

@@ -33,9 +33,10 @@ use App\Http\Controllers\Settings\AccountController;
 use App\Http\Controllers\Settings\DangerController;
 use App\Http\Controllers\Settings\SecurityController;
 use \App\Http\Controllers\Tenant\Project\Task\TaskController;
+use \App\Http\Controllers\Tenant\Project\Task\TaskActionController;
 
 
- 
+
 use App\Http\Controllers\Tenant\Project\ProjectController;
 use App\Http\Controllers\Tenant\Project\ClientController;
 use App\Http\Controllers\Tenant\Project\TeamController;
@@ -194,45 +195,70 @@ Route::middleware(['auth'])->group(function () {
         ->name('client.accept-invitation');
 
 
-        
 
-        Route::prefix('{username}/manage/projects')
+
+    Route::prefix('{username}/manage/projects')
         ->name('tenant.manage.projects.')
         ->middleware(['auth', 'verified'])
         ->group(function () {
-    
+
+
+            Route::get('media/{media}/download', [ProjectController::class, 'downloadMedia'])
+                ->name('tenant.manage.projects.media.download');
+
+            Route::delete('media/{media}', [ProjectController::class, 'deleteMedia'])
+                ->name('tenant.manage.projects.media.delete');
+
+            Route::post('{project}/media/upload', [ProjectController::class, 'uploadMedia'])
+                ->name('tenant.manage.projects.media.upload');
+
+            // Note Management Routes
+            Route::post('{project}/notes', [ProjectController::class, 'storeNote'])
+                ->name('tenant.manage.projects.notes.store');
+
+            Route::patch('notes/{note}', [ProjectController::class, 'updateNote'])
+                ->name('tenant.manage.projects.notes.update');
+
+            Route::delete('notes/{note}', [ProjectController::class, 'deleteNote'])
+                ->name('tenant.manage.projects.notes.delete');
+
+            Route::post('notes/{note}/toggle-pin', [ProjectController::class, 'toggleNotePin'])
+                ->name('tenant.manage.projects.notes.toggle-pin');
+
+
+
             //
             // ── helper / ajax style routes ─────────────────────────────
             //
             Route::get('/search-users',   [ProjectController::class, 'searchUsers'])
                 ->name('search-users');
-    
+
             Route::get('/search-clients', [ProjectController::class, 'searchClients'])
                 ->name('search-clients');
-    
+
             Route::post('/invite-client', [ProjectController::class, 'inviteClient'])
                 ->name('invite-client');
-    
+
             Route::get('/clients', [ClientController::class, 'index'])
                 ->name('clients.index');
-    
-    
+
+
             //
             // ── projects listing / create ──────────────────────────────
             //
             // all projects grid (your list.blade.php)
             Route::get('/list', [ProjectController::class, 'index'])
                 ->name('list');
-    
+
             // create project
-            Route::post('/store', [ProjectController::class, 'store'])
-                ->name('store');
-    
+            Route::post('/store', [ProjectController::class, 'store'])->name('store');
+
+
             // save draft
             Route::post('/draft', [ProjectController::class, 'saveDraft'])
                 ->name('draft');
-    
-    
+
+
             //
             // ── team area ──────────────────────────────────────────────
             //
@@ -242,8 +268,8 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/',         [TeamController::class, 'index'])->name('index');
                     Route::get('/workload', [TeamController::class, 'workload'])->name('workload');
                 });
-    
-    
+
+
             //
             // ── reports area ───────────────────────────────────────────
             //
@@ -255,58 +281,91 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/burndown',      [ReportController::class, 'burndown'])->name('burndown');
                     Route::get('/time-tracking', [ReportController::class, 'timeTracking'])->name('time-tracking');
                 });
-    
-    
+
+
             //
             // ── personal task views (assigned to me / by me) ───────────
             //
             Route::prefix('tasks')
                 ->name('tasks.')
                 ->group(function () {
+                    // dashboards
+                    // GET /{username}/manage/projects/tasks/my-tasks
                     Route::get('/my-tasks', [TaskController::class, 'assignedToMe'])
                         ->name('my-tasks');
-    
+
+                    // GET /{username}/manage/projects/tasks/assigned-out
                     Route::get('/assigned-out', [TaskController::class, 'assignedByMe'])
                         ->name('assigned-out');
+
+                    //
+                    // TASK actions
+                    //
+
+                    // POST /{username}/manage/projects/tasks/{task}/status
+                    // mark task done / postponed / blocked / cancelled (+ remark + optional files)
+                    Route::post('/{task}/status', [TaskActionController::class, 'updateStatus'])
+                        ->name('status.update');
+
+                    // POST /{username}/manage/projects/tasks/{task}/remark
+                    // just add a remark / comment / proof, don't change status
+                    Route::post('/{task}/remark', [TaskActionController::class, 'addRemark'])
+                        ->name('remark.add');
+
+                    //
+                    // SUBTASK actions
+                    //
+
+                    // POST /{username}/manage/projects/tasks/{task}/subtasks/{subtask}/toggle
+                    // simple check/uncheck toggle for a subtask
+                    Route::post('/{task}/subtasks/{subtask}/toggle', [TaskActionController::class, 'toggleSubtask'])
+                        ->name('subtasks.toggle');
+
+                    // POST /{username}/manage/projects/tasks/{task}/subtasks/{subtask}/complete-final
+                    // user finished last subtask -> complete task too (requires remark)
+                    Route::post('/{task}/subtasks/{subtask}/complete-final', [TaskActionController::class, 'completeSubtaskAndTask'])
+                        ->name('subtasks.complete-final');
                 });
-    
-    
+
+
+
+
             //
             // ── projects dashboard (global dashboard, not specific project) ──
             //
             Route::get('/dashboard', [DashboardController::class, 'index'])
                 ->name('dashboard');
-    
-    
+
+
             //
             // ── SINGLE PROJECT SCOPE (must be LAST so it doesn't eat /dashboard etc) ──
             //
             Route::prefix('{project}')
                 ->name('project.')
                 ->group(function () {
-    
+
                     // main overview page for this project
                     // /{username}/manage/projects/{project}
                     Route::get('/', [ProjectController::class, 'show'])
                         ->name('show'); // route name: tenant.manage.projects.project.show
-    
+
                     // kanban / board
                     Route::get('/board', [BoardController::class, 'show'])
                         ->name('board');
-    
+
                     // backlog
                     Route::get('/backlog', [BacklogController::class, 'index'])
                         ->name('backlog');
-    
+
                     // task list (inside this project)
                     Route::get('/list', [ProjectTaskListController::class, 'index'])
                         ->name('task-list');
-    
+
                     // timeline / roadmap
                     Route::get('/timeline', [TimelineController::class, 'show'])
                         ->name('timeline');
-    
-    
+
+
                     // issues
                     Route::prefix('issues')
                         ->name('issues.')
@@ -314,7 +373,7 @@ Route::middleware(['auth'])->group(function () {
                             Route::get('/',        [IssueController::class, 'index'])->name('index');
                             Route::get('/{issue}', [IssueController::class, 'show'])->name('show');
                         });
-    
+
                     // sprints
                     Route::prefix('sprints')
                         ->name('sprints.')
@@ -323,7 +382,7 @@ Route::middleware(['auth'])->group(function () {
                             Route::get('/active',   [SprintController::class, 'active'])->name('active');
                             Route::get('/planning', [SprintController::class, 'planning'])->name('planning');
                         });
-    
+
                     // milestones
                     Route::prefix('milestones')
                         ->name('milestones.')

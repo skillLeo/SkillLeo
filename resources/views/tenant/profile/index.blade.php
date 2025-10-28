@@ -1131,7 +1131,7 @@ use Illuminate\Support\Facades\Auth;
 
                     if (data.success) {
                         // Reload page to apply new sorting from backend
-                        window.location.reload();
+                        // window.location.reload();
                     } else {
                         alert('Failed to save preferences: ' + (data.message || 'Unknown error'));
                         if (saveBtn) {

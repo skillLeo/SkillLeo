@@ -2,6 +2,7 @@
     use App\Models\User;
     use App\Models\Project;
     use App\Models\Client;
+    use App\Models\Task;
     use Illuminate\Support\Str;
     use Illuminate\Support\Facades\Auth;
     use Illuminate\Support\Facades\DB;
@@ -58,34 +59,45 @@
         return request()->routeIs($name) ? 'active' : '';
     };
 
-    // Ensure section open/close matches the "manage projects" area
     $isManageProfile  = request()->routeIs('tenant.manage.*');
     $isManageProjects = request()->routeIs('tenant.manage.projects.*');
 
     // ===== Dynamic sidebar counts (scoped to this owner) =====
-    // Total projects owned by this user
     $sidebarCounts['projects'] = Project::where('user_id', $ownerId)->count();
 
-    // Distinct team members across ALL the owner's projects (via project_team)
     $sidebarCounts['team'] = DB::table('project_team')
         ->join('projects', 'project_team.project_id', '=', 'projects.id')
         ->where('projects.user_id', $ownerId)
         ->distinct('project_team.user_id')
         ->count('project_team.user_id');
 
-    // Clients belonging to this owner
     $sidebarCounts['clients'] = Client::where('user_id', $ownerId)->count();
-@endphp
-@php
+
     /** @var \App\Models\User $viewer */
     $viewer = Auth::user();
-    $workspaceOwnerUser = $owner ?? Auth::user(); // same logic you already use
-    // helper booleans
-    $canSeeAllTasks = $viewer->canSeeAllTasks($workspaceOwnerUser);
-    $canApproveTasks = $viewer->canApproveTasksFor($workspaceOwnerUser);
-    $isClient = $viewer->isClientFor($workspaceOwnerUser);
+    $workspaceOwnerUser = $owner ?? Auth::user();
+
+    // ===== NEW: Task counts (workspace-scoped) =====
+    // If you want ONLY open tasks, uncomment the whereNotIn status filter.
+    $sidebarCounts['my_tasks'] = Task::query()
+        ->withinWorkspace($workspaceOwnerUser)
+        ->where('assigned_to', $viewer->id)
+        // ->whereNotIn('status', ['done','cancelled'])
+        ->count();
+
+    $sidebarCounts['assigned_out'] = Task::query()
+        ->withinWorkspace($workspaceOwnerUser)
+        ->where('reporter_id', $viewer->id)
+        // ->whereNotIn('status', ['done','cancelled'])
+        ->count();
+
+    // helper booleans you already use
+    $canSeeAllTasks   = $viewer->canSeeAllTasks($workspaceOwnerUser);
+    $canApproveTasks  = $viewer->canApproveTasksFor($workspaceOwnerUser);
+    $isClient         = $viewer->isClientFor($workspaceOwnerUser);
 @endphp
 
+ 
 
 
 <div class="sidebar-scroll">
@@ -190,6 +202,7 @@
 
 
 {{-- ===== NEW WORK SECTION (Tasks / Approvals) ===== --}}
+{{-- ===== NEW WORK SECTION (Tasks / Approvals) ===== --}}
 <div class="sidebar-nav-group">
     <div class="sidebar-nav-group-label">Tasks</div>
 
@@ -198,17 +211,23 @@
            class="sidebar-nav-item {{ request()->routeIs('*.my-tasks') ? 'active' : '' }}">
             <i class="fas fa-inbox"></i>
             <span>My Tasks</span>
-            <span class="sidebar-badge">4</span>
+            @if(($sidebarCounts['my_tasks'] ?? 0) > 0)
+                <span class="sidebar-nav-badge">{{ number_format($sidebarCounts['my_tasks']) }}</span>
+            @endif
         </a>
 
         <a href="{{ route('tenant.manage.projects.tasks.assigned-out', $username) }}"
            class="sidebar-nav-item {{ request()->routeIs('*.assigned-out') ? 'active' : '' }}">
             <i class="fas fa-user-check"></i>
             <span>Assigned Out</span>
-            <span class="sidebar-badge">4</span>
+            @if(($sidebarCounts['assigned_out'] ?? 0) > 0)
+                <span class="sidebar-nav-badge">{{ number_format($sidebarCounts['assigned_out']) }}</span>
+            @endif
         </a>
     </nav>
 </div>
+{{-- ===== /WORK SECTION ===== --}}
+
 
 {{-- ===== /WORK SECTION ===== --}}
 
