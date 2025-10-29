@@ -16,14 +16,7 @@
         $reviewCount = $allTasks->where('status', 'review')->count();
         $blockedCount = $allTasks->where('status', 'blocked')->count();
 
-        $trackingCount = $allTasks->count(); // total tasks visible
-
-        // -------- NEW COMPLETION MATH --------
-        // Each task counts as 1 unit.
-        // Each subtask counts as 1 unit.
-        // Completed units:
-        //   - task status == 'done' -> +1
-        //   - each subtask completed == true -> +1
+        $trackingCount = $allTasks->count();  
         $totalUnits = 0;
         $completedUnits = 0;
 
@@ -399,12 +392,14 @@
     @include('tenant.manage.projects.tasks.components.status-modal')
     {{-- @include('tenant.manage.projects.tasks.components.task-action-modals', ['username' => $username ?? request()->segment(1)]) --}}
 
+    @include('tenant.manage.projects.modals.task-modals')
+    @include('tenant.manage.projects.modals.task-reassign-modal', ['username' => $username])
 
     <style>
         /* ============================================
-                   DESIGN SYSTEM FOUNDATION
-                   Professional-grade CSS Variables
-                   ============================================ */
+                       DESIGN SYSTEM FOUNDATION
+                       Professional-grade CSS Variables
+                       ============================================ */
 
         :root {
             /* Neutral Palette - Atlassian-inspired */
@@ -552,8 +547,8 @@
         }
 
         /* ============================================
-                   BASE & RESET
-                   ============================================ */
+                       BASE & RESET
+                       ============================================ */
 
         .pm-workspace {
             min-height: 100vh;
@@ -576,8 +571,8 @@
         }
 
         /* ============================================
-                   HEADER SECTION - Premium Design
-                   ============================================ */
+                       HEADER SECTION - Premium Design
+                       ============================================ */
 
         .pm-header {
             background: var(--pm-n0);
@@ -677,8 +672,8 @@
         }
 
         /* ============================================
-                   BUTTONS - Professional System
-                   ============================================ */
+                       BUTTONS - Professional System
+                       ============================================ */
 
         .pm-btn {
             display: inline-flex;
@@ -775,8 +770,8 @@
         }
 
         /* ============================================
-                   METRICS BAR - Data Visualization
-                   ============================================ */
+                       METRICS BAR - Data Visualization
+                       ============================================ */
 
         .pm-metrics {
             display: flex;
@@ -912,8 +907,8 @@
         }
 
         /* ============================================
-                   NAVIGATION TABS - Premium Filter System
-                   ============================================ */
+                       NAVIGATION TABS - Premium Filter System
+                       ============================================ */
 
         .pm-nav {
             background: var(--pm-n0);
@@ -1020,8 +1015,8 @@
         }
 
         /* ============================================
-                   BADGES - Status Indicators
-                   ============================================ */
+                       BADGES - Status Indicators
+                       ============================================ */
 
         .pm-badge {
             display: inline-flex;
@@ -1074,8 +1069,8 @@
         }
 
         /* ============================================
-                   CONTENT AREA
-                   ============================================ */
+                       CONTENT AREA
+                       ============================================ */
 
         .pm-content {
             background: var(--pm-n0);
@@ -1087,8 +1082,8 @@
         }
 
         /* ============================================
-                   EMPTY STATE - Elegant Design
-                   ============================================ */
+                       EMPTY STATE - Elegant Design
+                       ============================================ */
 
         .pm-empty {
             display: flex;
@@ -1137,8 +1132,8 @@
         }
 
         /* ============================================
-                   RESPONSIVE DESIGN - Mobile First
-                   ============================================ */
+                       RESPONSIVE DESIGN - Mobile First
+                       ============================================ */
 
         @media (max-width: 1024px) {
             .pm-container {
@@ -1253,8 +1248,8 @@
         }
 
         /* ============================================
-                   ACCESSIBILITY ENHANCEMENTS
-                   ============================================ */
+                       ACCESSIBILITY ENHANCEMENTS
+                       ============================================ */
 
         .pm-btn:focus-visible,
         .pm-nav-item:focus-visible {
@@ -1274,8 +1269,8 @@
         }
 
         /* ============================================
-                   PRINT STYLES
-                   ============================================ */
+                       PRINT STYLES
+                       ============================================ */
 
         @media print {
 
@@ -1297,23 +1292,21 @@
     </style>
 
     <script>
+        
         (function() {
     'use strict';
 
     // =========================================
-    //  GLOBAL CONFIG
-    //  make sure Blade sets this value:
-    //  window.TENANT_USERNAME = "{{ $username ?? request()->segment(1) }}";
+    // CONFIGURATION
     // =========================================
     if (!window.TENANT_USERNAME) {
-        window.TENANT_USERNAME = "{{ $username ?? request()->segment(1) }}";
+        window.TENANT_USERNAME = document.querySelector('meta[name="workspace-username"]')?.content || '';
     }
 
-    // keep selected attachments between drag/drop and submit
     let selectedFiles = [];
 
     // =========================================
-    // STATUS STYLE MAP (match backend statusMeta)
+    // STATUS STYLE MAP (matches backend)
     // =========================================
     const STATUS_STYLE = {
         'todo': {
@@ -1354,363 +1347,546 @@
     };
 
     // =========================================
-    // TOAST / NOTIFICATION
+    // 🔥 CORE REAL-TIME UPDATE FUNCTION
+    // This handles ALL UI updates from server response
     // =========================================
-    function showToast(message, type = 'info') {
-        let box = document.getElementById('app-toast-container');
-        if (!box) {
-            box = document.createElement('div');
-            box.id = 'app-toast-container';
-            box.style.position = 'fixed';
-            box.style.top = '16px';
-            box.style.right = '16px';
-            box.style.zIndex = '9999';
-            box.style.display = 'flex';
-            box.style.flexDirection = 'column';
-            box.style.gap = '8px';
-            document.body.appendChild(box);
+    function applyRealtimeUpdate(taskId, serverData) {
+        console.log('🔄 Real-time update for task:', taskId, serverData);
+
+        const card = document.querySelector(`.jira-task-card[data-task-id="${taskId}"]`);
+        
+        if (!card) {
+            console.warn(`❌ Task card ${taskId} not found in DOM`);
+            recalcGlobalCompletion();
+            return;
         }
 
-        const toast = document.createElement('div');
-        toast.style.minWidth = '220px';
-        toast.style.maxWidth = '320px';
-        toast.style.padding = '12px 14px';
-        toast.style.borderRadius = '6px';
-        toast.style.boxShadow = '0 10px 24px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)';
-        toast.style.display = 'flex';
-        toast.style.alignItems = 'flex-start';
-        toast.style.gap = '8px';
-        toast.style.fontSize = '13px';
-        toast.style.lineHeight = '1.4';
-        toast.style.border = '1px solid transparent';
-        toast.style.fontWeight = '500';
-        toast.style.cursor = 'default';
-
-        let iconSvg = '';
-        let colorBg = '';
-        let colorText = '';
-        let colorBorder = '';
-
-        if (type === 'success') {
-            colorBg = '#E3FCEF';
-            colorText = '#006644';
-            colorBorder = '#36B37E33';
-            iconSvg =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#006644" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-        } else if (type === 'error') {
-            colorBg = '#FFEBE6';
-            colorText = '#BF2600';
-            colorBorder = '#FF563033';
-            iconSvg =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BF2600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-        } else {
-            colorBg = '#DEEBFF';
-            colorText = '#0747A6';
-            colorBorder = '#0052CC33';
-            iconSvg =
-                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0747A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        // 1. UPDATE SUBTASK ROW (checkbox + strike-through)
+        if (serverData.subtask?.id) {
+            updateSubtaskRow(card, serverData.subtask);
         }
 
-        toast.style.backgroundColor = colorBg;
-        toast.style.color = colorText;
-        toast.style.borderColor = colorBorder;
+        // 2. UPDATE SUBTASK COUNTER (X/Y)
+        updateSubtaskCounter(card, serverData.completed_subtasks_count, serverData.subtasks_count);
 
-        toast.innerHTML = `
-                <div style="flex-shrink:0;">${iconSvg}</div>
-                <div style="flex:1;">${message}</div>
-                <button style="
-                    background:transparent;
-                    border:none;
-                    color:${colorText};
-                    cursor:pointer;
-                    line-height:1;
-                    padding:0;
-                    font-size:14px;
-                    font-weight:600;
-                " aria-label="Close">&times;</button>
-            `;
+        // 3. UPDATE PROGRESS BAR
+        updateProgressBar(card, serverData);
 
-        const closeBtn = toast.querySelector('button');
-        closeBtn.addEventListener('click', () => {
-            if (toast.parentNode) toast.parentNode.removeChild(toast);
-        });
+        // 4. UPDATE STATUS BADGE
+        if (serverData.task_status) {
+            updateStatusBadge(card, serverData);
+        }
 
-        setTimeout(() => {
-            toast.style.transition = 'opacity 200ms ease, transform 200ms ease';
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-4px)';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 220);
-        }, 3000);
+        // 5. UPDATE TASK DATA ATTRIBUTE
+        if (serverData.task_status) {
+            card.setAttribute('data-task-status', serverData.task_status);
+        }
 
-        box.appendChild(toast);
+        // 6. HANDLE SPECIAL STATUS CHANGES
+        handleStatusTransitions(card, serverData);
+
+        // 7. UPDATE GLOBAL COMPLETION RING
+        recalcGlobalCompletion();
+
+        // 8. CHECK IF TASK SHOULD BE FILTERED OUT
+        checkTaskVisibility(card, serverData.task_status);
     }
 
     // =========================================
-    // COMPLETION RING RECALC
-    // Each task = 1 unit
-    // Each subtask = 1 unit
-    // done task/subtask = completed unit
+    // UPDATE INDIVIDUAL SUBTASK ROW
+    // =========================================
+    function updateSubtaskRow(card, subtask) {
+        const row = card.querySelector(`.jira-subtask-item[data-subtask-id="${subtask.id}"]`);
+        
+        if (!row) return;
+
+        const checkbox = row.querySelector('.jira-subtask-checkbox');
+        
+        if (checkbox) {
+            checkbox.checked = !!subtask.completed;
+        }
+
+        if (subtask.completed) {
+            row.classList.add('is-completed');
+        } else {
+            row.classList.remove('is-completed');
+        }
+    }
+
+    // =========================================
+    // UPDATE SUBTASK COUNTER (X/Y subtasks)
+    // =========================================
+    function updateSubtaskCounter(card, completedCount, totalCount) {
+        const counterEl = card.querySelector('.jira-subtasks-count');
+        
+        if (counterEl && completedCount !== undefined && totalCount !== undefined) {
+            counterEl.textContent = `${completedCount}/${totalCount}`;
+        }
+    }
+
+    // =========================================
+    // UPDATE PROGRESS BAR
+    // =========================================
+    function updateProgressBar(card, serverData) {
+        const progressBar = card.querySelector('.jira-progress-bar');
+        
+        if (!progressBar) return;
+
+        const { completed_subtasks_count, subtasks_count, task_status, task_status_color } = serverData;
+
+        // Calculate percentage
+        const percentage = subtasks_count > 0 
+            ? Math.round((completed_subtasks_count / subtasks_count) * 100) 
+            : 0;
+
+        // Update width with smooth transition
+        progressBar.style.width = percentage + '%';
+
+        // Update color based on status
+        const statusStyle = STATUS_STYLE[task_status];
+        const color = task_status_color || statusStyle?.color || '#0052CC';
+        
+        progressBar.style.background = color;
+    }
+
+    // =========================================
+    // UPDATE STATUS BADGE
+    // =========================================
+    function updateStatusBadge(card, serverData) {
+        const badge = card.querySelector('.jira-status-badge');
+        
+        if (!badge) return;
+
+        const { task_status, task_status_label, task_status_bg, task_status_color } = serverData;
+        
+        const statusStyle = STATUS_STYLE[task_status] || STATUS_STYLE['todo'];
+        
+        const label = task_status_label || statusStyle.label;
+        const bg = task_status_bg || statusStyle.bg;
+        const color = task_status_color || statusStyle.color;
+
+        badge.textContent = label;
+        badge.style.background = bg;
+        badge.style.color = color;
+    }
+
+    // =========================================
+    // HANDLE STATUS TRANSITIONS
+    // =========================================
+    function handleStatusTransitions(card, serverData) {
+        const { task_status } = serverData;
+
+        if (task_status === 'done') {
+            // Mark ALL subtasks as completed visually
+            card.querySelectorAll('.jira-subtask-item').forEach(row => {
+                row.classList.add('is-completed');
+                const cb = row.querySelector('.jira-subtask-checkbox');
+                if (cb) cb.checked = true;
+            });
+
+            // Set progress to 100%
+            const progressBar = card.querySelector('.jira-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '100%';
+            }
+
+            showToast('✅ Task completed successfully!', 'success');
+        } 
+        else if (task_status === 'blocked') {
+            showToast('⛔ Task marked as blocked', 'error');
+        } 
+        else if (task_status === 'postponed') {
+            showToast('⏰ Task postponed', 'info');
+        } 
+        else if (task_status === 'cancelled') {
+            showToast('❌ Task cancelled', 'info');
+        } 
+     
+        else if (task_status === 'review') {
+            showToast('👀 Task in review', 'info');
+        }
+        else if (task_status === 'todo') {
+            showToast('📝 Task reopened', 'info');
+        }
+    }
+
+    // =========================================
+    // CHECK IF TASK SHOULD BE HIDDEN/FILTERED
+    // =========================================
+    function checkTaskVisibility(card, newStatus) {
+        // Get current active filter from URL or data attribute
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeFilter = urlParams.get('filter') || 'all';
+
+        let shouldHide = false;
+
+        // Check if task should be filtered out based on new status
+        switch(activeFilter) {
+            case 'overdue':
+                // Hide if not overdue anymore
+                const isOverdue = card.querySelector('.jira-overdue-badge');
+                shouldHide = !isOverdue;
+                break;
+
+            case 'today':
+                // Hide if not due today
+                // (Implementation depends on your due date logic)
+                break;
+
+            case 'in-progress':
+                shouldHide = newStatus !== 'in-progress';
+                break;
+
+            case 'review':
+                shouldHide = newStatus !== 'review';
+                break;
+
+            case 'blocked':
+                shouldHide = newStatus !== 'blocked';
+                break;
+
+            case 'done':
+                shouldHide = newStatus !== 'done';
+                break;
+
+            // Add more filter cases as needed
+        }
+
+        if (shouldHide) {
+            // Fade out and remove from view
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                card.style.display = 'none';
+                
+                // Check if section is now empty
+                checkIfSectionEmpty(card);
+            }, 300);
+        }
+    }
+
+    // =========================================
+    // CHECK IF TASK SECTION IS EMPTY
+    // =========================================
+    function checkIfSectionEmpty(card) {
+        const section = card.closest('.task-section, .pm-content');
+        
+        if (!section) return;
+
+        const visibleCards = section.querySelectorAll('.jira-task-card:not([style*="display: none"])');
+        
+        if (visibleCards.length === 0) {
+            // Show empty state
+            const emptyState = section.querySelector('.pm-empty');
+            if (emptyState) {
+                emptyState.style.display = 'flex';
+            }
+        }
+    }
+
+    // =========================================
+    // RECALCULATE GLOBAL COMPLETION RING
     // =========================================
     function recalcGlobalCompletion() {
         const wrapper = document.getElementById('pm-completion-wrapper');
+        
         if (!wrapper) return;
 
-        const taskCards = document.querySelectorAll('.pro-task-card');
+        const taskCards = document.querySelectorAll('.jira-task-card:not([style*="display: none"])');
 
         let totalUnits = 0;
         let completedUnits = 0;
 
         taskCards.forEach(card => {
-            // 1 unit for the task itself
+            // Each task = 1 unit
             totalUnits += 1;
+            
             const taskStatus = card.getAttribute('data-task-status');
             if (taskStatus === 'done') {
                 completedUnits += 1;
             }
 
-            // each subtask is also 1 unit
-            card.querySelectorAll('.pro-subtask-item').forEach(row => {
+            // Each subtask = 1 unit
+            card.querySelectorAll('.jira-subtask-item').forEach(row => {
                 totalUnits += 1;
-                const cb = row.querySelector('.pro-subtask-checkbox');
-                if (cb && cb.checked) {
+                
+                const checkbox = row.querySelector('.jira-subtask-checkbox');
+                if (checkbox && checkbox.checked) {
                     completedUnits += 1;
                 }
             });
         });
 
-        const pct = totalUnits > 0 ?
-            Math.round((completedUnits / totalUnits) * 100) :
-            0;
+        const percentage = totalUnits > 0 
+            ? Math.round((completedUnits / totalUnits) * 100) 
+            : 0;
 
+        // Update attributes
         wrapper.setAttribute('data-total-units', totalUnits);
         wrapper.setAttribute('data-completed-units', completedUnits);
 
-        // update ring dash
+        // Update circle progress
         const circle = wrapper.querySelector('.pm-circle');
         if (circle) {
-            circle.setAttribute('stroke-dasharray', pct + ', 100');
+            circle.setAttribute('stroke-dasharray', `${percentage}, 100`);
         }
 
-        // update % text
-        const pctText = wrapper.querySelector('.pm-percentage');
-        if (pctText) {
-            pctText.textContent = pct + '%';
+        // Update percentage text
+        const percentageText = wrapper.querySelector('.pm-percentage');
+        if (percentageText) {
+            percentageText.textContent = `${percentage}%`;
         }
-    }
-
-    // =========================================
-    // EXPAND/COLLAPSE SUBTASKS
-    // called by onclick="toggleSubtasksExpand(taskId)"
-    // =========================================
-    function toggleSubtasksExpand(taskId) {
-        const list = document.getElementById(`subtasks-list-${taskId}`);
-        const btn = document.getElementById(`expand-btn-${taskId}`);
-        if (!list || !btn) return;
-
-        const hidden = (list.style.display === 'none' || list.style.display === '');
-        list.style.display = hidden ? 'block' : 'none';
-        btn.classList.toggle('is-expanded', hidden);
-    }
-
-    // =========================================
-    // CLICK ON SUBTASK ROW
-    // called by onclick="subtaskRowClick(event, taskId, subtaskId, totalSubtasks)"
-    // =========================================
-    function subtaskRowClick(e, taskId, subtaskId, totalSubtasks) {
-        const cb = document.getElementById(`subtask-cb-${subtaskId}`);
-        if (!cb) return;
-
-        const willBeChecked = !cb.checked;
-
-        // figure out if this click will complete ALL subtasks
-        const checkboxes = document.querySelectorAll(
-            `#subtasks-list-${taskId} .pro-subtask-checkbox`
-        );
-
-        let futureCompleted = 0;
-        checkboxes.forEach(box => {
-            if (box.id === `subtask-cb-${subtaskId}`) {
-                if (willBeChecked) futureCompleted++;
-            } else if (box.checked) {
-                futureCompleted++;
-            }
-        });
-
-        const isLastSubtask = (futureCompleted === totalSubtasks);
-
-        // if this click finishes the final remaining subtask,
-        // open modal to finalize whole task (requires remark)
-        if (isLastSubtask && willBeChecked) {
-            e.preventDefault();
-            openStatusModal(taskId, 'done', subtaskId);
-            return;
-        }
-
-        // normal flow: optimistic toggle
-        cb.checked = willBeChecked;
-        toggleSubtask(taskId, subtaskId, willBeChecked);
-    }
-
-    // =========================================
-    // UPDATE SUBTASK + BADGE + BAR AFTER /toggle
-    // THIS VERSION IS UPDATED TO HANDLE ALL STATES
-    // =========================================
-    function updateSubtaskUIAfterToggle(taskId, data) {
-        // data from backend:
-        // {
-        //   success: true,
-        //   subtask: { id, completed: true/false, ... },
-        //   completed_subtasks_count,
-        //   subtasks_count,
-        //   task_status,
-        //   task_status_label,
-        //   task_status_bg,
-        //   task_status_color
-        // }
-
-        const card = document.querySelector(`.pro-task-card[data-task-id="${taskId}"]`);
-        if (!card) {
-            recalcGlobalCompletion();
-            return;
-        }
-
-        // 1. sync that specific subtask row (checkbox + strike-through)
-        if (data.subtask && data.subtask.id) {
-            const row = card.querySelector(`.pro-subtask-item[data-subtask-id="${data.subtask.id}"]`);
-            if (row) {
-                const cb = row.querySelector('.pro-subtask-checkbox');
-                if (cb) {
-                    cb.checked = !!data.subtask.completed;
-                }
-
-                if (data.subtask.completed) {
-                    row.classList.add('is-completed');
-                } else {
-                    row.classList.remove('is-completed');
-                }
-            }
-        }
-
-        // 2. update "X/Y subtasks"
-        const countEl = card.querySelector('.pro-subtasks-count');
-        if (countEl) {
-            countEl.textContent = `${data.completed_subtasks_count}/${data.subtasks_count}`;
-        }
-
-        // 3. update mini progress bar width + color
-        const bar = card.querySelector('.pro-progress-mini-bar');
-        if (bar) {
-            const pct = data.subtasks_count > 0
-                ? Math.round((data.completed_subtasks_count / data.subtasks_count) * 100)
-                : 0;
-
-            bar.style.width = pct + '%';
-
-            const styleForStatus = STATUS_STYLE[data.task_status] || {};
-            const barColor = data.task_status_color || styleForStatus.color || '#0052CC';
-            bar.style.background = barColor;
-        }
-
-        // 4. update the status badge
-        if (data.task_status) {
-            // update the data-task-status attr so global % calc stays correct
-            card.setAttribute('data-task-status', data.task_status);
-
-            const badge = card.querySelector('.pro-status-badge');
-            if (badge) {
-                const fallbackStyle = STATUS_STYLE[data.task_status] || {};
-
-                const label = data.task_status_label || fallbackStyle.label || data.task_status;
-                const bg    = data.task_status_bg    || fallbackStyle.bg    || '#F4F5F7';
-                const col   = data.task_status_color || fallbackStyle.color || '#6B778C';
-
-                badge.textContent       = label;
-                badge.style.background  = bg;
-                badge.style.color       = col;
-                badge.style.borderColor = col;
-            }
-
-            // if task flipped to "done", visually strike all subtasks, 100% bar, toast, etc.
-            if (data.task_status === 'done') {
-                card.querySelectorAll('.pro-subtask-item').forEach(r => {
-                    r.classList.add('is-completed');
-                    const cb = r.querySelector('.pro-subtask-checkbox');
-                    if (cb) cb.checked = true;
-                });
-
-                const doneBar = card.querySelector('.pro-progress-mini-bar');
-                if (doneBar) {
-                    doneBar.style.width = '100%';
-                }
-
-                showToast('Task marked done ✅', 'success');
-            } else if (data.task_status === 'blocked') {
-                showToast('Task marked blocked', 'error');
-            } else if (data.task_status === 'postponed') {
-                showToast('Task postponed', 'info');
-            } else if (data.task_status === 'cancelled') {
-                showToast('Task cancelled', 'info');
-            } else if (data.task_status === 'in-progress') {
-                showToast('Task set In Progress', 'success');
-            } else if (data.task_status === 'todo') {
-                showToast('Task reopened', 'info');
-            } else {
-                showToast('Task updated', 'success');
-            }
-        }
-
-        // 5. recalc global completion ring at top header
-        recalcGlobalCompletion();
     }
 
     // =========================================
     // AJAX: TOGGLE SUBTASK
     // =========================================
     function toggleSubtask(taskId, subtaskId, isChecked) {
-        fetch(`/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/toggle`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    completed: isChecked ? 1 : 0
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success) {
-                    throw new Error(data.message || 'Update failed');
-                }
+        const url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/toggle`;
 
-                updateSubtaskUIAfterToggle(taskId, data);
-
-                if (data.subtask.completed) {
-                    showToast('Subtask marked complete', 'success');
-                } else {
-                    showToast('Subtask reopened', 'info');
-                }
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                completed: isChecked ? 1 : 0
             })
-            .catch(err => {
-                console.error(err);
-                // rollback checkbox
-                const cb = document.getElementById(`subtask-cb-${subtaskId}`);
-                if (cb) cb.checked = !isChecked;
-                showToast('Could not update subtask', 'error');
-            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message || 'Update failed');
+            }
+
+            // 🔥 Apply real-time updates
+            applyRealtimeUpdate(taskId, data);
+
+            // Show appropriate toast
+            if (data.subtask?.completed) {
+                showToast('✅ Subtask completed', 'success');
+            } else {
+                showToast('↩️ Subtask reopened', 'info');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Toggle subtask failed:', error);
+            
+            // Rollback checkbox on error
+            const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
+            if (checkbox) {
+                checkbox.checked = !isChecked;
+            }
+            
+            showToast('Failed to update subtask', 'error');
+        });
     }
 
     // =========================================
-    // MODAL OPEN / CLOSE
-    // action:
-    //   'remark'      -> add comment only
-    //   'done'        -> mark done
-    //   'blocked'     -> mark blocked
-    //   'postponed'   -> postpone
-    //   'cancelled'   -> cancel
+    // SUBTASK ROW CLICK HANDLER
+    // =========================================
+    function subtaskRowClick(event, taskId, subtaskId, totalSubtasks) {
+        const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
+        
+        if (!checkbox) return;
+
+        const willBeChecked = !checkbox.checked;
+
+        // Calculate future completion state
+        const checkboxes = document.querySelectorAll(
+            `#subtasks-list-${taskId} .jira-subtask-checkbox`
+        );
+
+        let futureCompletedCount = 0;
+        checkboxes.forEach(box => {
+            if (box.id === `subtask-cb-${subtaskId}`) {
+                if (willBeChecked) futureCompletedCount++;
+            } else if (box.checked) {
+                futureCompletedCount++;
+            }
+        });
+
+        const isLastSubtask = (futureCompletedCount === totalSubtasks);
+
+        // If completing the last subtask, open modal for final confirmation
+        if (isLastSubtask && willBeChecked) {
+            event.preventDefault();
+            openStatusModal(taskId, 'done', subtaskId);
+            return;
+        }
+
+        // Optimistic UI update
+        checkbox.checked = willBeChecked;
+
+        // Send to backend
+        toggleSubtask(taskId, subtaskId, willBeChecked);
+    }
+
+    // =========================================
+    // UPDATE TASK STATUS (Done/Postponed/Blocked)
+    // =========================================
+    function submitTaskStatus(event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const prevHTML = submitBtn.innerHTML;
+
+        // Lock button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="spinning">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
+                <path d="M8 1a7 7 0 017 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+            <span>Processing...</span>
+        `;
+
+        const form = document.getElementById('taskStatusForm');
+        const taskId = document.getElementById('modalTaskId').value;
+        const subtaskId = document.getElementById('modalSubtaskId').value;
+        const action = document.getElementById('modalAction').value;
+
+        const formData = new FormData(form);
+
+        // Add selected files
+        selectedFiles.forEach(file => {
+            formData.append('attachments[]', file);
+        });
+
+        // Determine endpoint
+        let url;
+        if (action === 'remark') {
+            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/remark`;
+        } else if (subtaskId) {
+            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/complete-final`;
+        } else {
+            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/status`;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message || 'Request failed');
+            }
+
+            // Close modal
+            closeStatusModal();
+
+            // 🔥 Apply real-time updates
+            if (data.task_status || data.subtask) {
+                applyRealtimeUpdate(taskId, data);
+            } else {
+                showToast(data.message || 'Updated successfully', 'success');
+            }
+
+            // Restore button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = prevHTML;
+        })
+        .catch(error => {
+            console.error('❌ Status update failed:', error);
+            showToast(error.message || 'Failed to update task', 'error');
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = prevHTML;
+        });
+    }
+
+    // =========================================
+    // TOAST NOTIFICATION SYSTEM
+    // =========================================
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('app-toast-container');
+        
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'app-toast-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                z-index: 9999;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            `;
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        
+        const styles = {
+            success: {
+                bg: '#E3FCEF',
+                color: '#006644',
+                border: '#36B37E33',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#006644" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+            },
+            error: {
+                bg: '#FFEBE6',
+                color: '#BF2600',
+                border: '#FF563033',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BF2600" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+            },
+            info: {
+                bg: '#DEEBFF',
+                color: '#0747A6',
+                border: '#0052CC33',
+                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0747A6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+            }
+        };
+
+        const style = styles[type] || styles.info;
+
+        toast.style.cssText = `
+            min-width: 220px;
+            max-width: 320px;
+            padding: 12px 14px;
+            border-radius: 6px;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid ${style.border};
+            background: ${style.bg};
+            color: ${style.color};
+        `;
+
+        toast.innerHTML = `
+            <div style="flex-shrink:0;">${style.icon}</div>
+            <div style="flex:1;">${message}</div>
+            <button style="background:transparent;border:none;color:${style.color};cursor:pointer;font-size:14px;font-weight:600;padding:0;" aria-label="Close">&times;</button>
+        `;
+
+        const closeBtn = toast.querySelector('button');
+        closeBtn.addEventListener('click', () => toast.remove());
+
+        container.appendChild(toast);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.style.transition = 'opacity 200ms ease, transform 200ms ease';
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-4px)';
+            setTimeout(() => toast.remove(), 220);
+        }, 3000);
+    }
+
+    // =========================================
+    // MODAL HANDLERS
     // =========================================
     function openStatusModal(taskId, action, subtaskId = null) {
         const modal = document.getElementById('taskStatusModal');
@@ -1722,24 +1898,21 @@
         const statusWrap = document.getElementById('statusSelection');
         const remarkLabel = document.getElementById('remarkLabel');
         const submitBtnText = document.getElementById('submitBtnText');
-
         const postponeField = document.getElementById('postponeDateField');
         const postponeInput = document.getElementById('postponed_until');
         const filePreview = document.getElementById('filePreview');
 
-        // reset form
+        // Reset
         form.reset();
         selectedFiles = [];
         filePreview.innerHTML = '';
         filePreview.style.display = 'none';
 
-        // push ids
         modalTaskId.value = taskId;
         modalSubId.value = subtaskId || '';
         modalAction.value = action;
 
         if (action === 'remark') {
-            // remark-only mode
             modalTitle.textContent = 'Add Remark';
             statusWrap.style.display = 'none';
             remarkLabel.textContent = 'Your Remark';
@@ -1747,17 +1920,13 @@
             postponeField.style.display = 'none';
             postponeInput.required = false;
         } else {
-            // status-change mode
             modalTitle.textContent = 'Update Task Status';
             statusWrap.style.display = 'block';
             remarkLabel.textContent = 'Describe your update';
             submitBtnText.textContent = 'Update Status';
 
-            // preselect the chosen status radio
-            if (action !== 'status') {
-                const radio = document.querySelector(`input[name="status"][value="${action}"]`);
-                if (radio) radio.checked = true;
-            }
+            const radio = document.querySelector(`input[name="status"][value="${action}"]`);
+            if (radio) radio.checked = true;
 
             updatePostponeDateVisibility();
         }
@@ -1766,9 +1935,8 @@
         document.body.style.overflow = 'hidden';
     }
 
-    function closeStatusModal(evt) {
-        // clicking overlay (target===currentTarget) OR ESC
-        if (evt && evt.target && evt.currentTarget && evt.target !== evt.currentTarget) {
+    function closeStatusModal(event) {
+        if (event && event.target && event.currentTarget && event.target !== event.currentTarget) {
             return;
         }
 
@@ -1777,17 +1945,12 @@
         document.body.style.overflow = '';
     }
 
-    // =========================================
-    // SHOW/HIDE POSTPONE DATE FIELD
-    // =========================================
     function updatePostponeDateVisibility() {
         const checked = document.querySelector('input[name="status"]:checked');
-        const val = checked ? checked.value : null;
-
         const postponeField = document.getElementById('postponeDateField');
         const postponeInput = document.getElementById('postponed_until');
 
-        if (val === 'postponed') {
+        if (checked?.value === 'postponed') {
             postponeField.style.display = 'block';
             postponeInput.required = true;
         } else {
@@ -1796,31 +1959,22 @@
         }
     }
 
-    // =========================================
-    // REMARK CHARACTER COUNTER
-    // =========================================
-    function handleRemarkInput() {
-        const remark = document.getElementById('remark');
-        const cc = document.getElementById('charCount');
-        if (!remark || !cc) return;
+    function toggleSubtasksExpand(taskId) {
+        const list = document.getElementById(`subtasks-list-${taskId}`);
+        const btn = document.getElementById(`expand-btn-${taskId}`);
+        
+        if (!list || !btn) return;
 
-        const len = remark.value.length;
-        cc.textContent = len;
-        cc.style.color = len > 1900 ? '#DE350B' : '#6B778C';
+        const hidden = (list.style.display === 'none' || list.style.display === '');
+        list.style.display = hidden ? 'block' : 'none';
+        btn.classList.toggle('is-expanded', hidden);
     }
 
     // =========================================
-    // FILE UPLOAD HANDLING
-    // drag/drop + preview list
+    // FILE UPLOAD HANDLERS
     // =========================================
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function handleFileSelect(e) {
-        const files = e.target.files;
-        handleFiles(files);
+    function handleFileSelect(event) {
+        handleFiles(event.target.files);
     }
 
     function handleFiles(fileList) {
@@ -1844,32 +1998,32 @@
 
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onload = function(ev) {
+            reader.onload = function(e) {
                 item.innerHTML = `
-                        <img src="${ev.target.result}" alt="${file.name}" class="file-preview-image">
-                        <button type="button" class="file-preview-remove" onclick="removeFile('${file.name}')">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
-                            </svg>
-                        </button>
-                    `;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            item.innerHTML = `
-                    <div class="file-preview-file">
-                        <svg class="file-preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
-                            <path d="M13 2v7h7"/>
-                        </svg>
-                        <div class="file-preview-name">${file.name}</div>
-                    </div>
+                    <img src="${e.target.result}" alt="${file.name}" class="file-preview-image">
                     <button type="button" class="file-preview-remove" onclick="removeFile('${file.name}')">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
                         </svg>
                     </button>
                 `;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            item.innerHTML = `
+                <div class="file-preview-file">
+                    <svg class="file-preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+                        <path d="M13 2v7h7"/>
+                    </svg>
+                    <div class="file-preview-name">${file.name}</div>
+                </div>
+                <button type="button" class="file-preview-remove" onclick="removeFile('${file.name}')">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3l8 8M11 3l-8 8" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            `;
         }
 
         container.appendChild(item);
@@ -1881,292 +2035,84 @@
         if (item) item.remove();
 
         if (selectedFiles.length === 0) {
-            const container = document.getElementById('filePreview');
-            container.style.display = 'none';
+            document.getElementById('filePreview').style.display = 'none';
         }
     }
 
     // =========================================
-    // UPDATE CARD UI AFTER STATUS CHANGE
-    // called after we successfully POST status / remark
+    // KEYBOARD SHORTCUTS
     // =========================================
-    function updateTaskCardUIAfterStatus(taskId, data) {
-        // expects:
-        // data.task_status
-        // data.task_status_label
-        // data.completed_subtasks_count
-        // data.subtasks_count
-        // data.task_status_bg
-        // data.task_status_color
-
-        const card = document.querySelector(`.pro-task-card[data-task-id="${taskId}"]`);
-        if (!card) {
-            recalcGlobalCompletion();
-            return;
+    function handleKeyCommands(event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+            event.preventDefault();
+            window.location.reload();
         }
 
-        // update data-task-status on card
-        if (data.task_status) {
-            card.setAttribute('data-task-status', data.task_status);
-        }
-
-        // update badge
-        const badge = card.querySelector('.pro-status-badge');
-        if (badge && data.task_status) {
-            const styleMap = STATUS_STYLE[data.task_status] || {
-                bg: '#F4F5F7',
-                color: '#6B778C',
-                fallback: data.task_status_label || 'Status',
-            };
-
-            const label = data.task_status_label || styleMap.fallback;
-            const bg = data.task_status_bg || styleMap.bg;
-            const col = data.task_status_color || styleMap.color;
-
-            badge.textContent = label;
-            badge.style.background = bg;
-            badge.style.color = col;
-            badge.style.borderColor = col;
-        }
-
-        // if task went "done", force all subtasks done visually
-        if (data.task_status === 'done') {
-            const subRows = card.querySelectorAll('.pro-subtask-item');
-            subRows.forEach(r => {
-                r.classList.add('is-completed');
-                const cb = r.querySelector('.pro-subtask-checkbox');
-                if (cb) cb.checked = true;
-            });
-
-            // x/y label
-            const countEl = card.querySelector('.pro-subtasks-count');
-            if (countEl &&
-                data.subtasks_count !== undefined &&
-                data.completed_subtasks_count !== undefined) {
-                countEl.textContent = `${data.completed_subtasks_count}/${data.subtasks_count}`;
-            }
-
-            // progress bar -> 100%
-            const bar = card.querySelector('.pro-progress-mini-bar');
-            if (bar) {
-                bar.style.width = '100%';
-                bar.style.background = STATUS_STYLE['done'].color;
-            }
-
-            showToast('Task marked done ✅', 'success');
-        } else if (data.task_status === 'blocked') {
-            showToast('Task marked blocked', 'error');
-        } else if (data.task_status === 'postponed') {
-            showToast('Task postponed', 'info');
-        } else if (data.task_status === 'cancelled') {
-            showToast('Task cancelled', 'info');
-        } else if (data.task_status === 'in-progress') {
-            showToast('Task set In Progress', 'success');
-        } else if (data.task_status === 'todo') {
-            showToast('Task reopened', 'info');
-        } else if (data.task_status) {
-            showToast('Task updated', 'success');
-        }
-
-        // update global completion ring
-        recalcGlobalCompletion();
-    }
-
-    // =========================================
-    // SUBMIT MODAL FORM
-    // onsubmit="submitTaskStatus(event)"
-    // =========================================
-    function submitTaskStatus(e) {
-        e.preventDefault();
-
-        const submitBtn = document.getElementById('submitBtn');
-        const prevHTML = submitBtn.innerHTML;
-
-        // lock button + spinner
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="spinning">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
-                    <path d="M8 1a7 7 0 017 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-                </svg>
-                <span>Processing...</span>
-            `;
-
-        const formEl = document.getElementById('taskStatusForm');
-        const taskId = document.getElementById('modalTaskId').value;
-        const subtaskId = document.getElementById('modalSubtaskId').value;
-        const actionValue = document.getElementById('modalAction').value;
-
-        const fd = new FormData(formEl);
-
-        // push our selectedFiles (drag/drop)
-        selectedFiles.forEach(file => {
-            fd.append('attachments[]', file);
-        });
-
-        // decide endpoint:
-        //  - remark only
-        //  - completing last subtask (complete-final)
-        //  - regular task status update
-        let url = '';
-        if (actionValue === 'remark') {
-            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/remark`;
-        } else if (subtaskId) {
-            url =
-                `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/complete-final`;
-        } else {
-            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/status`;
-        }
-
-        fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    // do NOT set Content-Type here, browser sets multipart/form-data boundary
-                },
-                body: fd
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (!data.success) {
-                    throw new Error(data.message || 'Request failed');
-                }
-
-                // close modal
-                closeStatusModal();
-
-                // update UI
-                if (data.task_status) {
-                    updateTaskCardUIAfterStatus(taskId, data);
-                } else {
-                    // remark-only path
-                    showToast(data.message || 'Remark added successfully', 'success');
-                }
-
-                // restore button
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = prevHTML;
-            })
-            .catch(err => {
-                console.error(err);
-                showToast('Error updating task', 'error');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = prevHTML;
-            });
-    }
-
-    // =========================================
-    // PAGE-LEVEL SHORTCUTS / HELPERS
-    // =========================================
-    function refreshTasks() {
-        window.location.reload();
-    }
-
-    function openFilters() {
-        console.log('openFilters()');
-    }
-
-    function openSettings() {
-        console.log('openSettings()');
-    }
-
-    function openMenu() {
-        console.log('openMenu()');
-    }
-
-    function createTask() {
-        console.log('createTask()');
-    }
-
-    function handleKeyCommands(e) {
-        // Cmd/Ctrl + R = refresh (override browser)
-        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-            e.preventDefault();
-            refreshTasks();
-        }
-
-        // Cmd/Ctrl + F = filter
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-            e.preventDefault();
-            openFilters();
-        }
-
-        // Cmd/Ctrl + N = new task
-        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-            e.preventDefault();
-            createTask();
-        }
-
-        // ESC closes modal
-        if (e.key === 'Escape') {
+        if (event.key === 'Escape') {
             closeStatusModal();
         }
     }
 
     // =========================================
-    // INIT
+    // INITIALIZATION
     // =========================================
     document.addEventListener('DOMContentLoaded', function() {
-
-        // scroll active tab into view
-        const navScroll = document.querySelector('.pm-nav-scroll');
-        if (navScroll) {
-            const activeItem = navScroll.querySelector('.pm-nav-item--active');
-            if (activeItem) {
-                activeItem.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }
-
-        // listen to radio changes (postpone toggle)
+        // Status radio listeners
         document.querySelectorAll('input[name="status"]').forEach(radio => {
             radio.addEventListener('change', updatePostponeDateVisibility);
         });
 
-        // remark char counter
+        // Remark character counter
         const remark = document.getElementById('remark');
         if (remark) {
-            remark.addEventListener('input', handleRemarkInput);
+            remark.addEventListener('input', function() {
+                const counter = document.getElementById('charCount');
+                if (counter) {
+                    const length = this.value.length;
+                    counter.textContent = length;
+                    counter.style.color = length > 1900 ? '#DE350B' : '#6B778C';
+                }
+            });
         }
 
-        // drag+drop area
+        // Drag & drop
         const uploadArea = document.getElementById('uploadArea');
         if (uploadArea) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evtName => {
-                uploadArea.addEventListener(evtName, preventDefaults, false);
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
             });
 
-            ['dragenter', 'dragover'].forEach(evtName => {
-                uploadArea.addEventListener(evtName, () => {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
                     uploadArea.classList.add('drag-over');
                 }, false);
             });
 
-            ['dragleave', 'drop'].forEach(evtName => {
-                uploadArea.addEventListener(evtName, () => {
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, () => {
                     uploadArea.classList.remove('drag-over');
                 }, false);
             });
 
             uploadArea.addEventListener('drop', function(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles(files);
+                handleFiles(e.dataTransfer.files);
             }, false);
         }
 
-        // global keyboard shortcuts
+        // Keyboard shortcuts
         document.addEventListener('keydown', handleKeyCommands);
 
-        // ensure completion ring is accurate on load
+        // Initial completion calculation
         recalcGlobalCompletion();
+
+        console.log('✅ Real-time task system initialized');
     });
 
     // =========================================
-    // expose to window so Blade inline onclick="" works
+    // EXPOSE TO GLOBAL SCOPE
     // =========================================
     window.showToast = showToast;
     window.recalcGlobalCompletion = recalcGlobalCompletion;
@@ -2178,64 +2124,59 @@
     window.submitTaskStatus = submitTaskStatus;
     window.handleFileSelect = handleFileSelect;
     window.removeFile = removeFile;
-    window.refreshTasks = refreshTasks;
-    window.openFilters = openFilters;
-    window.openSettings = openSettings;
-    window.openMenu = openMenu;
-    window.createTask = createTask;
+    window.applyRealtimeUpdate = applyRealtimeUpdate;
 
-    // spinner CSS injected once
-    const spinStyle = document.createElement('style');
-    spinStyle.textContent = `
-            @keyframes spin {
-                from { transform: rotate(0deg); }
-                to   { transform: rotate(360deg); }
-            }
-            .spinning {
-                animation: spin 1s linear infinite;
-            }
-            .drag-over {
-                outline: 2px dashed #0052CC;
-                outline-offset: 4px;
-                background: rgba(0,82,204,.05);
-            }
-            .file-preview-image {
-                max-width: 64px;
-                max-height: 64px;
-                border-radius: 4px;
-                object-fit: cover;
-                box-shadow: 0 2px 8px rgba(0,0,0,.15);
-            }
-            .file-preview-file {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 12px;
-                background:#F4F5F7;
-                color:#172B4D;
-                border-radius:4px;
-                padding:6px 8px;
-            }
-            .file-preview-icon {
-                width:16px;
-                height:16px;
-            }
-            .file-preview-remove {
-                background:transparent;
-                border:none;
-                cursor:pointer;
-                color:#6B778C;
-                margin-left:4px;
-            }
-            #filePreview {
-                display:none;
-                grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
-                gap:8px;
-                margin-top:8px;
-            }
-        `;
-    document.head.appendChild(spinStyle);
+    // Spinner CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+        .drag-over {
+            outline: 2px dashed #0052CC;
+            outline-offset: 4px;
+            background: rgba(0,82,204,0.05);
+        }
+        .file-preview-image {
+            max-width: 64px;
+            max-height: 64px;
+            border-radius: 4px;
+            object-fit: cover;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .file-preview-file {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background: #F4F5F7;
+            color: #172B4D;
+            border-radius: 4px;
+            padding: 6px 8px;
+        }
+        .file-preview-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .file-preview-remove {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #6B778C;
+            margin-left: 4px;
+        }
+        #filePreview {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+    `;
+    document.head.appendChild(style);
 
-})();
-    </script>
+})();</script>
 @endsection

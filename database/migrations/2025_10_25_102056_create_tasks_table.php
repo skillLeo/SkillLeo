@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assigned_to')->nullable()
                 ->constrained('users')->nullOnDelete();
-            $table->foreignId('created_by')
+            $table->foreignId('reporter_id')
                 ->constrained('users')->cascadeOnDelete();
 
             // Core Info

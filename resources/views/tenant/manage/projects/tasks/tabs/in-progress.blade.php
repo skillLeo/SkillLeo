@@ -21,7 +21,7 @@
 @if($tasks->count() > 0)
     <div class="tasks-grid">
         @foreach($tasks as $task)
-            @include('tenant.manage.projects.tasks.components.task-grid-card', ['task' => $task])
+            @include('tenant.manage.projects.tasks.components.advanced-task-card', ['task' => $task])
         @endforeach
     </div>
 @else

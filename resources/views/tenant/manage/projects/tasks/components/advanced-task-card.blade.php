@@ -1,61 +1,96 @@
-{{-- resources/views/tenant/manage/projects/tasks/components/advanced-task-card.blade.php --}}
-
 @php
 use Illuminate\Support\Str;
 
+/**
+ * Priority / Status presentation config
+ */
 $priorityConfig = [
-    'urgent' => ['color' => '#DE350B', 'bg' => 'rgba(222, 53, 11, 0.1)', 'label' => 'Urgent', 'icon' => 'exclamation-circle'],
-    'high' => ['color' => '#FF991F', 'bg' => 'rgba(255, 153, 31, 0.1)', 'label' => 'High', 'icon' => 'arrow-up'],
-    'medium' => ['color' => '#0065FF', 'bg' => 'rgba(0, 101, 255, 0.1)', 'label' => 'Medium', 'icon' => 'minus'],
-    'low' => ['color' => '#00875A', 'bg' => 'rgba(0, 135, 90, 0.1)', 'label' => 'Low', 'icon' => 'arrow-down'],
+    'urgent'  => ['color' => '#DE350B', 'bg' => 'rgba(222, 53, 11, 0.1)', 'label' => 'Urgent',    'icon' => 'exclamation-circle'],
+    'high'    => ['color' => '#FF991F', 'bg' => 'rgba(255, 153, 31, 0.1)', 'label' => 'High',      'icon' => 'arrow-up'],
+    'medium'  => ['color' => '#0065FF', 'bg' => 'rgba(0, 101, 255, 0.1)', 'label' => 'Medium',    'icon' => 'minus'],
+    'low'     => ['color' => '#00875A', 'bg' => 'rgba(0, 135, 90, 0.1)',  'label' => 'Low',       'icon' => 'arrow-down'],
 ];
 
 $statusConfig = [
-    'todo' => ['color' => '#6B778C', 'bg' => '#F4F5F7', 'label' => 'To Do'],
-    'in-progress' => ['color' => '#0052CC', 'bg' => '#DEEBFF', 'label' => 'In Progress'],
-    'review' => ['color' => '#FF991F', 'bg' => '#FFFAE6', 'label' => 'Review'],
-    'done' => ['color' => '#00875A', 'bg' => '#E3FCEF', 'label' => 'Done'],
-    'blocked' => ['color' => '#DE350B', 'bg' => '#FFEBE6', 'label' => 'Blocked'],
-    'postponed' => ['color' => '#8777D9', 'bg' => '#EAE6FF', 'label' => 'Postponed'],
+    'todo'       => ['color' => '#6B778C', 'bg' => '#F4F5F7',  'label' => 'To Do'],
+    'in-progress'=> ['color' => '#0052CC', 'bg' => '#DEEBFF',  'label' => 'In Progress'],
+    'review'     => ['color' => '#FF991F', 'bg' => '#FFFAE6',  'label' => 'Review'],
+    'done'       => ['color' => '#00875A', 'bg' => '#E3FCEF',  'label' => 'Done'],
+    'blocked'    => ['color' => '#DE350B', 'bg' => '#FFEBE6',  'label' => 'Blocked'],
+    'postponed'  => ['color' => '#8777D9', 'bg' => '#EAE6FF',  'label' => 'Postponed'],
 ];
 
 $priority = $priorityConfig[$task->priority ?? 'medium'] ?? $priorityConfig['medium'];
-$status = $statusConfig[$task->status ?? 'todo'] ?? $statusConfig['todo'];
+$status   = $statusConfig[$task->status ?? 'todo'] ?? $statusConfig['todo'];
 
-$totalSubtasks = $task->subtasks->count();
-$completedSubtasks = $task->subtasks->where('completed', true)->count();
-$subtaskProgress = $totalSubtasks > 0 ? round(($completedSubtasks / $totalSubtasks) * 100) : 0;
+/**
+ * Progress for subtasks
+ */
+$totalSubtasks        = $task->subtasks->count();
+$completedSubtasks    = $task->subtasks->where('completed', true)->count();
+$subtaskProgress      = $totalSubtasks > 0 ? round(($completedSubtasks / $totalSubtasks) * 100) : 0;
 
-$isOverdue = $task->is_overdue;
-$isAssignedToMe = $task->assigned_to === auth()->id();
-$isCreatedByMe = $task->reporter_id === auth()->id();
-$canEdit = $isCreatedByMe;
-$canComplete = $isAssignedToMe;
+/**
+ * Relationship checks
+ */
+$isOverdue        = $task->is_overdue ?? false;
+$isAssignedToMe   = $task->assigned_to === auth()->id();
+$isCreatedByMe    = $task->reporter_id === auth()->id();
+
+/**
+ * Context coming from controller:
+ * - 'mine'       -> assignedToMe page
+ * - 'delegated'  -> assignedByMe page
+ */
+$context = $context ?? null;
+$contextIsMine      = $context === 'mine';
+$contextIsDelegated = $context === 'delegated';
+
+/**
+ * Base capability:
+ * - canEditBase: you can edit/reassign/delete if you CREATED the task
+ * - canCompleteBase: you can mark done/postpone/etc if you ARE the assignee
+ */
+$canEditBase     = $isCreatedByMe;
+$canCompleteBase = $isAssignedToMe;
+
+/**
+ * Apply page rules:
+ * Rule 1: assignedToMe page => NEVER show edit/delete/reassign (even if I created it)
+ * Rule 2: assignedByMe page => NEVER show quick-complete actions (done/postpone/block/note)
+ */
+$canEdit     = $contextIsMine      ? false : $canEditBase;
+$canComplete = $contextIsDelegated ? false : $canCompleteBase;
 @endphp
 
-<div class="jira-task-card" 
-     data-task-id="{{ $task->id }}" 
+{{-- 
+    Updated task-grid-card.blade.php component
+    This version is optimized for real-time updates
+--}}
+
+{{-- 
+    🔥 IMPORTANT: data-task-id and data-task-status are REQUIRED for real-time updates 
+--}}
+<div class="jira-task-card"
+     data-task-id="{{ $task->id }}"
      data-task-status="{{ $task->status }}"
      data-project-id="{{ $task->project_id }}">
-    
-    <!-- Card Header with Actions -->
+
+    <!-- Card Header -->
     <div class="jira-card-header">
         <div class="jira-card-badges">
-            <!-- Project Badge - Clickable -->
-            <a href="{{ route('tenant.manage.projects.project.show', [$username, $task->project_id]) }}" 
-               class="jira-project-badge"
-               onclick="event.stopPropagation()"
-               title="Go to {{ $task->project->name }}">
+            <a href="{{ route('tenant.manage.projects.project.show', [$username, $task->project_id]) }}"
+               class="jira-project-badge">
                 <span class="jira-project-key">{{ $task->project->key ?? 'PROJ' }}</span>
                 <span class="jira-task-number">-{{ $task->id }}</span>
             </a>
-            
+
             @if($isOverdue)
                 <span class="jira-overdue-badge" title="Overdue">
                     <i class="fas fa-clock"></i> Overdue
                 </span>
             @endif
-            
+
             @if($isCreatedByMe)
                 <span class="jira-owner-badge" title="You created this">
                     <i class="fas fa-user-tie"></i> Owner
@@ -63,74 +98,71 @@ $canComplete = $isAssignedToMe;
             @endif
         </div>
 
-        <!-- Action Menu -->
         <div class="jira-card-menu">
-            <button class="jira-menu-btn" onclick="event.stopPropagation(); toggleTaskMenu({{ $task->id }})">
+            <button class="jira-menu-btn"
+                    onclick="event.stopPropagation(); toggleTaskMenu({{ $task->id }})">
                 <i class="fas fa-ellipsis-h"></i>
             </button>
-            
-            <div class="jira-dropdown-menu" id="task-menu-{{ $task->id }}" style="display: none;">
-                <!-- View Details -->
-                <a href="{{ route('tenant.manage.projects.tasks.show', [$username, $task->id]) }}" 
+
+            <div class="jira-dropdown-menu"
+                 id="task-menu-{{ $task->id }}"
+                 style="display: none;">
+
+                <a href="{{ route('tenant.manage.projects.tasks.show', [$username, $task->id]) }}"
                    class="jira-menu-item"
                    onclick="event.stopPropagation()">
                     <i class="fas fa-eye"></i>
                     <span>View Details</span>
                 </a>
-                
-                <!-- Go to Project -->
-                <a href="{{ route('tenant.manage.projects.project.show', [$username, $task->project_id, 'tab' => 'list']) }}" 
+
+                <a href="{{ route('tenant.manage.projects.project.show', [$username, $task->project_id, 'tab' => 'list']) }}"
                    class="jira-menu-item"
                    onclick="event.stopPropagation()">
                     <i class="fas fa-folder-open"></i>
                     <span>Go to Project</span>
                 </a>
-                
+
                 <div class="jira-menu-divider"></div>
-                
+
                 @if($canEdit)
-                    <!-- Edit Task -->
-                    <button class="jira-menu-item" 
-                            onclick="event.stopPropagation(); openEditTaskModal({{ $task->id }})">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Task</span>
-                    </button>
-                    
-                    <!-- Reassign -->
-                    <button class="jira-menu-item" 
-                            onclick="event.stopPropagation(); openReassignModal({{ $task->id }})">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Reassign Task</span>
-                    </button>
-                    
-                    <div class="jira-menu-divider"></div>
-                    
-                    <!-- Delete Task -->
-                    <button class="jira-menu-item jira-menu-item-danger" 
-                            onclick="event.stopPropagation(); deleteTask({{ $task->id }})">
-                        <i class="fas fa-trash"></i>
-                        <span>Delete Task</span>
-                    </button>
+                <button class="jira-menu-item"
+                        onclick="event.stopPropagation(); openEditTaskModal({{ $task->id }})">
+                    <i class="fas fa-edit"></i>
+                    <span>Edit Task</span>
+                </button>
+            
+                <button class="jira-menu-item"
+                        onclick="event.stopPropagation(); openReassignModal({{ $task->id }})">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Reassign Task</span>
+                </button>
+            
+                <div class="jira-menu-divider"></div>
+            
+                <button class="jira-menu-item jira-menu-item-danger"
+                        onclick="event.stopPropagation(); deleteTask({{ $task->id }})">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Task</span>
+                </button>
                 @else
-                    <!-- Can only add notes if not owner -->
-                    <button class="jira-menu-item" 
-                            onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'remark')">
-                        <i class="fas fa-comment"></i>
-                        <span>Add Note</span>
-                    </button>
+                    @if($canComplete)
+                        <button class="jira-menu-item"
+                                onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'remark')">
+                            <i class="fas fa-comment"></i>
+                            <span>Add Note</span>
+                        </button>
+                    @endif
                 @endif
             </div>
         </div>
     </div>
 
-    <!-- Task Title (Clickable to Task Detail) -->
-    <a href="{{ route('tenant.manage.projects.tasks.show', [$username, $task->id]) }}" 
-       class="jira-card-title-link"
-       onclick="event.stopPropagation()">
+    <!-- Title -->
+    <a class="jira-card-title-link">
         <h3 class="jira-card-title">{{ $task->title }}</h3>
     </a>
 
-    <!-- Task Description -->
+    <!-- Description -->
     @if($task->notes)
         <p class="jira-card-description">
             {{ Str::limit(strip_tags($task->notes), 120) }}
@@ -140,16 +172,18 @@ $canComplete = $isAssignedToMe;
     <!-- Subtasks Section -->
     @if($totalSubtasks > 0)
         <div class="jira-subtasks-section">
-            <div class="jira-subtasks-header" 
+            <div class="jira-subtasks-header"
                  onclick="event.stopPropagation(); toggleSubtasksExpand({{ $task->id }})">
                 <div class="jira-subtasks-info">
                     <i class="fas fa-tasks"></i>
+                    {{-- 🔥 This counter updates in real-time --}}
                     <span class="jira-subtasks-count">{{ $completedSubtasks }}/{{ $totalSubtasks }}</span>
                     <span class="jira-subtasks-label">subtasks</span>
                 </div>
 
+                {{-- 🔥 Progress bar updates in real-time --}}
                 <div class="jira-progress-mini">
-                    <div class="jira-progress-bar" 
+                    <div class="jira-progress-bar"
                          style="width: {{ $subtaskProgress }}%; background: {{ $status['color'] }};"></div>
                 </div>
 
@@ -158,17 +192,22 @@ $canComplete = $isAssignedToMe;
                 </button>
             </div>
 
-            <div class="jira-subtasks-list" id="subtasks-list-{{ $task->id }}" style="display: none;">
+            {{-- Subtasks List --}}
+            <div class="jira-subtasks-list"
+                 id="subtasks-list-{{ $task->id }}"
+                 style="display: none;">
                 @foreach($task->subtasks as $index => $subtask)
+                    {{-- 🔥 data-subtask-id is REQUIRED for real-time updates --}}
                     <div class="jira-subtask-item {{ $subtask->completed ? 'is-completed' : '' }}"
+                         data-task-id="{{ $task->id }}"
+                         data-subtask-id="{{ $subtask->id }}"
                          @if($canComplete)
-                            onclick="subtaskRowClick(event, {{ $task->id }}, {{ $subtask->id }}, {{ $totalSubtasks }}, {{ $index + 1 }})"
-                         @endif
-                         data-task-id="{{ $task->id }}" 
-                         data-subtask-id="{{ $subtask->id }}">
+                            onclick="subtaskRowClick(event, {{ $task->id }}, {{ $subtask->id }}, {{ $totalSubtasks }})"
+                         @endif>
+
                         <label class="jira-subtask-checkbox-wrapper">
-                            <input type="checkbox" 
-                                   class="jira-subtask-checkbox" 
+                            <input type="checkbox"
+                                   class="jira-subtask-checkbox"
                                    id="subtask-cb-{{ $subtask->id }}"
                                    {{ $subtask->completed ? 'checked' : '' }}
                                    {{ !$canComplete ? 'disabled' : '' }}
@@ -185,11 +224,11 @@ $canComplete = $isAssignedToMe;
         </div>
     @endif
 
-    <!-- Card Footer -->
+    <!-- Footer -->
     <div class="jira-card-footer">
         <div class="jira-footer-left">
-            <!-- Priority Badge -->
-            <span class="jira-priority-badge" 
+            <!-- Priority -->
+            <span class="jira-priority-badge"
                   style="background: {{ $priority['bg'] }}; color: {{ $priority['color'] }};">
                 <i class="fas fa-{{ $priority['icon'] }}"></i>
                 {{ $priority['label'] }}
@@ -221,8 +260,8 @@ $canComplete = $isAssignedToMe;
         </div>
 
         <div class="jira-footer-right">
-            <!-- Status Badge -->
-            <span class="jira-status-badge" 
+            {{-- 🔥 Status badge updates in real-time --}}
+            <span class="jira-status-badge"
                   style="background: {{ $status['bg'] }}; color: {{ $status['color'] }};">
                 {{ $status['label'] }}
             </span>
@@ -231,9 +270,12 @@ $canComplete = $isAssignedToMe;
             @if($task->assignee)
                 <div class="jira-assignee" title="{{ $task->assignee->name }}">
                     @if($task->assignee->avatar_url)
-                        <img src="{{ $task->assignee->avatar_url }}" 
+                        <img src="{{ $task->assignee->avatar_url }}"
                              alt="{{ $task->assignee->name }}"
-                             class="jira-avatar">
+                             class="jira-avatar"
+                             referrerpolicy="no-referrer"
+                             crossorigin="anonymous"
+                             onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
                     @else
                         <div class="jira-avatar jira-avatar-placeholder">
                             {{ strtoupper(substr($task->assignee->name, 0, 1)) }}
@@ -248,31 +290,31 @@ $canComplete = $isAssignedToMe;
         </div>
     </div>
 
-    <!-- Quick Actions Bar (Only for assignee) -->
+    <!-- Quick Actions (only for assigned tasks) -->
     @if($canComplete)
         <div class="jira-quick-actions">
-            <button class="jira-quick-btn jira-quick-btn-success" 
+            <button class="jira-quick-btn jira-quick-btn-success"
                     onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'done')"
                     title="Mark as done">
                 <i class="fas fa-check"></i>
                 <span>Done</span>
             </button>
-            
-            <button class="jira-quick-btn jira-quick-btn-warning" 
+
+            <button class="jira-quick-btn jira-quick-btn-warning"
                     onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'postponed')"
                     title="Postpone">
                 <i class="fas fa-clock"></i>
                 <span>Postpone</span>
             </button>
-            
-            <button class="jira-quick-btn jira-quick-btn-danger" 
+
+            <button class="jira-quick-btn jira-quick-btn-danger"
                     onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'blocked')"
                     title="Mark as blocked">
                 <i class="fas fa-ban"></i>
                 <span>Block</span>
             </button>
-            
-            <button class="jira-quick-btn jira-quick-btn-secondary" 
+
+            <button class="jira-quick-btn jira-quick-btn-secondary"
                     onclick="event.stopPropagation(); openStatusModal({{ $task->id }}, 'remark')"
                     title="Add note">
                 <i class="fas fa-comment-alt"></i>
@@ -282,8 +324,10 @@ $canComplete = $isAssignedToMe;
     @endif
 </div>
 
+{{-- CSS remains the same as your existing version --}}
+
 <style>
-/* ===== JIRA-STYLE PROFESSIONAL TASK CARD ===== */
+/* === same CSS from your version (kept identical) === */
 
 .jira-task-card {
     background: #FFFFFF;
@@ -297,28 +341,24 @@ $canComplete = $isAssignedToMe;
     flex-direction: column;
     gap: 10px;
 }
-
 .jira-task-card:hover {
     border-color: #0052CC;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); */
 }
 
-/* Header */
 .jira-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
 }
-
 .jira-card-badges {
     display: flex;
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
 }
-
 .jira-project-badge {
     display: inline-flex;
     align-items: center;
@@ -331,21 +371,17 @@ $canComplete = $isAssignedToMe;
     transition: all 0.2s;
     border: 1px solid #DFE1E6;
 }
-
 .jira-project-badge:hover {
     background: #0052CC;
     color: #FFFFFF;
     border-color: #0052CC;
 }
-
 .jira-project-key {
     color: #5E6C84;
 }
-
 .jira-task-number {
     color: #172B4D;
 }
-
 .jira-project-badge:hover .jira-project-key,
 .jira-project-badge:hover .jira-task-number {
     color: #FFFFFF;
@@ -363,7 +399,6 @@ $canComplete = $isAssignedToMe;
     font-weight: 700;
     animation: pulse 2s infinite;
 }
-
 .jira-owner-badge {
     display: inline-flex;
     align-items: center;
@@ -376,11 +411,7 @@ $canComplete = $isAssignedToMe;
     font-weight: 700;
 }
 
-/* Menu */
-.jira-card-menu {
-    position: relative;
-}
-
+.jira-card-menu { position: relative; }
 .jira-menu-btn {
     width: 28px;
     height: 28px;
@@ -394,7 +425,6 @@ $canComplete = $isAssignedToMe;
     justify-content: center;
     transition: all 0.15s;
 }
-
 .jira-menu-btn:hover {
     background: #F4F5F7;
     border-color: #0052CC;
@@ -431,15 +461,11 @@ $canComplete = $isAssignedToMe;
     width: 100%;
     text-align: left;
 }
-
-.jira-menu-item:hover {
-    background: #F4F5F7;
-}
+.jira-menu-item:hover { background: #F4F5F7; }
 
 .jira-menu-item-danger {
     color: #DE350B;
 }
-
 .jira-menu-item-danger:hover {
     background: rgba(222, 53, 11, 0.1);
 }
@@ -450,11 +476,7 @@ $canComplete = $isAssignedToMe;
     margin: 4px 0;
 }
 
-/* Title */
-.jira-card-title-link {
-    text-decoration: none;
-}
-
+.jira-card-title-link { text-decoration: none; }
 .jira-card-title {
     font-size: 14px;
     font-weight: 600;
@@ -463,12 +485,8 @@ $canComplete = $isAssignedToMe;
     margin: 0;
     transition: color 0.2s;
 }
+.jira-card-title-link:hover .jira-card-title { color: #0052CC; }
 
-.jira-card-title-link:hover .jira-card-title {
-    color: #0052CC;
-}
-
-/* Description */
 .jira-card-description {
     font-size: 12px;
     color: #5E6C84;
@@ -476,13 +494,12 @@ $canComplete = $isAssignedToMe;
     margin: 0;
 }
 
-/* Subtasks */
+/* subtasks block */
 .jira-subtasks-section {
     background: #F7F8F9;
     border-radius: 6px;
     overflow: hidden;
 }
-
 .jira-subtasks-header {
     display: flex;
     align-items: center;
@@ -491,11 +508,7 @@ $canComplete = $isAssignedToMe;
     cursor: pointer;
     transition: background 0.15s;
 }
-
-.jira-subtasks-header:hover {
-    background: #EBECF0;
-}
-
+.jira-subtasks-header:hover { background: #EBECF0; }
 .jira-subtasks-info {
     display: flex;
     align-items: center;
@@ -509,7 +522,6 @@ $canComplete = $isAssignedToMe;
     font-weight: 700;
     color: #172B4D;
 }
-
 .jira-progress-mini {
     flex: 1;
     height: 3px;
@@ -517,7 +529,6 @@ $canComplete = $isAssignedToMe;
     border-radius: 2px;
     overflow: hidden;
 }
-
 .jira-progress-bar {
     height: 100%;
     transition: width 0.3s;
@@ -535,19 +546,12 @@ $canComplete = $isAssignedToMe;
     justify-content: center;
     transition: all 0.2s;
 }
-
-.jira-expand-btn:hover {
-    color: #0052CC;
-}
-
-.jira-expand-btn.is-expanded i {
-    transform: rotate(180deg);
-}
+.jira-expand-btn:hover { color: #0052CC; }
+.jira-expand-btn.is-expanded i { transform: rotate(180deg); }
 
 .jira-subtasks-list {
     padding: 0 10px 10px 10px;
 }
-
 .jira-subtask-item {
     display: flex;
     align-items: center;
@@ -557,11 +561,7 @@ $canComplete = $isAssignedToMe;
     transition: background 0.15s;
     margin-bottom: 3px;
 }
-
-.jira-subtask-item:hover {
-    background: #FFFFFF;
-}
-
+.jira-subtask-item:hover { background: #FFFFFF; }
 .jira-subtask-item.is-completed .jira-subtask-title {
     color: #6B778C;
     text-decoration: line-through;
@@ -571,12 +571,10 @@ $canComplete = $isAssignedToMe;
     display: flex;
     cursor: pointer;
 }
-
 .jira-subtask-checkbox {
     position: absolute;
     opacity: 0;
 }
-
 .jira-checkbox-custom {
     width: 16px;
     height: 16px;
@@ -588,22 +586,18 @@ $canComplete = $isAssignedToMe;
     background: #FFFFFF;
     transition: all 0.15s;
 }
-
 .jira-checkbox-custom i {
     font-size: 10px;
     color: #FFFFFF;
     opacity: 0;
 }
-
 .jira-subtask-checkbox:checked + .jira-checkbox-custom {
     background: #00875A;
     border-color: #00875A;
 }
-
 .jira-subtask-checkbox:checked + .jira-checkbox-custom i {
     opacity: 1;
 }
-
 .jira-subtask-checkbox:disabled + .jira-checkbox-custom {
     cursor: not-allowed;
     opacity: 0.6;
@@ -615,7 +609,7 @@ $canComplete = $isAssignedToMe;
     color: #172B4D;
 }
 
-/* Footer */
+/* footer */
 .jira-card-footer {
     display: flex;
     justify-content: space-between;
@@ -645,20 +639,14 @@ $canComplete = $isAssignedToMe;
     padding: 4px 8px;
     border-radius: 4px;
 }
-
 .jira-priority-badge {
     border: 1px solid currentColor;
 }
-
-.jira-due-date {
-    color: #5E6C84;
-}
-
+.jira-due-date { color: #5E6C84; }
 .jira-due-date.is-overdue {
     color: #DE350B;
     background: rgba(222, 53, 11, 0.1);
 }
-
 .jira-attachment-count,
 .jira-story-points {
     color: #6B778C;
@@ -676,7 +664,6 @@ $canComplete = $isAssignedToMe;
     display: flex;
     align-items: center;
 }
-
 .jira-avatar {
     width: 24px;
     height: 24px;
@@ -684,7 +671,6 @@ $canComplete = $isAssignedToMe;
     border: 2px solid #FFFFFF;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
-
 .jira-avatar-placeholder {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: #FFFFFF;
@@ -694,7 +680,6 @@ $canComplete = $isAssignedToMe;
     align-items: center;
     justify-content: center;
 }
-
 .jira-assignee-unassigned {
     width: 24px;
     height: 24px;
@@ -707,14 +692,13 @@ $canComplete = $isAssignedToMe;
     font-size: 10px;
 }
 
-/* Quick Actions */
+/* quick actions */
 .jira-quick-actions {
     display: flex;
     gap: 4px;
     padding-top: 10px;
     border-top: 1px solid #EBECF0;
 }
-
 .jira-quick-btn {
     flex: 1;
     display: flex;
@@ -730,60 +714,40 @@ $canComplete = $isAssignedToMe;
     cursor: pointer;
     transition: all 0.15s;
 }
-
 .jira-quick-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-.jira-quick-btn-success {
-    color: #00875A;
-}
-
+.jira-quick-btn-success { color: #00875A; }
 .jira-quick-btn-success:hover {
     background: #E3FCEF;
     border-color: #00875A;
 }
-
-.jira-quick-btn-warning {
-    color: #FF991F;
-}
-
+.jira-quick-btn-warning { color: #FF991F; }
 .jira-quick-btn-warning:hover {
     background: #FFFAE6;
     border-color: #FF991F;
 }
-
-.jira-quick-btn-danger {
-    color: #DE350B;
-}
-
+.jira-quick-btn-danger { color: #DE350B; }
 .jira-quick-btn-danger:hover {
     background: #FFEBE6;
     border-color: #DE350B;
 }
-
-.jira-quick-btn-secondary {
-    color: #0052CC;
-}
-
+.jira-quick-btn-secondary { color: #0052CC; }
 .jira-quick-btn-secondary:hover {
     background: #DEEBFF;
     border-color: #0052CC;
 }
 
-/* Animations */
+/* animations */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50%      { opacity: 0.5; }
 }
 
-/* Responsive */
+/* responsive */
 @media (max-width: 768px) {
-    .jira-task-card {
-        padding: 12px;
-    }
-
+    .jira-task-card { padding: 12px; }
     .jira-quick-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -795,17 +759,17 @@ $canComplete = $isAssignedToMe;
 function toggleTaskMenu(taskId) {
     const menu = document.getElementById(`task-menu-${taskId}`);
     const allMenus = document.querySelectorAll('.jira-dropdown-menu');
-    
+
     allMenus.forEach(m => {
         if (m.id !== `task-menu-${taskId}`) {
             m.style.display = 'none';
         }
     });
-    
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+
+    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
 }
 
-// Close menus when clicking outside
+// close menus when clicking outside
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.jira-card-menu')) {
         document.querySelectorAll('.jira-dropdown-menu').forEach(menu => {
@@ -817,21 +781,19 @@ document.addEventListener('click', function(e) {
 function toggleSubtasksExpand(taskId) {
     const list = document.getElementById(`subtasks-list-${taskId}`);
     const btn = document.getElementById(`expand-btn-${taskId}`);
-    
+
     if (list && btn) {
-        const isHidden = list.style.display === 'none';
+        const isHidden = (list.style.display === 'none' || list.style.display === '');
         list.style.display = isHidden ? 'block' : 'none';
         btn.classList.toggle('is-expanded', isHidden);
     }
 }
 
 function openReassignModal(taskId) {
-    // Implement reassign modal
     console.log('Open reassign modal for task:', taskId);
 }
 
 function openEditTaskModal(taskId) {
-    // Implement edit task modal
     console.log('Open edit modal for task:', taskId);
 }
 

@@ -62,7 +62,7 @@
                 <!-- Task Cards -->
                 <div class="tasks-card-grid">
                     @foreach($projectTasks->sortBy('due_date') as $task)
-                        @include('tenant.manage.projects.tasks.components.task-grid-card', ['task' => $task])
+                        @include('tenant.manage.projects.tasks.components.advanced-task-card', ['task' => $task])
                     @endforeach
                 </div>
             </div>

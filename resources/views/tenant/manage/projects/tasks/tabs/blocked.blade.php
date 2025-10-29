@@ -75,7 +75,11 @@
                     @if($task->reporter)
                         <div class="task-avatar-large">
                             @if($task->reporter->avatar_url)
-                                <img src="{{ $task->reporter->avatar_url }}" alt="{{ $task->reporter->name }}">
+                                <img src="{{ $task->reporter->avatar_url }}" alt="{{ $task->reporter->name }}"
+                                
+                                referrerpolicy="no-referrer"
+                                crossorigin="anonymous"
+                                onerror="this.onerror=null; this.src='{{ asset('images/avatar-fallback.png') }}';">
                             @else
                                 <div style="width: 100%; height: 100%; background: #DE350B; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">
                                     {{ substr($task->reporter->name, 0, 1) }}

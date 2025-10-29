@@ -118,17 +118,4 @@ class Task extends Model
 
         return $this->due_date->isPast() && $this->status !== self::STATUS_DONE;
     }
-
-
-
-    public function dependencies()
-    {
-        return $this->belongsToMany(
-            Task::class,
-            'task_dependencies',
-            'task_id',            // this task
-            'depends_on_task_id'  // the task it waits on
-        );
-    }
-
 }

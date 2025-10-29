@@ -66,12 +66,7 @@ protected $guarded = [];
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function team()
-    {
-        return $this->belongsToMany(User::class, 'project_team')
-            ->withPivot(['role','tech_stack','position'])
-            ->withTimestamps();
-    }
+ 
 
     public function tasks()
     {
@@ -93,4 +88,13 @@ public function media(): HasMany
     return $this->hasMany(ProjectMedia::class);
 }
 
+
+
+public function team()
+{
+    // pivot table like project_user or project_team, etc.
+    // adjust table/keys to match your schema
+    return $this->belongsToMany(User::class, 'project_team', 'project_id', 'user_id')
+                ->withPivot('role'); // e.g. role = 'project_manager'
+}
 }
