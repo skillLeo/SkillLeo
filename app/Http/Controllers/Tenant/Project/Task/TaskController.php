@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Tenant/Project/Task/TaskController.php
 
 namespace App\Http\Controllers\Tenant\Project\Task;
 
@@ -8,52 +7,117 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Subtask;
 use App\Models\TaskActivity;
-use Illuminate\Http\Request;
-use App\Services\TaskService;
 use App\Models\TaskAttachment;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Http\Requests\UpdateTaskRequest;
 use Illuminate\Database\Eloquent\Builder;
+
 use App\Http\Controllers\Tenant\BaseTenantController;
+use App\Http\Requests\UpdateTaskRequest;
+use App\Services\TaskService;
+use App\Services\TaskActivityService;
 
 class TaskController extends BaseTenantController
 {
+    protected TaskActivityService $activityService;
 
 
-    // Add to TaskController.php
-
-public function downloadAttachment(string $username, Task $task, TaskAttachment $attachment)
-{
-    if ($attachment->task_id !== $task->id) {
-        abort(404);
+    /**
+     * We MUST accept Request $request here and forward it to the parent,
+     * because BaseTenantController::__construct(Request $request) expects it.
+     */
+    public function __construct(Request $request, TaskActivityService $activityService)
+    {
+        parent::__construct($request); // ✅ pass request up so viewer / workspaceOwner get set
+        $this->activityService = $activityService;
     }
 
-    $filePath = Storage::disk('public')->path($attachment->path_or_url);
+    /**
+     * Download a single attachment
+     * GET /{username}/manage/projects/tasks/{task}/attachments/{attachment}/download
+     */
+    public function downloadAttachment(string $username, Task $task, TaskAttachment $attachment)
+    {
+        if ($attachment->task_id !== $task->id) {
+            abort(404);
+        }
+
+        $filePath = Storage::disk('public')->path($attachment->path_or_url);
+
+        if (!file_exists($filePath)) {
+            abort(404, 'File not found');
+        }
+
+        return response()->download($filePath, $attachment->label);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    public function editData(Request $request, string $username, Task $task)
+    {
+        $hasAccess =
+            $task->assigned_to === $this->viewer->id ||
+            $task->reporter_id === $this->viewer->id ||
+            $task->project->user_id === $this->workspaceOwner->id ||
+            $task->project->team()->where('user_id', $this->viewer->id)->exists();
     
-    if (!file_exists($filePath)) {
-        abort(404, 'File not found');
+        if (!$hasAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+    
+        $task->load([
+            'assignee:id,name,avatar_url',
+            'reporter:id,name,avatar_url',
+            'subtasks' => function ($q) {
+                $q->orderBy('order')->orderBy('id');
+            },
+        ]);
+    
+        return response()->json([
+            'success' => true,
+            'task'    => $this->formatTaskResponse($task),
+        ]);
     }
+    
 
-    return response()->download($filePath, $attachment->label);
-}
+
+
+
+
+
+
+
 
 
 
 
     /**
      * GET /{username}/manage/projects/tasks/{task}
-     * Full task detail page (like project detail)
+     * Full task detail page (blade view, not JSON)
      */
     public function show(string $username, Task $task)
     {
         // Authorization check
-        $hasAccess = $task->assigned_to === $this->viewer->id
-            || $task->reporter_id === $this->viewer->id
-            || $task->project->user_id === $this->workspaceOwner->id
-            || $task->project->team()->where('user_id', $this->viewer->id)->exists();
+        $hasAccess =
+            $task->assigned_to === $this->viewer->id ||
+            $task->reporter_id === $this->viewer->id ||
+            $task->project->user_id === $this->workspaceOwner->id ||
+            $task->project->team()->where('user_id', $this->viewer->id)->exists();
 
         if (!$hasAccess) {
             abort(403, 'You do not have access to this task');
@@ -61,68 +125,85 @@ public function downloadAttachment(string $username, Task $task, TaskAttachment 
 
         // Load all necessary relationships
         $task->load([
-            'project' => function($q) {
+            'project' => function ($q) {
                 $q->select('id', 'name', 'key', 'user_id', 'status', 'type', 'client_id')
                   ->with('user:id,name,avatar_url');
             },
             'assignee:id,name,email,avatar_url',
             'reporter:id,name,email,avatar_url',
-            'subtasks' => function($q) {
+            'subtasks' => function ($q) {
                 $q->orderBy('order')->orderBy('id');
             },
-            'attachments' => function($q) {
+            'attachments' => function ($q) {
                 $q->orderBy('created_at', 'desc');
             },
-            'activities' => function($q) {
+            'activities' => function ($q) {
                 $q->with('actor:id,name,avatar_url')
                   ->orderBy('created_at', 'desc')
                   ->limit(50);
             },
         ]);
 
-        // Calculate progress metrics
-        $totalSubtasks = $task->subtasks->count();
-        $completedSubtasks = $task->subtasks->where('completed', true)->count();
-        $progress = $totalSubtasks > 0 ? round(($completedSubtasks / $totalSubtasks) * 100) : 0;
+        // Load any extra user info needed for "reassigned" activity, etc.
+        $reassignmentUsers = $this->activityService->loadActivityUsers($task);
+        // Progress %
+        $totalSubtasks      = $task->subtasks->count();
+        $completedSubtasks  = $task->subtasks->where('completed', true)->count();
+        $progress           = $totalSubtasks > 0
+            ? round(($completedSubtasks / $totalSubtasks) * 100)
+            : 0;
 
-        // Time tracking
+        // Time tracking from activity log
         $timeSpent = $task->activities()
             ->where('type', 'time_logged')
             ->sum(DB::raw("CAST(JSON_EXTRACT(body, '$.hours') AS DECIMAL(10,2))"));
 
-        // Group attachments by type
-        $images = $task->attachments->where('type', 'image');
-        $files = $task->attachments->where('type', 'file');
-
-        // Get related tasks (dependencies, blockers, etc.)
+        // Status color for badge
+        $statusColor = match ($task->status) {
+            'todo'         => '#6B778C',
+            'in-progress'  => '#0052CC',
+            'review'       => '#FF991F',
+            'done'         => '#00875A',
+            'blocked'      => '#DE350B',
+            'postponed'    => '#8777D9',
+            default        => '#6B778C',
+        };
         $dependencies = $task->dependencies()->with('project:id,key')->get();
-        
-        // Get project context for breadcrumbs
-        $project = $task->project;
+// Separate attachments into images vs other docs
+$images = $task->attachments
+    ->where('type', 'image')
+    ->values(); // reset collection keys for cleanliness
+
+$files = $task->attachments
+    ->where('type', '!=', 'image')
+    ->values();
 
         return view('tenant.manage.projects.tasks.show', [
-            'username' => $this->workspaceOwner->username,
-            'workspaceOwner' => $this->workspaceOwner,
-            'viewer' => $this->viewer,
-            'task' => $task,
-            'project' => $project,
-            'progress' => $progress,
-            'totalSubtasks' => $totalSubtasks,
-            'completedSubtasks' => $completedSubtasks,
-            'timeSpent' => $timeSpent,
-            'images' => $images,
-            'files' => $files,
-            'dependencies' => $dependencies,
+            'username'           => $this->workspaceOwner->username,
+            'workspaceOwner'     => $this->workspaceOwner,
+            'viewer'             => $this->viewer,
+            'task'               => $task,
+            'project'            => $task->project,
+            'progress'           => $progress,
+            'totalSubtasks'      => $totalSubtasks,
+            'completedSubtasks'  => $completedSubtasks,
+            'timeSpent'          => $timeSpent,
+            'statusColor'        => $statusColor,
+            'reassignmentUsers'  => $reassignmentUsers,
+            'dependencies'  => $dependencies,
+            'images'             => $images,
+            'files'              => $files,
         ]);
     }
 
     /**
-     * Upload task attachment
+     * POST /{username}/manage/projects/tasks/{task}/attachment
+     * Upload task attachment (AJAX)
      */
     public function uploadAttachment(Request $request, string $username, Task $task)
     {
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
+            'file'  => 'required|file|max:10240', // 10MB
             'label' => 'nullable|string|max:255',
         ]);
 
@@ -130,29 +211,29 @@ public function downloadAttachment(string $username, Task $task, TaskAttachment 
         $path = $file->store('task-attachments/' . $task->id, 'public');
 
         $attachment = TaskAttachment::create([
-            'task_id' => $task->id,
-            'uploaded_by' => $this->viewer->id,
-            'type' => str_starts_with($file->getClientMimeType(), 'image/') ? 'image' : 'file',
-            'label' => $request->label ?? $file->getClientOriginalName(),
-            'path_or_url' => $path,
+            'task_id'      => $task->id,
+            'uploaded_by'  => $this->viewer->id,
+            'type'         => str_starts_with($file->getClientMimeType(), 'image/') ? 'image' : 'file',
+            'label'        => $request->label ?? $file->getClientOriginalName(),
+            'path_or_url'  => $path,
         ]);
 
         TaskActivity::create([
-            'task_id' => $task->id,
+            'task_id'  => $task->id,
             'actor_id' => $this->viewer->id,
-            'type' => 'attachment_uploaded',
-            'body' => "Uploaded file: {$attachment->label}",
+            'type'     => 'attachment_uploaded',
+            'body'     => "Uploaded file: {$attachment->label}",
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => 'File uploaded successfully',
+            'success'    => true,
+            'message'    => 'File uploaded successfully',
             'attachment' => $attachment->load('uploader:id,name,avatar_url'),
         ]);
     }
 
     /**
-     * Delete task attachment
+     * DELETE /{username}/manage/projects/tasks/{task}/attachments/{attachment}
      */
     public function deleteAttachment(string $username, Task $task, TaskAttachment $attachment)
     {
@@ -160,8 +241,11 @@ public function downloadAttachment(string $username, Task $task, TaskAttachment 
             abort(404);
         }
 
-        // Only uploader or task creator can delete
-        if ($attachment->uploaded_by !== $this->viewer->id && $task->reporter_id !== $this->viewer->id) {
+        // only uploader or task creator can delete
+        if (
+            $attachment->uploaded_by !== $this->viewer->id &&
+            $task->reporter_id !== $this->viewer->id
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -169,12 +253,12 @@ public function downloadAttachment(string $username, Task $task, TaskAttachment 
         }
 
         Storage::disk('public')->delete($attachment->path_or_url);
-        
+
         TaskActivity::create([
-            'task_id' => $task->id,
+            'task_id'  => $task->id,
             'actor_id' => $this->viewer->id,
-            'type' => 'attachment_deleted',
-            'body' => "Deleted file: {$attachment->label}",
+            'type'     => 'attachment_deleted',
+            'body'     => "Deleted file: {$attachment->label}",
         ]);
 
         $attachment->delete();
@@ -186,66 +270,48 @@ public function downloadAttachment(string $username, Task $task, TaskAttachment 
     }
 
     /**
-     * Add comment to task
+     * POST /{username}/manage/projects/tasks/{task}/comment
+     * Add a comment + optional attachments
      */
- /**
- * Add comment to task
- */
-public function addComment(Request $request, string $username, Task $task)
-{
-    $request->validate([
-        'comment' => 'required|string|min:1|max:2000',
-        'attachments.*' => 'nullable|file|max:10240', // 10MB per file
-    ]);
-
-    DB::transaction(function () use ($request, $task) {
-        // Create comment activity
-        $activity = TaskActivity::create([
-            'task_id' => $task->id,
-            'actor_id' => $this->viewer->id,
-            'type' => 'comment',
-            'body' => $request->comment,
+    public function addComment(Request $request, string $username, Task $task)
+    {
+        $request->validate([
+            'comment'        => 'required|string|min:1|max:2000',
+            'attachments.*'  => 'nullable|file|max:10240', // 10MB each
         ]);
 
-        // Handle file attachments
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $path = $file->store('task-attachments/' . $task->id, 'public');
+        DB::transaction(function () use ($request, $task) {
+            // 1. activity row for the comment
+            $activity = TaskActivity::create([
+                'task_id'  => $task->id,
+                'actor_id' => $this->viewer->id,
+                'type'     => 'comment',
+                'body'     => $request->comment,
+            ]);
 
-                TaskAttachment::create([
-                    'task_id' => $task->id,
-                    'uploaded_by' => $this->viewer->id,
-                    'type' => str_starts_with($file->getClientMimeType(), 'image/') ? 'image' : 'file',
-                    'label' => $file->getClientOriginalName(),
-                    'path_or_url' => $path,
-                    'created_at' => $activity->created_at, // 🔥 Match timestamp
-                    'updated_at' => $activity->created_at,
-                ]);
+            // 2. if there are files, store them and link to same timestamp
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('task-attachments/' . $task->id, 'public');
+
+                    TaskAttachment::create([
+                        'task_id'     => $task->id,
+                        'uploaded_by' => $this->viewer->id,
+                        'type'        => str_starts_with($file->getClientMimeType(), 'image/') ? 'image' : 'file',
+                        'label'       => $file->getClientOriginalName(),
+                        'path_or_url' => $path,
+                        'created_at'  => $activity->created_at, // align timestamps
+                        'updated_at'  => $activity->created_at,
+                    ]);
+                }
             }
-        }
-    });
+        });
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Comment added successfully',
-    ]);
-}
-
-    // ... (keep existing methods: assignedToMe, assignedByMe, store, update, destroy, etc.)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return response()->json([
+            'success' => true,
+            'message' => 'Comment added successfully',
+        ]);
+    }
 
     /**
      * GET /{username}/manage/projects/tasks/my-tasks
@@ -260,12 +326,12 @@ public function addComment(Request $request, string $username, Task $task)
                 'project:id,name,key,user_id',
                 'assignee:id,name,avatar_url',
                 'reporter:id,name,avatar_url',
-                'subtasks' => fn($q) => $q->orderBy('order')->orderBy('id'),
+                'subtasks' => fn ($q) => $q->orderBy('order')->orderBy('id'),
                 'attachments',
             ])
             ->withinWorkspace($this->workspaceOwner)
             ->where('assigned_to', $this->viewer->id)
-            ->where('status', '!=', 'done'); // Don't show completed tasks
+            ->where('status', '!=', 'done'); // don't show completed tasks
 
         $tasks = $this->applyTaskFilter(clone $baseQuery, $filter)->get();
 
@@ -275,7 +341,7 @@ public function addComment(Request $request, string $username, Task $task)
             'viewer'          => $this->viewer,
             'tasks'           => $tasks,
             'activeFilter'    => $filter,
-            'context'         => 'mine',        // 🔥 IMPORTANT
+            'context'         => 'mine', // for UI
         ]);
     }
 
@@ -292,7 +358,7 @@ public function addComment(Request $request, string $username, Task $task)
                 'project:id,name,key,user_id',
                 'assignee:id,name,avatar_url',
                 'reporter:id,name,avatar_url',
-                'subtasks' => fn($q) => $q->orderBy('order')->orderBy('id'),
+                'subtasks' => fn ($q) => $q->orderBy('order')->orderBy('id'),
                 'attachments',
             ])
             ->withinWorkspace($this->workspaceOwner)
@@ -306,73 +372,9 @@ public function addComment(Request $request, string $username, Task $task)
             'viewer'          => $this->viewer,
             'tasks'           => $tasks,
             'activeFilter'    => $filter,
-            'context'         => 'delegated',   // 🔥 IMPORTANT
+            'context'         => 'delegated', // for UI
         ]);
     }
-
-    /**
-     * GET /{username}/manage/projects/tasks/{task}
-     * View full task details
-     */
-    // public function show(string $username, Task $task)
-    // {
-    //     // access check
-    //     $hasAccess =
-    //         $task->assigned_to === $this->viewer->id ||
-    //         $task->reporter_id === $this->viewer->id ||
-    //         $task->project->user_id === $this->workspaceOwner->id;
-
-    //     if (!$hasAccess) {
-    //         abort(403, 'Unauthorized');
-    //     }
-
-    //     // load full relations we actually need in the modal
-    //     $task->load([
-    //         'project:id,name,key,user_id',
-    //         'assignee:id,name,avatar_url',
-    //         'reporter:id,name,avatar_url',
-    //         'subtasks:id,task_id,title,completed,order,completed_at',
-    //         'attachments:id,task_id,uploaded_by,type,label,path_or_url,created_at',
-    //         'activities.actor:id,name,avatar_url',
-    //     ]);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'task' => [
-    //             'id'              => $task->id,
-    //             'project_id'      => $task->project_id,
-
-    //             'title'           => $task->title,
-    //             'notes'           => $task->notes,
-    //             'priority'        => $task->priority,
-    //             'status'          => $task->status,
-
-    //             'due_date'        => $task->due_date?->format('Y-m-d'),
-    //             'estimated_hours' => $task->estimated_hours,
-    //             'story_points'    => $task->story_points,
-
-    //             'assigned_to'     => $task->assigned_to,
-    //             'reporter_id'     => $task->reporter_id,
-
-    //             // give modal what it needs to render
-    //             'assignee' => $task->assignee ? [
-    //                 'id'         => $task->assignee->id,
-    //                 'name'       => $task->assignee->name,
-    //                 'avatar_url' => $task->assignee->avatar_url,
-    //             ] : null,
-
-    //             'subtasks' => $task->subtasks->map(function ($st) {
-    //                 return [
-    //                     'id'        => $st->id,
-    //                     'title'     => $st->title,
-    //                     'completed' => (bool) $st->completed,
-    //                     'order'     => $st->order,
-    //                 ];
-    //             })->values(),
-    //         ],
-    //     ]);
-    // }
-
 
     /**
      * POST /{username}/manage/projects/tasks
@@ -395,6 +397,7 @@ public function addComment(Request $request, string $username, Task $task)
 
         $project = Project::findOrFail($validated['project_id']);
 
+        // only project owner (workspace owner) can create in that project
         if ($project->user_id !== $this->workspaceOwner->id) {
             return response()->json([
                 'success' => false,
@@ -403,6 +406,7 @@ public function addComment(Request $request, string $username, Task $task)
         }
 
         $task = DB::transaction(function () use ($validated, $project) {
+            // create main task
             $task = Task::create([
                 'project_id'      => $project->id,
                 'title'           => $validated['title'],
@@ -416,6 +420,7 @@ public function addComment(Request $request, string $username, Task $task)
                 'story_points'    => $validated['story_points'] ?? 0,
             ]);
 
+            // create subtasks if provided
             if (!empty($validated['subtasks'])) {
                 foreach ($validated['subtasks'] as $index => $subtaskData) {
                     Subtask::create([
@@ -427,6 +432,7 @@ public function addComment(Request $request, string $username, Task $task)
                 }
             }
 
+            // log activity
             TaskActivity::create([
                 'task_id'  => $task->id,
                 'actor_id' => $this->viewer->id,
@@ -446,57 +452,48 @@ public function addComment(Request $request, string $username, Task $task)
         ], 201);
     }
 
-    // make sure we can validate assigned_to
-
-
-    
-
-
-
-
-
-
-
+    /**
+     * PATCH /{username}/manage/projects/tasks/{task}
+     * Update task (fields, subtasks, etc)
+     */
     public function update(
-        \App\Http\Requests\UpdateTaskRequest $request, 
-        string $username, 
-        \App\Models\Task $task,
-        \App\Services\TaskService $taskService
+        UpdateTaskRequest $request,
+        string $username,
+        Task $task,
+        TaskService $taskService
     ) {
         try {
-            // Service handles:
-            // - change detection
-            // - core field updates
-            // - subtask sync (create/update/delete)
-            // - activity logging
-            // - transaction
+            // Service does:
+            // - detect changes
+            // - sync core fields
+            // - sync subtasks
+            // - log TaskActivity entries
+            // - wrap in DB transaction
             $updatedTask = $taskService->updateTask(
                 $task,
                 $request->validated(),
-                $this->viewer->id // whoever is performing the update
+                $this->viewer->id // actor performing update
             );
-    
+
             return response()->json([
                 'success' => true,
                 'message' => '✅ Task updated successfully',
                 'task'    => $this->formatTaskResponse($updatedTask),
             ]);
-    
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
                 'errors'  => $e->errors(),
             ], 422);
-    
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Task update failed', [
+            Log::error('Task update failed', [
                 'task_id' => $task->id,
                 'user_id' => $this->viewer->id,
                 'error'   => $e->getMessage(),
                 'trace'   => $e->getTraceAsString(),
             ]);
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update task. Please try again.',
@@ -504,106 +501,89 @@ public function addComment(Request $request, string $username, Task $task)
             ], 500);
         }
     }
-    
 
     /**
      * Format task data for JSON response
-     * 
-     * Ensures frontend receives exactly what it needs to update UI
-     *
-     * @param Task $task
-     * @return array
      */
     protected function formatTaskResponse(Task $task): array
     {
         return [
-            'id' => $task->id,
-            'project_id' => $task->project_id,
-            
+            'id'               => $task->id,
+            'project_id'       => $task->project_id,
+
             // Core fields
-            'title' => $task->title,
-            'notes' => $task->notes,
-            'priority' => $task->priority,
-            'status' => $task->status,
-            
+            'title'            => $task->title,
+            'notes'            => $task->notes,
+            'priority'         => $task->priority,
+            'status'           => $task->status,
+
             // Dates
-            'due_date' => $task->due_date?->format('Y-m-d'),
-            'created_at' => $task->created_at?->toIso8601String(),
-            'updated_at' => $task->updated_at?->toIso8601String(),
-            
+            'due_date'         => $task->due_date?->format('Y-m-d'),
+            'created_at'       => $task->created_at?->toIso8601String(),
+            'updated_at'       => $task->updated_at?->toIso8601String(),
+
             // Estimation
-            'estimated_hours' => $task->estimated_hours,
-            'story_points' => $task->story_points,
-            
+            'estimated_hours'  => $task->estimated_hours,
+            'story_points'     => $task->story_points,
+
             // Assignment
-            'assigned_to' => $task->assigned_to,
-            'reporter_id' => $task->reporter_id,
-            
-            // Assignee details for avatar/name update
+            'assigned_to'      => $task->assigned_to,
+            'reporter_id'      => $task->reporter_id,
+
+            // Assignee (for avatar/name refresh)
             'assignee' => $task->assignee ? [
-                'id' => $task->assignee->id,
-                'name' => $task->assignee->name,
+                'id'         => $task->assignee->id,
+                'name'       => $task->assignee->name,
                 'avatar_url' => $task->assignee->avatar_url,
             ] : null,
-            
-            // Reporter details
+
+            // Reporter (task creator)
             'reporter' => $task->reporter ? [
-                'id' => $task->reporter->id,
-                'name' => $task->reporter->name,
+                'id'         => $task->reporter->id,
+                'name'       => $task->reporter->name,
                 'avatar_url' => $task->reporter->avatar_url,
             ] : null,
-            
-            // Subtasks with proper ordering
+
+            // Subtasks sorted
             'subtasks' => $task->subtasks
-                ->map(fn($st) => [
-                    'id' => $st->id,
-                    'title' => $st->title,
-                    'completed' => (bool) $st->completed,
-                    'completed_at' => $st->completed_at?->toIso8601String(),
-                    'order' => $st->order,
+                ->map(fn ($st) => [
+                    'id'            => $st->id,
+                    'title'         => $st->title,
+                    'completed'     => (bool) $st->completed,
+                    'completed_at'  => $st->completed_at?->toIso8601String(),
+                    'order'         => $st->order,
                 ])
                 ->values()
                 ->toArray(),
-            
-            // Computed properties for UI
-            'is_overdue' => $task->due_date && $task->due_date->isPast() && $task->status !== 'done',
+
+            // Computed
+            'is_overdue' => $task->due_date
+                && $task->due_date->isPast()
+                && $task->status !== 'done',
+
             'completion_percentage' => $this->calculateCompletionPercentage($task),
         ];
     }
 
     /**
-     * Calculate task completion percentage
-     *
-     * @param Task $task
-     * @return int Percentage (0-100)
+     * % complete based on subtasks
      */
     protected function calculateCompletionPercentage(Task $task): int
     {
         if ($task->status === 'done') {
             return 100;
         }
-        
+
         $totalSubtasks = $task->subtasks->count();
-        
+
         if ($totalSubtasks === 0) {
             return 0;
         }
-        
+
         $completedSubtasks = $task->subtasks->where('completed', true)->count();
-        
+
         return (int) round(($completedSubtasks / $totalSubtasks) * 100);
     }
-
-
-
-
-
-
-
-
-
-
-    
 
     /**
      * DELETE /{username}/manage/projects/tasks/{task}
@@ -630,10 +610,10 @@ public function addComment(Request $request, string $username, Task $task)
                 $attachment->delete();
             }
 
-            // delete activity log
+            // delete activities
             $task->activities()->delete();
 
-            // soft delete / hard delete
+            // finally delete task
             $task->delete();
         });
 
@@ -645,7 +625,7 @@ public function addComment(Request $request, string $username, Task $task)
 
     /**
      * POST /{username}/manage/projects/tasks/{task}/assign
-     * Reassign task
+     * Reassign task to me / teammate
      */
     public function reassignTask(Request $request, string $username, Task $task)
     {
@@ -670,12 +650,16 @@ public function addComment(Request $request, string $username, Task $task)
         } else {
             $newAssigneeId = $request->user_id;
 
+            // confirm that new assignee is in project team OR is project owner
             $isInTeam = $task->project
                 ->team()
                 ->where('user_id', $newAssigneeId)
                 ->exists();
 
-            if (!$isInTeam && $newAssigneeId !== $task->project->user_id) {
+            if (
+                !$isInTeam &&
+                $newAssigneeId !== $task->project->user_id
+            ) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Selected user is not in the project team',
@@ -685,17 +669,21 @@ public function addComment(Request $request, string $username, Task $task)
 
         DB::transaction(function () use ($task, $newAssigneeId, $oldAssignee, $request) {
             $task->update([
-                'assigned_to'          => $newAssigneeId,
+                'assigned_to'           => $newAssigneeId,
                 'last_status_change_at' => now(),
             ]);
 
+            // Log "reassigned" activity and include structured metadata
             TaskActivity::create([
                 'task_id'  => $task->id,
                 'actor_id' => $this->viewer->id,
                 'type'     => 'reassigned',
-                'body'     => $request->note
-                    ?? "Reassigned from " . ($oldAssignee->name ?? 'Unassigned')
-                    . " to " . ($task->fresh()->assignee->name ?? 'Unknown'),
+                'body'     => $request->note,
+                'metadata' => [
+                    'from_user_id' => $oldAssignee?->id,
+                    'to_user_id'   => $newAssigneeId,
+                    'note'         => $request->note,
+                ],
             ]);
         });
 
@@ -708,24 +696,24 @@ public function addComment(Request $request, string $username, Task $task)
                 'id'          => $task->id,
                 'assigned_to' => $task->assigned_to,
                 'assignee'    => [
-                    'id'          => $task->assignee->id,
-                    'name'        => $task->assignee->name,
-                    'avatar_url'  => $task->assignee->avatar_url,
+                    'id'         => $task->assignee->id,
+                    'name'       => $task->assignee->name,
+                    'avatar_url' => $task->assignee->avatar_url,
                 ],
             ],
         ]);
     }
 
     /**
-     * Centralized filters
+     * Centralized filters for task lists
      */
     protected function applyTaskFilter(Builder $query, string $filter): Builder
     {
         switch ($filter) {
             case 'overdue':
                 $query->whereNotNull('due_date')
-                    ->where('due_date', '<', now())
-                    ->where('status', '!=', 'done');
+                      ->where('due_date', '<', now())
+                      ->where('status', '!=', 'done');
                 break;
 
             case 'today':
@@ -734,8 +722,8 @@ public function addComment(Request $request, string $username, Task $task)
 
             case 'upcoming':
                 $query->whereNotNull('due_date')
-                    ->where('due_date', '>', now())
-                    ->orderBy('due_date', 'asc');
+                      ->where('due_date', '>', now())
+                      ->orderBy('due_date', 'asc');
                 break;
 
             case 'urgent':
@@ -761,7 +749,7 @@ public function addComment(Request $request, string $username, Task $task)
             case 'all':
             default:
                 $query->orderBy('priority', 'asc')
-                    ->orderBy('due_date', 'asc');
+                      ->orderBy('due_date', 'asc');
                 break;
         }
 

@@ -276,7 +276,8 @@ Route::middleware(['auth'])->group(function () {
                 ->name('tasks.')
                 ->group(function () {
 
-
+                    Route::get('{task}/edit-data', [TaskController::class, 'editData'])
+                    ->name('tenant.manage.projects.tasks.edit-data');
                     Route::post('/{task}/attachments', [TaskController::class, 'uploadAttachment'])
                         ->name('attachments.upload');
 

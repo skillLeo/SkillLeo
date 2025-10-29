@@ -1,6 +1,5 @@
 {{-- resources/views/tenant/manage/projects/modals/task-modals.blade.php --}}
-{{-- This partial should be @included once on pages that render task cards. --}}
-{{-- Assumes you have $username, csrf token meta, etc. --}}
+{{-- Include this partial anywhere you render task cards. Requires $username to exist in parent view. --}}
 
 <style>
     :root {
@@ -511,7 +510,7 @@
                             <select class="jira-select" id="addTaskAssigneeSelect"
                                 onchange="previewAssigneeAvatar(this)">
                                 <option value="">Unassigned</option>
-                                {{-- we inject team members via JS --}}
+                                {{-- Options inserted dynamically --}}
                             </select>
                         </div>
                         <small class="jira-hint">Assignee will see it under "My Tasks".</small>
@@ -544,17 +543,21 @@
                     <input type="hidden" id="addTaskPriority" value="medium">
                     <div class="jira-priority-row">
                         <button type="button" class="jira-priority-chip" data-value="low"
-                            onclick="selectPriorityChip(this, 'addTaskPriority')"><i class="fas fa-arrow-down"></i>
-                            Low</button>
+                            onclick="selectPriorityChip(this, 'addTaskPriority')">
+                            <i class="fas fa-arrow-down"></i> Low
+                        </button>
                         <button type="button" class="jira-priority-chip active" data-value="medium"
-                            onclick="selectPriorityChip(this, 'addTaskPriority')"><i class="fas fa-minus"></i>
-                            Medium</button>
+                            onclick="selectPriorityChip(this, 'addTaskPriority')">
+                            <i class="fas fa-minus"></i> Medium
+                        </button>
                         <button type="button" class="jira-priority-chip" data-value="high"
-                            onclick="selectPriorityChip(this, 'addTaskPriority')"><i class="fas fa-arrow-up"></i>
-                            High</button>
+                            onclick="selectPriorityChip(this, 'addTaskPriority')">
+                            <i class="fas fa-arrow-up"></i> High
+                        </button>
                         <button type="button" class="jira-priority-chip" data-value="urgent"
-                            onclick="selectPriorityChip(this, 'addTaskPriority')"><i class="fas fa-exclamation"></i>
-                            Urgent</button>
+                            onclick="selectPriorityChip(this, 'addTaskPriority')">
+                            <i class="fas fa-exclamation"></i> Urgent
+                        </button>
                     </div>
                 </div>
 
@@ -633,7 +636,6 @@
                     </div>
                 </div>
 
-                <!-- due date full width -->
                 <div class="jira-task-grid-1" style="margin-top:16px;">
                     <div class="jira-form-group">
                         <label class="jira-label">Due Date</label>
@@ -666,17 +668,21 @@
                     <input type="hidden" id="editTaskPriority" value="medium">
                     <div class="jira-priority-row" id="editPriorityChips">
                         <button type="button" class="jira-priority-chip" data-value="low"
-                            onclick="selectPriorityChip(this, 'editTaskPriority')"><i class="fas fa-arrow-down"></i>
-                            Low</button>
+                            onclick="selectPriorityChip(this, 'editTaskPriority')">
+                            <i class="fas fa-arrow-down"></i> Low
+                        </button>
                         <button type="button" class="jira-priority-chip" data-value="medium"
-                            onclick="selectPriorityChip(this, 'editTaskPriority')"><i class="fas fa-minus"></i>
-                            Medium</button>
+                            onclick="selectPriorityChip(this, 'editTaskPriority')">
+                            <i class="fas fa-minus"></i> Medium
+                        </button>
                         <button type="button" class="jira-priority-chip" data-value="high"
-                            onclick="selectPriorityChip(this, 'editTaskPriority')"><i class="fas fa-arrow-up"></i>
-                            High</button>
+                            onclick="selectPriorityChip(this, 'editTaskPriority')">
+                            <i class="fas fa-arrow-up"></i> High
+                        </button>
                         <button type="button" class="jira-priority-chip" data-value="urgent"
-                            onclick="selectPriorityChip(this, 'editTaskPriority')"><i class="fas fa-exclamation"></i>
-                            Urgent</button>
+                            onclick="selectPriorityChip(this, 'editTaskPriority')">
+                            <i class="fas fa-exclamation"></i> Urgent
+                        </button>
                     </div>
                 </div>
 
@@ -719,13 +725,13 @@
 
 <script>
     // ---------------------------------
-    // globals helpers for reuse
+    // Global helpers / config
     // ---------------------------------
     window.TENANT_USERNAME = "{{ $username }}";
     window.AVATAR_FALLBACK_URL = "{{ asset('images/avatar-fallback.png') }}";
 
     /**
-     * Toast helper
+     * Small toast banner (top-right)
      */
     function modalToast(msg, type = 'info') {
         const colors = {
@@ -734,6 +740,7 @@
             warning: '#FF991F',
             info: '#0052CC',
         };
+
         const el = document.createElement('div');
         el.style.cssText = `
             position: fixed;
@@ -745,11 +752,12 @@
             color:#fff;
             font-size:13px;
             font-weight:600;
-            background:${colors[type]||colors.info};
+            background:${colors[type] || colors.info};
             box-shadow:0 4px 12px rgba(0,0,0,.15);
         `;
         el.textContent = msg;
         document.body.appendChild(el);
+
         setTimeout(() => {
             el.remove();
         }, 2600);
@@ -774,7 +782,7 @@
     }
 
     /**
-     * Escape HTML (for innerHTML-safe string)
+     * Escape string for use in innerHTML
      */
     function escapeHtml(txt = '') {
         const div = document.createElement('div');
@@ -783,7 +791,7 @@
     }
 
     /**
-     * Build + remove subtask rows (add modal vs edit modal)
+     * Add a subtask row (used in both Add Task + Edit Task modals)
      */
     function addSubtaskRow(
         listId,
@@ -799,15 +807,14 @@
         const row = document.createElement('div');
         row.className = 'jira-subtask-line';
         if (subtaskId) {
-            // Keep ID so backend knows it's existing
+            // This lets backend know this subtask already exists
             row.dataset.subtaskId = subtaskId;
         }
 
         const isEditModal = (listId === 'editTaskSubtasksList');
 
         if (isEditModal) {
-            // EDIT MODAL: no visible checkbox
-            // but keep completion state in hidden input
+            // Edit modal version: checkbox state stored in hidden input
             row.innerHTML = `
                 <input type="text"
                     class="jira-subtask-title-input"
@@ -825,7 +832,7 @@
                 </button>
             `;
         } else {
-            // ADD TASK MODAL VERSION: show checkbox
+            // Add task modal version: visible checkbox
             row.innerHTML = `
                 <input type="text"
                     class="jira-subtask-title-input"
@@ -855,6 +862,7 @@
     function removeSubtaskRow(btn, countId) {
         const row = btn.closest('.jira-subtask-line');
         if (row) row.remove();
+
         const countEl = document.getElementById(countId);
         if (countEl) {
             const wrapper = btn.closest('.jira-subtasks-mini');
@@ -864,7 +872,7 @@
     }
 
     /**
-     * Assignee avatar preview (used in Add Task modal only)
+     * Preview avatar next to assignee <select> (Add Task modal only)
      */
     function previewAssigneeAvatar(selectEl, avatarDivId) {
         if (!avatarDivId) avatarDivId = 'addTaskAssigneeAvatar';
@@ -892,9 +900,10 @@
         }
     }
 
-    // ------------------------------------------------
-    // DOM PATCH after successful update (NO RELOAD)
-    // ------------------------------------------------
+    /**
+     * Update the visible card in DOM after editing (no page refresh)
+     * Expects backend to return { task: { ...task data... } }
+     */
     function updateTaskCardFromResponse(task) {
         console.log('Updating card for task:', task.id, task);
 
@@ -904,13 +913,13 @@
             return;
         }
 
-        // 1. TITLE
+        // TITLE
         const titleEl = card.querySelector('.jira-card-title');
         if (titleEl) {
             titleEl.textContent = task.title || '';
         }
 
-        // 2. PRIORITY BADGE
+        // PRIORITY BADGE
         const priorityMap = {
             urgent:  { color:'#DE350B', bg:'rgba(222,53,11,0.1)', label:'Urgent',  icon:'exclamation-circle' },
             high:    { color:'#FF991F', bg:'rgba(255,153,31,0.1)', label:'High',    icon:'arrow-up' },
@@ -927,7 +936,7 @@
             prBadge.innerHTML = `<i class="fas fa-${pConf.icon}"></i> ${pConf.label}`;
         }
 
-        // 3. DUE DATE
+        // DUE DATE
         const dueWrap = card.querySelector('.jira-due-date');
         if (dueWrap) {
             if (task.due_date) {
@@ -943,7 +952,7 @@
             }
         }
 
-        // 4. STORY POINTS
+        // STORY POINTS
         const storyPointsEl = card.querySelector('.jira-story-points');
         if (storyPointsEl) {
             if (task.story_points && task.story_points > 0) {
@@ -954,7 +963,7 @@
             }
         }
 
-        // 5. ASSIGNEE AVATAR in card footer (still shown on cards, read-only here)
+        // ASSIGNEE
         const assigneeWrapper = card.querySelector('.jira-footer-right .jira-assignee');
         if (assigneeWrapper) {
             if (task.assignee) {
@@ -966,11 +975,11 @@
                 if (avatarUrl) {
                     assigneeWrapper.innerHTML = `
                         <img src="${avatarUrl}"
-                             alt="${name}"
-                             class="jira-avatar"
-                             referrerpolicy="no-referrer"
-                             crossorigin="anonymous"
-                             onerror="this.onerror=null; this.src='${window.AVATAR_FALLBACK_URL || '/images/avatar-fallback.png'}';">
+                            alt="${name}"
+                            class="jira-avatar"
+                            referrerpolicy="no-referrer"
+                            crossorigin="anonymous"
+                            onerror="this.onerror=null; this.src='${window.AVATAR_FALLBACK_URL || '/images/avatar-fallback.png'}';">
                     `;
                 } else {
                     assigneeWrapper.innerHTML = `
@@ -988,25 +997,25 @@
             }
         }
 
-        // 6. SUBTASK PROGRESS
+        // SUBTASK STATS
         const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
         const total = subtasks.length;
         const completed = subtasks.filter(st => st.completed).length;
         const percent = total > 0 ? (completed * 100) / total : 0;
 
-        // Count badge
+        // count badge
         const subCountEl = card.querySelector('.jira-subtasks-count');
         if (subCountEl) {
             subCountEl.textContent = `${completed}/${total}`;
         }
 
-        // Progress bar
+        // progress bar
         const bar = card.querySelector('.jira-progress-bar');
         if (bar) {
             bar.style.width = percent + '%';
         }
 
-        // Expanded list (if visible)
+        // expanded list (if visible)
         const listEl = card.querySelector('.jira-subtasks-list');
         if (listEl) {
             listEl.innerHTML = subtasks.map(st => {
@@ -1016,8 +1025,8 @@
 
                 return `
                     <div class="jira-subtask-item ${completedClass}"
-                         data-task-id="${task.id}"
-                         data-subtask-id="${st.id}">
+                        data-task-id="${task.id}"
+                        data-subtask-id="${st.id}">
                         <label class="jira-subtask-checkbox-wrapper">
                             <input type="checkbox"
                                 class="jira-subtask-checkbox"
@@ -1033,11 +1042,34 @@
             }).join('');
         }
 
+        // status badge in footer can be updated here too if backend returns updated status
+        if (task.status) {
+            const statusMap = {
+                'todo':       {label:'To Do',        bg:'#F4F5F7', color:'#6B778C'},
+                'in-progress':{label:'In Progress',  bg:'#DEEBFF', color:'#0052CC'},
+                'review':     {label:'Review',       bg:'#FFFAE6', color:'#FF991F'},
+                'done':       {label:'Done',         bg:'#E3FCEF', color:'#00875A'},
+                'blocked':    {label:'Blocked',      bg:'#FFEBE6', color:'#DE350B'},
+                'postponed':  {label:'Postponed',    bg:'#EAE6FF', color:'#8777D9'},
+            };
+
+            const conf = statusMap[task.status] || statusMap['todo'];
+            const statusBadge = card.querySelector('.jira-status-badge');
+            if (statusBadge) {
+                statusBadge.style.background = conf.bg;
+                statusBadge.style.color = conf.color;
+                statusBadge.textContent = conf.label;
+            }
+
+            // also sync data-task-status attr so other scripts know
+            card.setAttribute('data-task-status', task.status);
+        }
+
         console.log('✅ Card updated successfully');
     }
 
     // --------------------------------
-    // ADD TASK MODAL
+    // ADD TASK MODAL LOGIC
     // --------------------------------
     let CURRENT_ADD_TASK_PROJECT_ID = null;
 
@@ -1054,7 +1086,7 @@
         document.getElementById('addTaskSubtasksList').innerHTML = '';
         document.getElementById('addTaskSubtaskCount').textContent = '0';
 
-        // reset chips state
+        // reset priority chip UI
         const addPriorityRow = document.querySelector('#addTaskModal .jira-priority-row');
         if (addPriorityRow) {
             addPriorityRow.querySelectorAll('.jira-priority-chip').forEach(chip => {
@@ -1062,13 +1094,13 @@
             });
         }
 
-        // badge
+        // top badge
         const badge = document.getElementById('addTaskProjectBadge');
         if (badge) {
             badge.textContent = (projectKey || 'PROJ') + ' Project';
         }
 
-        // populate assignee dropdown
+        // pull team list for assignee
         populateAssigneeSelect('addTaskAssigneeSelect', 'addTaskAssigneeAvatar', projectId);
 
         // show modal
@@ -1132,8 +1164,8 @@
             modalToast('Task created', 'success');
             closeAddTaskModal();
 
-            // you can inject new card to DOM here if you want
-            // location.reload();
+            // If you want instant insert of the new task card into DOM,
+            // do it here using data.task
         })
         .catch(err => {
             console.error(err);
@@ -1142,86 +1174,92 @@
     }
 
     // --------------------------------
-    // EDIT TASK MODAL
+    // EDIT TASK MODAL LOGIC
     // --------------------------------
     function openEditTaskModal(taskId) {
-        fetch(`/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) {
-                modalToast(data.message || 'Unable to load task', 'error');
-                return;
+    fetch(`/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/edit-data`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            modalToast(data.message || 'Unable to load task', 'error');
+            return;
+        }
+
+        const t = data.task;
+
+        // fill core fields
+        document.getElementById('editTaskId').value = t.id;
+        document.getElementById('editTaskProjectId').value = t.project_id;
+        document.getElementById('editTaskTitle').value = t.title || '';
+        document.getElementById('editTaskNotes').value = t.notes || '';
+        document.getElementById('editTaskDueDate').value = t.due_date || '';
+        document.getElementById('editTaskHours').value = t.estimated_hours ?? '';
+        document.getElementById('editTaskPoints').value = t.story_points ?? '0';
+        document.getElementById('editTaskPriority').value = t.priority || 'medium';
+
+        // header pill
+        const pill = document.getElementById('editTaskIdPill');
+        if (pill) {
+            pill.textContent = `#${t.id} • ${t.status || 'todo'}`;
+        }
+
+        // subtitle
+        const subtitle = document.getElementById('editTaskSubtitle');
+        if (subtitle) {
+            subtitle.textContent = `Project ID ${t.project_id} • Status: ${t.status}`;
+        }
+
+        // priority chip highlight
+        const row = document.getElementById('editPriorityChips');
+        if (row) {
+            row.querySelectorAll('.jira-priority-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.value === t.priority);
+            });
+        }
+
+        // rebuild subtasks list
+        const subtaskList   = document.getElementById('editTaskSubtasksList');
+        const subtaskCount  = document.getElementById('editTaskSubtaskCount');
+
+        if (subtaskList && subtaskCount) {
+            subtaskList.innerHTML = '';
+
+            if (Array.isArray(t.subtasks)) {
+                t.subtasks
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .forEach(st => {
+                        // this calls your helper that builds each editable row
+                        addSubtaskRow(
+                            'editTaskSubtasksList',
+                            'editTaskSubtaskCount',
+                            st.title,
+                            !!st.completed,
+                            st.id
+                        );
+                    });
+
+                subtaskCount.textContent = t.subtasks.length.toString();
+            } else {
+                subtaskCount.textContent = '0';
             }
+        }
 
-            const t = data.task;
+        // finally show modal
+        const overlay = document.getElementById('editTaskModal');
+        if (overlay) overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    })
+    .catch(err => {
+        console.error(err);
+        modalToast('Error loading task', 'error');
+    });
+}
 
-            // Fill fields
-            document.getElementById('editTaskId').value = t.id;
-            document.getElementById('editTaskProjectId').value = t.project_id;
-            document.getElementById('editTaskTitle').value = t.title || '';
-            document.getElementById('editTaskNotes').value = t.notes || '';
-            document.getElementById('editTaskDueDate').value = t.due_date || '';
-            document.getElementById('editTaskHours').value = (t.estimated_hours ?? '');
-            document.getElementById('editTaskPoints').value = (t.story_points ?? '0');
-            document.getElementById('editTaskPriority').value = t.priority || 'medium';
-
-            // Header pill / subtitle
-            const pill = document.getElementById('editTaskIdPill');
-            if (pill) {
-                pill.textContent = `#${t.id} • ${t.status || 'todo'}`;
-            }
-
-            const subtitle = document.getElementById('editTaskSubtitle');
-            if (subtitle) {
-                subtitle.textContent = `Project ID ${t.project_id} • Status: ${t.status}`;
-            }
-
-            // Priority chip active state
-            const row = document.getElementById('editPriorityChips');
-            if (row) {
-                row.querySelectorAll('.jira-priority-chip').forEach(chip => {
-                    chip.classList.toggle('active', chip.dataset.value === t.priority);
-                });
-            }
-
-            // Subtasks
-            const subtaskList = document.getElementById('editTaskSubtasksList');
-            const subtaskCount = document.getElementById('editTaskSubtaskCount');
-            if (subtaskList && subtaskCount) {
-                subtaskList.innerHTML = '';
-                if (Array.isArray(t.subtasks)) {
-                    t.subtasks
-                        .sort((a, b) => (a.order || 0) - (b.order || 0))
-                        .forEach(st => {
-                            addSubtaskRow(
-                                'editTaskSubtasksList',
-                                'editTaskSubtaskCount',
-                                st.title,
-                                !!st.completed,
-                                st.id
-                            );
-                        });
-                    subtaskCount.textContent = t.subtasks.length.toString();
-                } else {
-                    subtaskCount.textContent = '0';
-                }
-            }
-
-            // show modal
-            const overlay = document.getElementById('editTaskModal');
-            if (overlay) overlay.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        })
-        .catch(err => {
-            console.error(err);
-            modalToast('Error loading task', 'error');
-        });
-    }
 
     function closeEditTaskModal() {
         const overlay = document.getElementById('editTaskModal');
@@ -1231,10 +1269,11 @@
 
     function gatherEditTaskPayload() {
         const subtasks = [];
+
         document.querySelectorAll('#editTaskSubtasksList .jira-subtask-line').forEach(line => {
             const title = line.querySelector('.jira-subtask-title-input')?.value.trim() || '';
 
-            // read completion state:
+            // read completion state
             const completedInput = line.querySelector('.jira-subtask-completed-input');
             let completedVal = false;
             if (completedInput) {
@@ -1260,7 +1299,7 @@
             due_date: document.getElementById('editTaskDueDate').value || null,
             estimated_hours: document.getElementById('editTaskHours').value || null,
             story_points: document.getElementById('editTaskPoints').value || 0,
-            // we are NOT sending assigned_to here anymore (edit modal doesn't edit assignee)
+            // we are NOT editing assignee in this modal right now
             subtasks: subtasks,
         };
     }
@@ -1269,7 +1308,7 @@
         const taskId = document.getElementById('editTaskId').value;
         const payload = gatherEditTaskPayload();
 
-        // Validation
+        // validate
         if (!payload.title || payload.title.trim().length === 0) {
             modalToast('Task title is required', 'error');
             return;
@@ -1280,7 +1319,7 @@
             return;
         }
 
-        // show loading UI
+        // lock submit button
         const submitBtn = document.querySelector('#editTaskModal .jira-btn-primary');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
@@ -1312,7 +1351,7 @@
             modalToast('✅ Task updated successfully', 'success');
             closeEditTaskModal();
 
-            // patch card in DOM
+            // live-update card
             updateTaskCardFromResponse(data.task);
         })
         .catch(err => {
@@ -1326,16 +1365,15 @@
     }
 
     // ------------------------------------------------
-    // Assignee dropdown population (Add Task modal ONLY)
+    // Populate assignee dropdown (Add Task only)
     // ------------------------------------------------
     //
-    // backend endpoint must return teammates like:
+    // Backend endpoint should return JSON like:
     // [
     //   { "id":5, "name":"Ayesha", "avatar_url":"..." },
     //   { "id":12, "name":"Daniyal", "avatar_url":null }
     // ]
     //
-    // Route we call:
     // GET /{username}/manage/projects/{projectId}/team
     //
     function populateAssigneeSelect(selectId, avatarDivId, projectId, preselectUserId = null) {
@@ -1344,9 +1382,10 @@
 
         if (!sel) return;
 
+        // reset select
         sel.innerHTML = `<option value="">Unassigned</option>`;
 
-        // default avatar bubble
+        // reset avatar bubble
         if (avatarDiv) {
             avatarDiv.innerHTML = '?';
             avatarDiv.style.background = 'var(--jira-bg)';
@@ -1374,11 +1413,9 @@
             // preselect if provided
             if (preselectUserId) {
                 sel.value = preselectUserId;
-            } else {
-                sel.value = sel.value || '';
             }
 
-            // update avatar preview bubble
+            // update bubble preview
             previewAssigneeAvatar(sel, avatarDivId);
         })
         .catch(err => {
@@ -1387,7 +1424,7 @@
     }
 
     // ------------------------------------------------
-    // Card dropdown menu etc
+    // Card menu helpers (3-dot menu on each card)
     // ------------------------------------------------
     function toggleTaskMenu(taskId) {
         const menu = document.getElementById(`task-menu-${taskId}`);
@@ -1399,13 +1436,15 @@
             }
         });
 
+        if (!menu) return;
+
         menu.style.display =
             (menu.style.display === 'none' || menu.style.display === '')
-            ? 'block'
-            : 'none';
+                ? 'block'
+                : 'none';
     }
 
-    // close menus when clicking outside
+    // Close any open task menu when the page is clicked elsewhere
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.jira-card-menu')) {
             document.querySelectorAll('.jira-dropdown-menu').forEach(menu => {
@@ -1414,6 +1453,8 @@
         }
     });
 
+    // This function may also be defined in other includes.
+    // We'll keep it here for safety if this file is used standalone.
     function toggleSubtasksExpand(taskId) {
         const list = document.getElementById(`subtasks-list-${taskId}`);
         const btn = document.getElementById(`expand-btn-${taskId}`);
@@ -1426,7 +1467,7 @@
     }
 
     function openReassignModal(taskId) {
-        // future reassign modal if you want to move assignee separately
+        // stub for future reassignment modal
         console.log('Open reassign modal for task:', taskId);
     }
 

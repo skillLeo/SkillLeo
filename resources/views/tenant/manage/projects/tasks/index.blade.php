@@ -90,14 +90,7 @@
 
                         <div class="pm-divider"></div>
 
-                        <button class="pm-btn pm-btn--icon" onclick="openSettings()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="3" />
-                                <path d="M12 1v6m0 6v6M1 12h6m6 0h6" />
-                                <path d="M4.2 4.2l4.3 4.3m5 5l4.3 4.3M4.2 19.8l4.3-4.3m5-5l4.3-4.3" />
-                            </svg>
-                        </button>
+                     
 
                         <button class="pm-btn pm-btn--icon" onclick="openMenu()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -389,20 +382,21 @@
         </div>
     </div>
 
+    {{-- other modals --}}
     @include('tenant.manage.projects.tasks.components.status-modal')
-    {{-- @include('tenant.manage.projects.tasks.components.task-action-modals', ['username' => $username ?? request()->segment(1)]) --}}
 
-    @include('tenant.manage.projects.modals.task-modals')
+    @include('tenant.manage.projects.modals.task-modals', [
+        'username' => $username ?? request()->segment(1),
+    ])
     @include('tenant.manage.projects.modals.task-reassign-modal', ['username' => $username])
 
     <style>
         /* ============================================
                        DESIGN SYSTEM FOUNDATION
-                       Professional-grade CSS Variables
                        ============================================ */
 
         :root {
-            /* Neutral Palette - Atlassian-inspired */
+            /* Neutral Palette */
             --pm-n0: #FFFFFF;
             --pm-n10: #FAFBFC;
             --pm-n20: #F4F5F7;
@@ -471,21 +465,13 @@
             /* Typography Scale */
             --pm-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             --pm-font-size-xs: 0.6875rem;
-            /* 11px */
             --pm-font-size-sm: 0.75rem;
-            /* 12px */
             --pm-font-size-base: 0.875rem;
-            /* 14px */
             --pm-font-size-md: 1rem;
-            /* 16px */
             --pm-font-size-lg: 1.125rem;
-            /* 18px */
             --pm-font-size-xl: 1.25rem;
-            /* 20px */
             --pm-font-size-2xl: 1.5rem;
-            /* 24px */
             --pm-font-size-3xl: 1.875rem;
-            /* 30px */
 
             --pm-font-weight-normal: 400;
             --pm-font-weight-medium: 500;
@@ -498,21 +484,13 @@
 
             /* Spacing Scale */
             --pm-space-xs: 0.25rem;
-            /* 4px */
             --pm-space-sm: 0.5rem;
-            /* 8px */
             --pm-space-md: 0.75rem;
-            /* 12px */
             --pm-space-base: 1rem;
-            /* 16px */
             --pm-space-lg: 1.5rem;
-            /* 24px */
             --pm-space-xl: 2rem;
-            /* 32px */
             --pm-space-2xl: 2.5rem;
-            /* 40px */
             --pm-space-3xl: 3rem;
-            /* 48px */
 
             /* Border Radius */
             --pm-radius-sm: 3px;
@@ -522,7 +500,7 @@
             --pm-radius-xl: 16px;
             --pm-radius-full: 9999px;
 
-            /* Shadows - Layered elevation system */
+            /* Shadows */
             --pm-shadow-xs: 0 1px 2px 0 rgba(9, 30, 66, 0.08);
             --pm-shadow-sm: 0 1px 3px 0 rgba(9, 30, 66, 0.12), 0 1px 2px 0 rgba(9, 30, 66, 0.06);
             --pm-shadow-base: 0 4px 6px -1px rgba(9, 30, 66, 0.12), 0 2px 4px -1px rgba(9, 30, 66, 0.06);
@@ -552,7 +530,6 @@
 
         .pm-workspace {
             min-height: 100vh;
-            /* background: var(--pm-n20); */
             font-family: var(--pm-font-family);
             font-size: var(--pm-font-size-base);
             color: var(--pm-n800);
@@ -562,18 +539,13 @@
         }
 
         .pm-container {
-            /* max-width: 1400px; */
             margin: 0 auto;
-            /* padding: var(--pm-space-lg); */
             display: flex;
             flex-direction: column;
             gap: var(--pm-space-base);
         }
 
-        /* ============================================
-                       HEADER SECTION - Premium Design
-                       ============================================ */
-
+        /* HEADER SECTION */
         .pm-header {
             background: var(--pm-n0);
             border: 1px solid var(--pm-n40);
@@ -671,10 +643,7 @@
             flex-wrap: wrap;
         }
 
-        /* ============================================
-                       BUTTONS - Professional System
-                       ============================================ */
-
+        /* BUTTONS */
         .pm-btn {
             display: inline-flex;
             align-items: center;
@@ -769,10 +738,7 @@
             background: var(--pm-n40);
         }
 
-        /* ============================================
-                       METRICS BAR - Data Visualization
-                       ============================================ */
-
+        /* METRICS BAR */
         .pm-metrics {
             display: flex;
             align-items: center;
@@ -906,10 +872,7 @@
             text-anchor: middle;
         }
 
-        /* ============================================
-                       NAVIGATION TABS - Premium Filter System
-                       ============================================ */
-
+        /* NAVIGATION FILTER BAR */
         .pm-nav {
             background: var(--pm-n0);
             border: 1px solid var(--pm-n40);
@@ -981,10 +944,8 @@
         }
 
         .pm-nav-item--active {
-            /* background: var(--pm-primary-50); */
             color: var(--pm-primary-600);
             font-weight: var(--pm-font-weight-semibold);
-            /* border-color: var(--pm-primary-200); */
         }
 
         .pm-nav-item--active::before {
@@ -1014,10 +975,7 @@
             margin: 0 var(--pm-space-xs);
         }
 
-        /* ============================================
-                       BADGES - Status Indicators
-                       ============================================ */
-
+        /* BADGES */
         .pm-badge {
             display: inline-flex;
             align-items: center;
@@ -1068,10 +1026,7 @@
             border-color: var(--pm-info-100);
         }
 
-        /* ============================================
-                       CONTENT AREA
-                       ============================================ */
-
+        /* MAIN CONTENT AREA */
         .pm-content {
             background: var(--pm-n0);
             border: 1px solid var(--pm-n40);
@@ -1081,10 +1036,7 @@
             box-shadow: var(--pm-shadow-sm);
         }
 
-        /* ============================================
-                       EMPTY STATE - Elegant Design
-                       ============================================ */
-
+        /* EMPTY STATE */
         .pm-empty {
             display: flex;
             flex-direction: column;
@@ -1131,10 +1083,7 @@
             animation: pm-fade-in 0.6s ease-out 0.8s forwards;
         }
 
-        /* ============================================
-                       RESPONSIVE DESIGN - Mobile First
-                       ============================================ */
-
+        /* RESPONSIVE */
         @media (max-width: 1024px) {
             .pm-container {
                 padding: var(--pm-space-base);
@@ -1247,10 +1196,7 @@
             }
         }
 
-        /* ============================================
-                       ACCESSIBILITY ENHANCEMENTS
-                       ============================================ */
-
+        /* ACCESSIBILITY */
         .pm-btn:focus-visible,
         .pm-nav-item:focus-visible {
             outline: 2px solid var(--pm-primary-500);
@@ -1268,10 +1214,7 @@
             }
         }
 
-        /* ============================================
-                       PRINT STYLES
-                       ============================================ */
-
+        /* PRINT */
         @media print {
 
             .pm-header-actions,
@@ -1292,452 +1235,440 @@
     </style>
 
     <script>
-        
         (function() {
-    'use strict';
+            'use strict';
 
-    // =========================================
-    // CONFIGURATION
-    // =========================================
-    if (!window.TENANT_USERNAME) {
-        window.TENANT_USERNAME = document.querySelector('meta[name="workspace-username"]')?.content || '';
-    }
-
-    let selectedFiles = [];
-
-    // =========================================
-    // STATUS STYLE MAP (matches backend)
-    // =========================================
-    const STATUS_STYLE = {
-        'todo': {
-            label: 'To Do',
-            bg: '#F4F5F7',
-            color: '#6B778C'
-        },
-        'in-progress': {
-            label: 'In Progress',
-            bg: '#DEEBFF',
-            color: '#0052CC'
-        },
-        'review': {
-            label: 'Review',
-            bg: '#FFFAE6',
-            color: '#FF991F'
-        },
-        'done': {
-            label: 'Done',
-            bg: '#E3FCEF',
-            color: '#00875A'
-        },
-        'blocked': {
-            label: 'Blocked',
-            bg: '#FFEBE6',
-            color: '#DE350B'
-        },
-        'postponed': {
-            label: 'Postponed',
-            bg: '#EAE6FF',
-            color: '#8777D9'
-        },
-        'cancelled': {
-            label: 'Cancelled',
-            bg: '#F4F5F7',
-            color: '#6B778C'
-        },
-    };
-
-    // =========================================
-    // 🔥 CORE REAL-TIME UPDATE FUNCTION
-    // This handles ALL UI updates from server response
-    // =========================================
-    function applyRealtimeUpdate(taskId, serverData) {
-        console.log('🔄 Real-time update for task:', taskId, serverData);
-
-        const card = document.querySelector(`.jira-task-card[data-task-id="${taskId}"]`);
-        
-        if (!card) {
-            console.warn(`❌ Task card ${taskId} not found in DOM`);
-            recalcGlobalCompletion();
-            return;
-        }
-
-        // 1. UPDATE SUBTASK ROW (checkbox + strike-through)
-        if (serverData.subtask?.id) {
-            updateSubtaskRow(card, serverData.subtask);
-        }
-
-        // 2. UPDATE SUBTASK COUNTER (X/Y)
-        updateSubtaskCounter(card, serverData.completed_subtasks_count, serverData.subtasks_count);
-
-        // 3. UPDATE PROGRESS BAR
-        updateProgressBar(card, serverData);
-
-        // 4. UPDATE STATUS BADGE
-        if (serverData.task_status) {
-            updateStatusBadge(card, serverData);
-        }
-
-        // 5. UPDATE TASK DATA ATTRIBUTE
-        if (serverData.task_status) {
-            card.setAttribute('data-task-status', serverData.task_status);
-        }
-
-        // 6. HANDLE SPECIAL STATUS CHANGES
-        handleStatusTransitions(card, serverData);
-
-        // 7. UPDATE GLOBAL COMPLETION RING
-        recalcGlobalCompletion();
-
-        // 8. CHECK IF TASK SHOULD BE FILTERED OUT
-        checkTaskVisibility(card, serverData.task_status);
-    }
-
-    // =========================================
-    // UPDATE INDIVIDUAL SUBTASK ROW
-    // =========================================
-    function updateSubtaskRow(card, subtask) {
-        const row = card.querySelector(`.jira-subtask-item[data-subtask-id="${subtask.id}"]`);
-        
-        if (!row) return;
-
-        const checkbox = row.querySelector('.jira-subtask-checkbox');
-        
-        if (checkbox) {
-            checkbox.checked = !!subtask.completed;
-        }
-
-        if (subtask.completed) {
-            row.classList.add('is-completed');
-        } else {
-            row.classList.remove('is-completed');
-        }
-    }
-
-    // =========================================
-    // UPDATE SUBTASK COUNTER (X/Y subtasks)
-    // =========================================
-    function updateSubtaskCounter(card, completedCount, totalCount) {
-        const counterEl = card.querySelector('.jira-subtasks-count');
-        
-        if (counterEl && completedCount !== undefined && totalCount !== undefined) {
-            counterEl.textContent = `${completedCount}/${totalCount}`;
-        }
-    }
-
-    // =========================================
-    // UPDATE PROGRESS BAR
-    // =========================================
-    function updateProgressBar(card, serverData) {
-        const progressBar = card.querySelector('.jira-progress-bar');
-        
-        if (!progressBar) return;
-
-        const { completed_subtasks_count, subtasks_count, task_status, task_status_color } = serverData;
-
-        // Calculate percentage
-        const percentage = subtasks_count > 0 
-            ? Math.round((completed_subtasks_count / subtasks_count) * 100) 
-            : 0;
-
-        // Update width with smooth transition
-        progressBar.style.width = percentage + '%';
-
-        // Update color based on status
-        const statusStyle = STATUS_STYLE[task_status];
-        const color = task_status_color || statusStyle?.color || '#0052CC';
-        
-        progressBar.style.background = color;
-    }
-
-    // =========================================
-    // UPDATE STATUS BADGE
-    // =========================================
-    function updateStatusBadge(card, serverData) {
-        const badge = card.querySelector('.jira-status-badge');
-        
-        if (!badge) return;
-
-        const { task_status, task_status_label, task_status_bg, task_status_color } = serverData;
-        
-        const statusStyle = STATUS_STYLE[task_status] || STATUS_STYLE['todo'];
-        
-        const label = task_status_label || statusStyle.label;
-        const bg = task_status_bg || statusStyle.bg;
-        const color = task_status_color || statusStyle.color;
-
-        badge.textContent = label;
-        badge.style.background = bg;
-        badge.style.color = color;
-    }
-
-    // =========================================
-    // HANDLE STATUS TRANSITIONS
-    // =========================================
-    function handleStatusTransitions(card, serverData) {
-        const { task_status } = serverData;
-
-        if (task_status === 'done') {
-            // Mark ALL subtasks as completed visually
-            card.querySelectorAll('.jira-subtask-item').forEach(row => {
-                row.classList.add('is-completed');
-                const cb = row.querySelector('.jira-subtask-checkbox');
-                if (cb) cb.checked = true;
-            });
-
-            // Set progress to 100%
-            const progressBar = card.querySelector('.jira-progress-bar');
-            if (progressBar) {
-                progressBar.style.width = '100%';
+            // =========================================
+            // CONFIGURATION
+            // =========================================
+            if (!window.TENANT_USERNAME) {
+                window.TENANT_USERNAME = document.querySelector('meta[name="workspace-username"]')?.content || '';
             }
 
-            showToast('✅ Task completed successfully!', 'success');
-        } 
-        else if (task_status === 'blocked') {
-            showToast('⛔ Task marked as blocked', 'error');
-        } 
-        else if (task_status === 'postponed') {
-            showToast('⏰ Task postponed', 'info');
-        } 
-        else if (task_status === 'cancelled') {
-            showToast('❌ Task cancelled', 'info');
-        } 
-     
-        else if (task_status === 'review') {
-            showToast('👀 Task in review', 'info');
-        }
-        else if (task_status === 'todo') {
-            showToast('📝 Task reopened', 'info');
-        }
-    }
+            let selectedFiles = [];
 
-    // =========================================
-    // CHECK IF TASK SHOULD BE HIDDEN/FILTERED
-    // =========================================
-    function checkTaskVisibility(card, newStatus) {
-        // Get current active filter from URL or data attribute
-        const urlParams = new URLSearchParams(window.location.search);
-        const activeFilter = urlParams.get('filter') || 'all';
+            // =========================================
+            // STATUS STYLE MAP (matches backend)
+            // =========================================
+            const STATUS_STYLE = {
+                'todo': {
+                    label: 'To Do',
+                    bg: '#F4F5F7',
+                    color: '#6B778C'
+                },
+                'in-progress': {
+                    label: 'In Progress',
+                    bg: '#DEEBFF',
+                    color: '#0052CC'
+                },
+                'review': {
+                    label: 'Review',
+                    bg: '#FFFAE6',
+                    color: '#FF991F'
+                },
+                'done': {
+                    label: 'Done',
+                    bg: '#E3FCEF',
+                    color: '#00875A'
+                },
+                'blocked': {
+                    label: 'Blocked',
+                    bg: '#FFEBE6',
+                    color: '#DE350B'
+                },
+                'postponed': {
+                    label: 'Postponed',
+                    bg: '#EAE6FF',
+                    color: '#8777D9'
+                },
+                'cancelled': {
+                    label: 'Cancelled',
+                    bg: '#F4F5F7',
+                    color: '#6B778C'
+                },
+            };
 
-        let shouldHide = false;
+            // =========================================
+            // 🔥 CORE REAL-TIME UPDATE FUNCTION
+            // =========================================
+            function applyRealtimeUpdate(taskId, serverData) {
+                console.log('🔄 Real-time update for task:', taskId, serverData);
 
-        // Check if task should be filtered out based on new status
-        switch(activeFilter) {
-            case 'overdue':
-                // Hide if not overdue anymore
-                const isOverdue = card.querySelector('.jira-overdue-badge');
-                shouldHide = !isOverdue;
-                break;
+                const card = document.querySelector(`.jira-task-card[data-task-id="${taskId}"]`);
 
-            case 'today':
-                // Hide if not due today
-                // (Implementation depends on your due date logic)
-                break;
-
-            case 'in-progress':
-                shouldHide = newStatus !== 'in-progress';
-                break;
-
-            case 'review':
-                shouldHide = newStatus !== 'review';
-                break;
-
-            case 'blocked':
-                shouldHide = newStatus !== 'blocked';
-                break;
-
-            case 'done':
-                shouldHide = newStatus !== 'done';
-                break;
-
-            // Add more filter cases as needed
-        }
-
-        if (shouldHide) {
-            // Fade out and remove from view
-            card.style.transition = 'all 0.3s ease';
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.95)';
-            
-            setTimeout(() => {
-                card.style.display = 'none';
-                
-                // Check if section is now empty
-                checkIfSectionEmpty(card);
-            }, 300);
-        }
-    }
-
-    // =========================================
-    // CHECK IF TASK SECTION IS EMPTY
-    // =========================================
-    function checkIfSectionEmpty(card) {
-        const section = card.closest('.task-section, .pm-content');
-        
-        if (!section) return;
-
-        const visibleCards = section.querySelectorAll('.jira-task-card:not([style*="display: none"])');
-        
-        if (visibleCards.length === 0) {
-            // Show empty state
-            const emptyState = section.querySelector('.pm-empty');
-            if (emptyState) {
-                emptyState.style.display = 'flex';
-            }
-        }
-    }
-
-    // =========================================
-    // RECALCULATE GLOBAL COMPLETION RING
-    // =========================================
-    function recalcGlobalCompletion() {
-        const wrapper = document.getElementById('pm-completion-wrapper');
-        
-        if (!wrapper) return;
-
-        const taskCards = document.querySelectorAll('.jira-task-card:not([style*="display: none"])');
-
-        let totalUnits = 0;
-        let completedUnits = 0;
-
-        taskCards.forEach(card => {
-            // Each task = 1 unit
-            totalUnits += 1;
-            
-            const taskStatus = card.getAttribute('data-task-status');
-            if (taskStatus === 'done') {
-                completedUnits += 1;
-            }
-
-            // Each subtask = 1 unit
-            card.querySelectorAll('.jira-subtask-item').forEach(row => {
-                totalUnits += 1;
-                
-                const checkbox = row.querySelector('.jira-subtask-checkbox');
-                if (checkbox && checkbox.checked) {
-                    completedUnits += 1;
+                if (!card) {
+                    console.warn(`❌ Task card ${taskId} not found in DOM`);
+                    recalcGlobalCompletion();
+                    return;
                 }
-            });
-        });
 
-        const percentage = totalUnits > 0 
-            ? Math.round((completedUnits / totalUnits) * 100) 
-            : 0;
+                // 1. UPDATE SUBTASK ROW (checkbox + strike-through)
+                if (serverData.subtask?.id) {
+                    updateSubtaskRow(card, serverData.subtask);
+                }
 
-        // Update attributes
-        wrapper.setAttribute('data-total-units', totalUnits);
-        wrapper.setAttribute('data-completed-units', completedUnits);
+                // 2. UPDATE SUBTASK COUNTER (X/Y)
+                updateSubtaskCounter(card, serverData.completed_subtasks_count, serverData.subtasks_count);
 
-        // Update circle progress
-        const circle = wrapper.querySelector('.pm-circle');
-        if (circle) {
-            circle.setAttribute('stroke-dasharray', `${percentage}, 100`);
-        }
+                // 3. UPDATE PROGRESS BAR
+                updateProgressBar(card, serverData);
 
-        // Update percentage text
-        const percentageText = wrapper.querySelector('.pm-percentage');
-        if (percentageText) {
-            percentageText.textContent = `${percentage}%`;
-        }
-    }
+                // 4. UPDATE STATUS BADGE
+                if (serverData.task_status) {
+                    updateStatusBadge(card, serverData);
+                }
 
-    // =========================================
-    // AJAX: TOGGLE SUBTASK
-    // =========================================
-    function toggleSubtask(taskId, subtaskId, isChecked) {
-        const url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/toggle`;
+                // 5. UPDATE TASK DATA ATTRIBUTE
+                if (serverData.task_status) {
+                    card.setAttribute('data-task-status', serverData.task_status);
+                }
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                completed: isChecked ? 1 : 0
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                throw new Error(data.message || 'Update failed');
+                // 6. HANDLE SPECIAL STATUS CHANGES
+                handleStatusTransitions(card, serverData);
+
+                // 7. UPDATE GLOBAL COMPLETION RING
+                recalcGlobalCompletion();
+
+                // 8. CHECK IF TASK SHOULD BE FILTERED OUT
+                checkTaskVisibility(card, serverData.task_status);
             }
 
-            // 🔥 Apply real-time updates
-            applyRealtimeUpdate(taskId, data);
+            // =========================================
+            // UPDATE INDIVIDUAL SUBTASK ROW
+            // =========================================
+            function updateSubtaskRow(card, subtask) {
+                const row = card.querySelector(`.jira-subtask-item[data-subtask-id="${subtask.id}"]`);
 
-            // Show appropriate toast
-            if (data.subtask?.completed) {
-                showToast('✅ Subtask completed', 'success');
-            } else {
-                showToast('↩️ Subtask reopened', 'info');
+                if (!row) return;
+
+                const checkbox = row.querySelector('.jira-subtask-checkbox');
+
+                if (checkbox) {
+                    checkbox.checked = !!subtask.completed;
+                }
+
+                if (subtask.completed) {
+                    row.classList.add('is-completed');
+                } else {
+                    row.classList.remove('is-completed');
+                }
             }
-        })
-        .catch(error => {
-            console.error('❌ Toggle subtask failed:', error);
-            
-            // Rollback checkbox on error
-            const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
-            if (checkbox) {
-                checkbox.checked = !isChecked;
+
+            // =========================================
+            // UPDATE SUBTASK COUNTER (X/Y subtasks)
+            // =========================================
+            function updateSubtaskCounter(card, completedCount, totalCount) {
+                const counterEl = card.querySelector('.jira-subtasks-count');
+
+                if (counterEl && completedCount !== undefined && totalCount !== undefined) {
+                    counterEl.textContent = `${completedCount}/${totalCount}`;
+                }
             }
-            
-            showToast('Failed to update subtask', 'error');
-        });
-    }
 
-    // =========================================
-    // SUBTASK ROW CLICK HANDLER
-    // =========================================
-    function subtaskRowClick(event, taskId, subtaskId, totalSubtasks) {
-        const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
-        
-        if (!checkbox) return;
+            // =========================================
+            // UPDATE PROGRESS BAR
+            // =========================================
+            function updateProgressBar(card, serverData) {
+                const progressBar = card.querySelector('.jira-progress-bar');
 
-        const willBeChecked = !checkbox.checked;
+                if (!progressBar) return;
 
-        // Calculate future completion state
-        const checkboxes = document.querySelectorAll(
-            `#subtasks-list-${taskId} .jira-subtask-checkbox`
-        );
+                const { completed_subtasks_count, subtasks_count, task_status, task_status_color } = serverData;
 
-        let futureCompletedCount = 0;
-        checkboxes.forEach(box => {
-            if (box.id === `subtask-cb-${subtaskId}`) {
-                if (willBeChecked) futureCompletedCount++;
-            } else if (box.checked) {
-                futureCompletedCount++;
+                // Calculate percentage
+                const percentage = subtasks_count > 0
+                    ? Math.round((completed_subtasks_count / subtasks_count) * 100)
+                    : 0;
+
+                // Update width with smooth transition
+                progressBar.style.width = percentage + '%';
+
+                // Update color based on status
+                const statusStyle = STATUS_STYLE[task_status];
+                const color = task_status_color || statusStyle?.color || '#0052CC';
+
+                progressBar.style.background = color;
             }
-        });
 
-        const isLastSubtask = (futureCompletedCount === totalSubtasks);
+            // =========================================
+            // UPDATE STATUS BADGE
+            // =========================================
+            function updateStatusBadge(card, serverData) {
+                const badge = card.querySelector('.jira-status-badge');
 
-        // If completing the last subtask, open modal for final confirmation
-        if (isLastSubtask && willBeChecked) {
-            event.preventDefault();
-            openStatusModal(taskId, 'done', subtaskId);
-            return;
-        }
+                if (!badge) return;
 
-        // Optimistic UI update
-        checkbox.checked = willBeChecked;
+                const { task_status, task_status_label, task_status_bg, task_status_color } = serverData;
 
-        // Send to backend
-        toggleSubtask(taskId, subtaskId, willBeChecked);
-    }
+                const statusStyle = STATUS_STYLE[task_status] || STATUS_STYLE['todo'];
 
-    // =========================================
-    // UPDATE TASK STATUS (Done/Postponed/Blocked)
-    // =========================================
-    function submitTaskStatus(event) {
-        event.preventDefault();
+                const label = task_status_label || statusStyle.label;
+                const bg = task_status_bg || statusStyle.bg;
+                const color = task_status_color || statusStyle.color;
 
-        const submitBtn = document.getElementById('submitBtn');
-        const prevHTML = submitBtn.innerHTML;
+                badge.textContent = label;
+                badge.style.background = bg;
+                badge.style.color = color;
+            }
 
-        // Lock button
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
+            // =========================================
+            // HANDLE STATUS TRANSITIONS
+            // =========================================
+            function handleStatusTransitions(card, serverData) {
+                const { task_status } = serverData;
+
+                if (task_status === 'done') {
+                    // Mark ALL subtasks as completed visually
+                    card.querySelectorAll('.jira-subtask-item').forEach(row => {
+                        row.classList.add('is-completed');
+                        const cb = row.querySelector('.jira-subtask-checkbox');
+                        if (cb) cb.checked = true;
+                    });
+
+                    // Set progress to 100%
+                    const progressBar = card.querySelector('.jira-progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+
+                    showToast('✅ Task completed successfully!', 'success');
+                } else if (task_status === 'blocked') {
+                    showToast('⛔ Task marked as blocked', 'error');
+                } else if (task_status === 'postponed') {
+                    showToast('⏰ Task postponed', 'info');
+                } else if (task_status === 'cancelled') {
+                    showToast('❌ Task cancelled', 'info');
+                } else if (task_status === 'review') {
+                    showToast('👀 Task in review', 'info');
+                } else if (task_status === 'todo') {
+                    showToast('📝 Task reopened', 'info');
+                }
+            }
+
+            // =========================================
+            // CHECK IF TASK SHOULD BE HIDDEN/FILTERED
+            // =========================================
+            function checkTaskVisibility(card, newStatus) {
+                // Get current active filter from URL or data attribute
+                const urlParams = new URLSearchParams(window.location.search);
+                const activeFilter = urlParams.get('filter') || 'all';
+
+                let shouldHide = false;
+
+                // Check if task should be filtered out based on new status
+                switch (activeFilter) {
+                    case 'overdue':
+                        // Hide if not overdue anymore
+                        const isOverdue = card.querySelector('.jira-overdue-badge');
+                        shouldHide = !isOverdue;
+                        break;
+
+                    case 'today':
+                        // no-op here, depends on due date logic
+                        break;
+
+                    case 'in-progress':
+                        shouldHide = newStatus !== 'in-progress';
+                        break;
+
+                    case 'review':
+                        shouldHide = newStatus !== 'review';
+                        break;
+
+                    case 'blocked':
+                        shouldHide = newStatus !== 'blocked';
+                        break;
+
+                    case 'done':
+                        shouldHide = newStatus !== 'done';
+                        break;
+                }
+
+                if (shouldHide) {
+                    // Fade out and remove from view
+                    card.style.transition = 'all 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                        // Check if section is now empty
+                        checkIfSectionEmpty(card);
+                    }, 300);
+                }
+            }
+
+            // =========================================
+            // CHECK IF TASK SECTION IS EMPTY
+            // =========================================
+            function checkIfSectionEmpty(card) {
+                const section = card.closest('.task-section, .pm-content');
+
+                if (!section) return;
+
+                const visibleCards = section.querySelectorAll('.jira-task-card:not([style*="display: none"])');
+
+                if (visibleCards.length === 0) {
+                    // Show empty state
+                    const emptyState = section.querySelector('.pm-empty');
+                    if (emptyState) {
+                        emptyState.style.display = 'flex';
+                    }
+                }
+            }
+
+            // =========================================
+            // RECALCULATE GLOBAL COMPLETION RING
+            // =========================================
+            function recalcGlobalCompletion() {
+                const wrapper = document.getElementById('pm-completion-wrapper');
+
+                if (!wrapper) return;
+
+                const taskCards = document.querySelectorAll('.jira-task-card:not([style*="display: none"])');
+
+                let totalUnits = 0;
+                let completedUnits = 0;
+
+                taskCards.forEach(card => {
+                    // Each task = 1 unit
+                    totalUnits += 1;
+
+                    const taskStatus = card.getAttribute('data-task-status');
+                    if (taskStatus === 'done') {
+                        completedUnits += 1;
+                    }
+
+                    // Each subtask = 1 unit
+                    card.querySelectorAll('.jira-subtask-item').forEach(row => {
+                        totalUnits += 1;
+
+                        const checkbox = row.querySelector('.jira-subtask-checkbox');
+                        if (checkbox && checkbox.checked) {
+                            completedUnits += 1;
+                        }
+                    });
+                });
+
+                const percentage = totalUnits > 0
+                    ? Math.round((completedUnits / totalUnits) * 100)
+                    : 0;
+
+                // Update attributes
+                wrapper.setAttribute('data-total-units', totalUnits);
+                wrapper.setAttribute('data-completed-units', completedUnits);
+
+                // Update circle progress
+                const circle = wrapper.querySelector('.pm-circle');
+                if (circle) {
+                    circle.setAttribute('stroke-dasharray', `${percentage}, 100`);
+                }
+
+                // Update percentage text
+                const percentageText = wrapper.querySelector('.pm-percentage');
+                if (percentageText) {
+                    percentageText.textContent = `${percentage}%`;
+                }
+            }
+
+            // =========================================
+            // AJAX: TOGGLE SUBTASK
+            // =========================================
+            function toggleSubtask(taskId, subtaskId, isChecked) {
+                const url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/toggle`;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        completed: isChecked ? 1 : 0
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            throw new Error(data.message || 'Update failed');
+                        }
+
+                        // 🔥 Apply real-time updates
+                        applyRealtimeUpdate(taskId, data);
+
+                        // Show appropriate toast
+                        if (data.subtask?.completed) {
+                            showToast('✅ Subtask completed', 'success');
+                        } else {
+                            showToast('↩️ Subtask reopened', 'info');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Toggle subtask failed:', error);
+
+                        // Rollback checkbox on error
+                        const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
+                        if (checkbox) {
+                            checkbox.checked = !isChecked;
+                        }
+
+                        showToast('Failed to update subtask', 'error');
+                    });
+            }
+
+            // =========================================
+            // SUBTASK ROW CLICK HANDLER
+            // =========================================
+            function subtaskRowClick(event, taskId, subtaskId, totalSubtasks) {
+                const checkbox = document.getElementById(`subtask-cb-${subtaskId}`);
+
+                if (!checkbox) return;
+
+                const willBeChecked = !checkbox.checked;
+
+                // Calculate future completion state
+                const checkboxes = document.querySelectorAll(
+                    `#subtasks-list-${taskId} .jira-subtask-checkbox`
+                );
+
+                let futureCompletedCount = 0;
+                checkboxes.forEach(box => {
+                    if (box.id === `subtask-cb-${subtaskId}`) {
+                        if (willBeChecked) futureCompletedCount++;
+                    } else if (box.checked) {
+                        futureCompletedCount++;
+                    }
+                });
+
+                const isLastSubtask = (futureCompletedCount === totalSubtasks);
+
+                // If completing the last subtask, open modal for final confirmation
+                if (isLastSubtask && willBeChecked) {
+                    event.preventDefault();
+                    openStatusModal(taskId, 'done', subtaskId);
+                    return;
+                }
+
+                // Optimistic UI update
+                checkbox.checked = willBeChecked;
+
+                // Send to backend
+                toggleSubtask(taskId, subtaskId, willBeChecked);
+            }
+
+            // =========================================
+            // UPDATE TASK STATUS (Done/Postponed/Blocked)
+            // =========================================
+            function submitTaskStatus(event) {
+                event.preventDefault();
+
+                const submitBtn = document.getElementById('submitBtn');
+                const prevHTML = submitBtn.innerHTML;
+
+                // Lock button
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" class="spinning">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
                 <path d="M8 1a7 7 0 017 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
@@ -1745,74 +1676,74 @@
             <span>Processing...</span>
         `;
 
-        const form = document.getElementById('taskStatusForm');
-        const taskId = document.getElementById('modalTaskId').value;
-        const subtaskId = document.getElementById('modalSubtaskId').value;
-        const action = document.getElementById('modalAction').value;
+                const form = document.getElementById('taskStatusForm');
+                const taskId = document.getElementById('modalTaskId').value;
+                const subtaskId = document.getElementById('modalSubtaskId').value;
+                const action = document.getElementById('modalAction').value;
 
-        const formData = new FormData(form);
+                const formData = new FormData(form);
 
-        // Add selected files
-        selectedFiles.forEach(file => {
-            formData.append('attachments[]', file);
-        });
+                // Add selected files
+                selectedFiles.forEach(file => {
+                    formData.append('attachments[]', file);
+                });
 
-        // Determine endpoint
-        let url;
-        if (action === 'remark') {
-            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/remark`;
-        } else if (subtaskId) {
-            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/complete-final`;
-        } else {
-            url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/status`;
-        }
+                // Determine endpoint
+                let url;
+                if (action === 'remark') {
+                    url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/remark`;
+                } else if (subtaskId) {
+                    url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/subtasks/${subtaskId}/complete-final`;
+                } else {
+                    url = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}/status`;
+                }
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                throw new Error(data.message || 'Request failed');
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            throw new Error(data.message || 'Request failed');
+                        }
+
+                        // Close modal
+                        closeStatusModal();
+
+                        // 🔥 Apply real-time updates
+                        if (data.task_status || data.subtask) {
+                            applyRealtimeUpdate(taskId, data);
+                        } else {
+                            showToast(data.message || 'Updated successfully', 'success');
+                        }
+
+                        // Restore button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = prevHTML;
+                    })
+                    .catch(error => {
+                        console.error('❌ Status update failed:', error);
+                        showToast(error.message || 'Failed to update task', 'error');
+
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = prevHTML;
+                    });
             }
 
-            // Close modal
-            closeStatusModal();
+            // =========================================
+            // TOAST NOTIFICATION SYSTEM
+            // =========================================
+            function showToast(message, type = 'info') {
+                let container = document.getElementById('app-toast-container');
 
-            // 🔥 Apply real-time updates
-            if (data.task_status || data.subtask) {
-                applyRealtimeUpdate(taskId, data);
-            } else {
-                showToast(data.message || 'Updated successfully', 'success');
-            }
-
-            // Restore button
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = prevHTML;
-        })
-        .catch(error => {
-            console.error('❌ Status update failed:', error);
-            showToast(error.message || 'Failed to update task', 'error');
-            
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = prevHTML;
-        });
-    }
-
-    // =========================================
-    // TOAST NOTIFICATION SYSTEM
-    // =========================================
-    function showToast(message, type = 'info') {
-        let container = document.getElementById('app-toast-container');
-        
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'app-toast-container';
-            container.style.cssText = `
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'app-toast-container';
+                    container.style.cssText = `
                 position: fixed;
                 top: 16px;
                 right: 16px;
@@ -1821,35 +1752,35 @@
                 flex-direction: column;
                 gap: 8px;
             `;
-            document.body.appendChild(container);
-        }
+                    document.body.appendChild(container);
+                }
 
-        const toast = document.createElement('div');
-        
-        const styles = {
-            success: {
-                bg: '#E3FCEF',
-                color: '#006644',
-                border: '#36B37E33',
-                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#006644" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
-            },
-            error: {
-                bg: '#FFEBE6',
-                color: '#BF2600',
-                border: '#FF563033',
-                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BF2600" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-            },
-            info: {
-                bg: '#DEEBFF',
-                color: '#0747A6',
-                border: '#0052CC33',
-                icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0747A6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-            }
-        };
+                const toast = document.createElement('div');
 
-        const style = styles[type] || styles.info;
+                const styles = {
+                    success: {
+                        bg: '#E3FCEF',
+                        color: '#006644',
+                        border: '#36B37E33',
+                        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#006644" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+                    },
+                    error: {
+                        bg: '#FFEBE6',
+                        color: '#BF2600',
+                        border: '#FF563033',
+                        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#BF2600" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                    },
+                    info: {
+                        bg: '#DEEBFF',
+                        color: '#0747A6',
+                        border: '#0052CC33',
+                        icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0747A6" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                    }
+                };
 
-        toast.style.cssText = `
+                const style = styles[type] || styles.info;
+
+                toast.style.cssText = `
             min-width: 220px;
             max-width: 320px;
             padding: 12px 14px;
@@ -1865,141 +1796,141 @@
             color: ${style.color};
         `;
 
-        toast.innerHTML = `
+                toast.innerHTML = `
             <div style="flex-shrink:0;">${style.icon}</div>
             <div style="flex:1;">${message}</div>
             <button style="background:transparent;border:none;color:${style.color};cursor:pointer;font-size:14px;font-weight:600;padding:0;" aria-label="Close">&times;</button>
         `;
 
-        const closeBtn = toast.querySelector('button');
-        closeBtn.addEventListener('click', () => toast.remove());
+                const closeBtn = toast.querySelector('button');
+                closeBtn.addEventListener('click', () => toast.remove());
 
-        container.appendChild(toast);
+                container.appendChild(toast);
 
-        // Auto-remove after 3 seconds
-        setTimeout(() => {
-            toast.style.transition = 'opacity 200ms ease, transform 200ms ease';
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-4px)';
-            setTimeout(() => toast.remove(), 220);
-        }, 3000);
-    }
-
-    // =========================================
-    // MODAL HANDLERS
-    // =========================================
-    function openStatusModal(taskId, action, subtaskId = null) {
-        const modal = document.getElementById('taskStatusModal');
-        const form = document.getElementById('taskStatusForm');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalTaskId = document.getElementById('modalTaskId');
-        const modalSubId = document.getElementById('modalSubtaskId');
-        const modalAction = document.getElementById('modalAction');
-        const statusWrap = document.getElementById('statusSelection');
-        const remarkLabel = document.getElementById('remarkLabel');
-        const submitBtnText = document.getElementById('submitBtnText');
-        const postponeField = document.getElementById('postponeDateField');
-        const postponeInput = document.getElementById('postponed_until');
-        const filePreview = document.getElementById('filePreview');
-
-        // Reset
-        form.reset();
-        selectedFiles = [];
-        filePreview.innerHTML = '';
-        filePreview.style.display = 'none';
-
-        modalTaskId.value = taskId;
-        modalSubId.value = subtaskId || '';
-        modalAction.value = action;
-
-        if (action === 'remark') {
-            modalTitle.textContent = 'Add Remark';
-            statusWrap.style.display = 'none';
-            remarkLabel.textContent = 'Your Remark';
-            submitBtnText.textContent = 'Add Remark';
-            postponeField.style.display = 'none';
-            postponeInput.required = false;
-        } else {
-            modalTitle.textContent = 'Update Task Status';
-            statusWrap.style.display = 'block';
-            remarkLabel.textContent = 'Describe your update';
-            submitBtnText.textContent = 'Update Status';
-
-            const radio = document.querySelector(`input[name="status"][value="${action}"]`);
-            if (radio) radio.checked = true;
-
-            updatePostponeDateVisibility();
-        }
-
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeStatusModal(event) {
-        if (event && event.target && event.currentTarget && event.target !== event.currentTarget) {
-            return;
-        }
-
-        const modal = document.getElementById('taskStatusModal');
-        if (modal) modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-
-    function updatePostponeDateVisibility() {
-        const checked = document.querySelector('input[name="status"]:checked');
-        const postponeField = document.getElementById('postponeDateField');
-        const postponeInput = document.getElementById('postponed_until');
-
-        if (checked?.value === 'postponed') {
-            postponeField.style.display = 'block';
-            postponeInput.required = true;
-        } else {
-            postponeField.style.display = 'none';
-            postponeInput.required = false;
-        }
-    }
-
-    function toggleSubtasksExpand(taskId) {
-        const list = document.getElementById(`subtasks-list-${taskId}`);
-        const btn = document.getElementById(`expand-btn-${taskId}`);
-        
-        if (!list || !btn) return;
-
-        const hidden = (list.style.display === 'none' || list.style.display === '');
-        list.style.display = hidden ? 'block' : 'none';
-        btn.classList.toggle('is-expanded', hidden);
-    }
-
-    // =========================================
-    // FILE UPLOAD HANDLERS
-    // =========================================
-    function handleFileSelect(event) {
-        handleFiles(event.target.files);
-    }
-
-    function handleFiles(fileList) {
-        Array.from(fileList).forEach(file => {
-            if (file.size > 10 * 1024 * 1024) {
-                showToast(`"${file.name}" is too large (max 10MB)`, 'error');
-                return;
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    toast.style.transition = 'opacity 200ms ease, transform 200ms ease';
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-4px)';
+                    setTimeout(() => toast.remove(), 220);
+                }, 3000);
             }
-            selectedFiles.push(file);
-            displayFilePreview(file);
-        });
-    }
 
-    function displayFilePreview(file) {
-        const container = document.getElementById('filePreview');
-        container.style.display = 'grid';
+            // =========================================
+            // STATUS MODAL HANDLERS
+            // =========================================
+            function openStatusModal(taskId, action, subtaskId = null) {
+                const modal = document.getElementById('taskStatusModal');
+                const form = document.getElementById('taskStatusForm');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalTaskId = document.getElementById('modalTaskId');
+                const modalSubId = document.getElementById('modalSubtaskId');
+                const modalAction = document.getElementById('modalAction');
+                const statusWrap = document.getElementById('statusSelection');
+                const remarkLabel = document.getElementById('remarkLabel');
+                const submitBtnText = document.getElementById('submitBtnText');
+                const postponeField = document.getElementById('postponeDateField');
+                const postponeInput = document.getElementById('postponed_until');
+                const filePreview = document.getElementById('filePreview');
 
-        const item = document.createElement('div');
-        item.className = 'file-preview-item';
-        item.dataset.fileName = file.name;
+                // Reset
+                form.reset();
+                selectedFiles = [];
+                filePreview.innerHTML = '';
+                filePreview.style.display = 'none';
 
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                item.innerHTML = `
+                modalTaskId.value = taskId;
+                modalSubId.value = subtaskId || '';
+                modalAction.value = action;
+
+                if (action === 'remark') {
+                    modalTitle.textContent = 'Add Remark';
+                    statusWrap.style.display = 'none';
+                    remarkLabel.textContent = 'Your Remark';
+                    submitBtnText.textContent = 'Add Remark';
+                    postponeField.style.display = 'none';
+                    postponeInput.required = false;
+                } else {
+                    modalTitle.textContent = 'Update Task Status';
+                    statusWrap.style.display = 'block';
+                    remarkLabel.textContent = 'Describe your update';
+                    submitBtnText.textContent = 'Update Status';
+
+                    const radio = document.querySelector(`input[name="status"][value="${action}"]`);
+                    if (radio) radio.checked = true;
+
+                    updatePostponeDateVisibility();
+                }
+
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeStatusModal(event) {
+                if (event && event.target && event.currentTarget && event.target !== event.currentTarget) {
+                    return;
+                }
+
+                const modal = document.getElementById('taskStatusModal');
+                if (modal) modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            function updatePostponeDateVisibility() {
+                const checked = document.querySelector('input[name="status"]:checked');
+                const postponeField = document.getElementById('postponeDateField');
+                const postponeInput = document.getElementById('postponed_until');
+
+                if (checked?.value === 'postponed') {
+                    postponeField.style.display = 'block';
+                    postponeInput.required = true;
+                } else {
+                    postponeField.style.display = 'none';
+                    postponeInput.required = false;
+                }
+            }
+
+            function toggleSubtasksExpand(taskId) {
+                const list = document.getElementById(`subtasks-list-${taskId}`);
+                const btn = document.getElementById(`expand-btn-${taskId}`);
+
+                if (!list || !btn) return;
+
+                const hidden = (list.style.display === 'none' || list.style.display === '');
+                list.style.display = hidden ? 'block' : 'none';
+                btn.classList.toggle('is-expanded', hidden);
+            }
+
+            // =========================================
+            // FILE UPLOAD HANDLERS
+            // =========================================
+            function handleFileSelect(event) {
+                handleFiles(event.target.files);
+            }
+
+            function handleFiles(fileList) {
+                Array.from(fileList).forEach(file => {
+                    if (file.size > 10 * 1024 * 1024) {
+                        showToast(`"${file.name}" is too large (max 10MB)`, 'error');
+                        return;
+                    }
+                    selectedFiles.push(file);
+                    displayFilePreview(file);
+                });
+            }
+
+            function displayFilePreview(file) {
+                const container = document.getElementById('filePreview');
+                container.style.display = 'grid';
+
+                const item = document.createElement('div');
+                item.className = 'file-preview-item';
+                item.dataset.fileName = file.name;
+
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        item.innerHTML = `
                     <img src="${e.target.result}" alt="${file.name}" class="file-preview-image">
                     <button type="button" class="file-preview-remove" onclick="removeFile('${file.name}')">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
@@ -2007,10 +1938,10 @@
                         </svg>
                     </button>
                 `;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            item.innerHTML = `
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    item.innerHTML = `
                 <div class="file-preview-file">
                     <svg class="file-preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
@@ -2024,111 +1955,111 @@
                     </svg>
                 </button>
             `;
-        }
-
-        container.appendChild(item);
-    }
-
-    function removeFile(fileName) {
-        selectedFiles = selectedFiles.filter(f => f.name !== fileName);
-        const item = document.querySelector(`.file-preview-item[data-file-name="${fileName}"]`);
-        if (item) item.remove();
-
-        if (selectedFiles.length === 0) {
-            document.getElementById('filePreview').style.display = 'none';
-        }
-    }
-
-    // =========================================
-    // KEYBOARD SHORTCUTS
-    // =========================================
-    function handleKeyCommands(event) {
-        if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-            event.preventDefault();
-            window.location.reload();
-        }
-
-        if (event.key === 'Escape') {
-            closeStatusModal();
-        }
-    }
-
-    // =========================================
-    // INITIALIZATION
-    // =========================================
-    document.addEventListener('DOMContentLoaded', function() {
-        // Status radio listeners
-        document.querySelectorAll('input[name="status"]').forEach(radio => {
-            radio.addEventListener('change', updatePostponeDateVisibility);
-        });
-
-        // Remark character counter
-        const remark = document.getElementById('remark');
-        if (remark) {
-            remark.addEventListener('input', function() {
-                const counter = document.getElementById('charCount');
-                if (counter) {
-                    const length = this.value.length;
-                    counter.textContent = length;
-                    counter.style.color = length > 1900 ? '#DE350B' : '#6B778C';
                 }
+
+                container.appendChild(item);
+            }
+
+            function removeFile(fileName) {
+                selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+                const item = document.querySelector(`.file-preview-item[data-file-name="${fileName}"]`);
+                if (item) item.remove();
+
+                if (selectedFiles.length === 0) {
+                    document.getElementById('filePreview').style.display = 'none';
+                }
+            }
+
+            // =========================================
+            // KEYBOARD SHORTCUTS
+            // =========================================
+            function handleKeyCommands(event) {
+                if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+                    event.preventDefault();
+                    window.location.reload();
+                }
+
+                if (event.key === 'Escape') {
+                    closeStatusModal();
+                }
+            }
+
+            // =========================================
+            // INITIALIZATION
+            // =========================================
+            document.addEventListener('DOMContentLoaded', function() {
+                // Status radio listeners
+                document.querySelectorAll('input[name="status"]').forEach(radio => {
+                    radio.addEventListener('change', updatePostponeDateVisibility);
+                });
+
+                // Remark character counter
+                const remark = document.getElementById('remark');
+                if (remark) {
+                    remark.addEventListener('input', function() {
+                        const counter = document.getElementById('charCount');
+                        if (counter) {
+                            const length = this.value.length;
+                            counter.textContent = length;
+                            counter.style.color = length > 1900 ? '#DE350B' : '#6B778C';
+                        }
+                    });
+                }
+
+                // Drag & drop
+                const uploadArea = document.getElementById('uploadArea');
+                if (uploadArea) {
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                        uploadArea.addEventListener(eventName, e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }, false);
+                    });
+
+                    ['dragenter', 'dragover'].forEach(eventName => {
+                        uploadArea.addEventListener(eventName, () => {
+                            uploadArea.classList.add('drag-over');
+                        }, false);
+                    });
+
+                    ['dragleave', 'drop'].forEach(eventName => {
+                        uploadArea.addEventListener(eventName, () => {
+                            uploadArea.classList.remove('drag-over');
+                        }, false);
+                    });
+
+                    uploadArea.addEventListener('drop', function(e) {
+                        handleFiles(e.dataTransfer.files);
+                    }, false);
+                }
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', handleKeyCommands);
+
+                // Initial completion calculation
+                recalcGlobalCompletion();
+
+                console.log('✅ Real-time task system initialized');
             });
-        }
 
-        // Drag & drop
-        const uploadArea = document.getElementById('uploadArea');
-        if (uploadArea) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-            });
+            // =========================================
+            // EXPOSE TO GLOBAL SCOPE
+            // =========================================
+            window.showToast = showToast;
+            window.recalcGlobalCompletion = recalcGlobalCompletion;
+            window.toggleSubtasksExpand = toggleSubtasksExpand;
+            window.subtaskRowClick = subtaskRowClick;
+            window.toggleSubtask = toggleSubtask;
+            window.openStatusModal = openStatusModal;
+            window.closeStatusModal = closeStatusModal;
+            window.submitTaskStatus = submitTaskStatus;
+            window.handleFileSelect = handleFileSelect;
+            window.removeFile = removeFile;
+            window.applyRealtimeUpdate = applyRealtimeUpdate;
 
-            ['dragenter', 'dragover'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, () => {
-                    uploadArea.classList.add('drag-over');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, () => {
-                    uploadArea.classList.remove('drag-over');
-                }, false);
-            });
-
-            uploadArea.addEventListener('drop', function(e) {
-                handleFiles(e.dataTransfer.files);
-            }, false);
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', handleKeyCommands);
-
-        // Initial completion calculation
-        recalcGlobalCompletion();
-
-        console.log('✅ Real-time task system initialized');
-    });
-
-    // =========================================
-    // EXPOSE TO GLOBAL SCOPE
-    // =========================================
-    window.showToast = showToast;
-    window.recalcGlobalCompletion = recalcGlobalCompletion;
-    window.toggleSubtasksExpand = toggleSubtasksExpand;
-    window.subtaskRowClick = subtaskRowClick;
-    window.toggleSubtask = toggleSubtask;
-    window.openStatusModal = openStatusModal;
-    window.closeStatusModal = closeStatusModal;
-    window.submitTaskStatus = submitTaskStatus;
-    window.handleFileSelect = handleFileSelect;
-    window.removeFile = removeFile;
-    window.applyRealtimeUpdate = applyRealtimeUpdate;
-
-    // Spinner CSS
-    const style = document.createElement('style');
-    style.textContent = `
+            // Spinner CSS / misc injected styles
+            const style = document.createElement('style');
+            style.textContent = `
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -2176,7 +2107,8 @@
             margin-top: 8px;
         }
     `;
-    document.head.appendChild(style);
+            document.head.appendChild(style);
 
-})();</script>
+        })();
+    </script>
 @endsection
