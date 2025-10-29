@@ -157,10 +157,11 @@ $canComplete = $contextIsDelegated ? false : $canCompleteBase;
         </div>
     </div>
 
-    <!-- Title -->
-    <a class="jira-card-title-link">
-        <h3 class="jira-card-title">{{ $task->title }}</h3>
-    </a>
+<!-- Title -->
+<a href="{{ route('tenant.manage.projects.tasks.show', [$username, $task->id]) }}" 
+    class="jira-card-title-link">
+     <h3 class="jira-card-title">{{ $task->title }}</h3>
+ </a>
 
     <!-- Description -->
     @if($task->notes)
@@ -340,6 +341,10 @@ $canComplete = $contextIsDelegated ? false : $canCompleteBase;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.jira-task-card:not(:has(.jira-quick-btn:hover, .jira-menu-btn:hover, .jira-subtask-item:hover)) {
+    cursor: pointer;
 }
 .jira-task-card:hover {
     border-color: #0052CC;
@@ -768,6 +773,27 @@ function toggleTaskMenu(taskId) {
 
     menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
 }
+
+
+
+// Make entire card clickable (except buttons)
+document.addEventListener('click', function(e) {
+    const card = e.target.closest('.jira-task-card');
+    
+    if (!card) return;
+    
+    // Don't navigate if clicking on interactive elements
+    if (e.target.closest('.jira-menu-btn, .jira-dropdown-menu, .jira-quick-btn, .jira-subtask-item, .jira-project-badge')) {
+        return;
+    }
+    
+    const taskId = card.dataset.taskId;
+    if (taskId) {
+        window.location.href = `/${window.TENANT_USERNAME}/manage/projects/tasks/${taskId}`;
+    }
+});
+
+
 
 // close menus when clicking outside
 document.addEventListener('click', function(e) {

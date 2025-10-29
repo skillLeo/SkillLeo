@@ -22,8 +22,10 @@ class TaskActionController extends BaseTenantController
     public function updateStatus(Request $request, string $username, Task $task)
     {
         // Authorization check
-        if ($task->assigned_to !== $this->viewer->id &&
-            $task->reporter_id !== $this->viewer->id) {
+        if (
+            $task->assigned_to !== $this->viewer->id &&
+            $task->reporter_id !== $this->viewer->id
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to update this task',
@@ -73,14 +75,15 @@ class TaskActionController extends BaseTenantController
             $task->update($updateData);
 
             // Log activity
-            TaskActivity::create([
+            // Log activity FIRST - capture the exact timestamp
+            $activity = TaskActivity::create([
                 'task_id'  => $task->id,
                 'actor_id' => $this->viewer->id,
                 'type'     => $request->status === 'done' ? 'completed' : $request->status,
                 'body'     => $request->remark,
             ]);
 
-            // Handle attachments
+            // Handle attachments - use the activity timestamp
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     $path = $file->store('task-attachments/' . $task->id, 'public');
@@ -93,6 +96,8 @@ class TaskActionController extends BaseTenantController
                             : 'file',
                         'label'       => $file->getClientOriginalName(),
                         'path_or_url' => $path,
+                        'created_at'  => $activity->created_at, // 🔥 CRITICAL: Match activity timestamp
+                        'updated_at'  => $activity->created_at,
                     ]);
                 }
             }
@@ -107,17 +112,17 @@ class TaskActionController extends BaseTenantController
                 'success'                   => true,
                 'message'                   => 'Task updated successfully',
                 'task_id'                   => $task->id,
-                
+
                 // Status information
                 'task_status'               => $task->status,
                 'task_status_label'         => $meta['label'],
                 'task_status_bg'            => $meta['bg'],
                 'task_status_color'         => $meta['color'],
-                
+
                 // Subtask progress
                 'completed_subtasks_count'  => $completedCount,
                 'subtasks_count'            => $totalCount,
-                
+
                 // Additional data for UI
                 'completed_at'              => $task->completed_at?->toIso8601String(),
                 'postponed_until'           => $task->postponed_until?->format('Y-m-d'),
@@ -134,8 +139,10 @@ class TaskActionController extends BaseTenantController
      */
     public function addRemark(Request $request, string $username, Task $task)
     {
-        if ($task->assigned_to !== $this->viewer->id &&
-            $task->reporter_id !== $this->viewer->id) {
+        if (
+            $task->assigned_to !== $this->viewer->id &&
+            $task->reporter_id !== $this->viewer->id
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -148,7 +155,8 @@ class TaskActionController extends BaseTenantController
         ]);
 
         DB::transaction(function () use ($request, $task) {
-            TaskActivity::create([
+            // Create activity first
+            $activity = TaskActivity::create([
                 'task_id'  => $task->id,
                 'actor_id' => $this->viewer->id,
                 'type'     => 'comment',
@@ -167,6 +175,8 @@ class TaskActionController extends BaseTenantController
                             : 'file',
                         'label'       => $file->getClientOriginalName(),
                         'path_or_url' => $path,
+                        'created_at'  => $activity->created_at, // 🔥 Match timestamps
+                        'updated_at'  => $activity->created_at,
                     ]);
                 }
             }
@@ -235,7 +245,7 @@ class TaskActionController extends BaseTenantController
 
             $responseData = [
                 'success' => true,
-                
+
                 // Subtask data
                 'subtask' => [
                     'id'           => $subtask->id,
@@ -243,17 +253,17 @@ class TaskActionController extends BaseTenantController
                     'completed'    => (bool) $subtask->completed,
                     'completed_at' => $subtask->completed_at?->toIso8601String(),
                 ],
-                
+
                 // Subtask counts
                 'completed_subtasks_count' => $completedCount,
                 'subtasks_count'           => $totalCount,
-                
+
                 // Task status (may have changed)
                 'task_status'              => $newStatus,
                 'task_status_label'        => $newStatusMeta['label'],
                 'task_status_bg'           => $newStatusMeta['bg'],
                 'task_status_color'        => $newStatusMeta['color'],
-                
+
                 // Additional task data
                 'task_completed_at'        => $task->completed_at?->toIso8601String(),
             ];
@@ -306,14 +316,15 @@ class TaskActionController extends BaseTenantController
             ]);
 
             // Log activity
-            TaskActivity::create([
+            // Log activity FIRST
+            $activity = TaskActivity::create([
                 'task_id'  => $task->id,
                 'actor_id' => $this->viewer->id,
                 'type'     => 'completed',
                 'body'     => $request->remark,
             ]);
 
-            // Handle attachments
+            // Handle attachments with matched timestamp
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     $path = $file->store('task-attachments/' . $task->id, 'public');
@@ -326,6 +337,8 @@ class TaskActionController extends BaseTenantController
                             : 'file',
                         'label'       => $file->getClientOriginalName(),
                         'path_or_url' => $path,
+                        'created_at'  => $activity->created_at, // 🔥 CRITICAL
+                        'updated_at'  => $activity->created_at,
                     ]);
                 }
             }
@@ -341,7 +354,7 @@ class TaskActionController extends BaseTenantController
                 'success'                   => true,
                 'message'                   => 'Task completed successfully!',
                 'task_id'                   => $task->id,
-                
+
                 // Subtask that was clicked
                 'subtask' => [
                     'id'           => $subtask->id,
@@ -349,17 +362,17 @@ class TaskActionController extends BaseTenantController
                     'completed'    => true,
                     'completed_at' => $subtask->completed_at->toIso8601String(),
                 ],
-                
+
                 // Task status
                 'task_status'               => 'done',
                 'task_status_label'         => $meta['label'],
                 'task_status_bg'            => $meta['bg'],
                 'task_status_color'         => $meta['color'],
-                
+
                 // Subtask progress (should be 100%)
                 'completed_subtasks_count'  => $completedCount,
                 'subtasks_count'            => $totalCount,
-                
+
                 // Task completion time
                 'task_completed_at'         => $task->completed_at->toIso8601String(),
             ];
@@ -417,7 +430,7 @@ class TaskActionController extends BaseTenantController
         ]);
 
         $newAssignee = User::find($validated['user_id']);
-        
+
         if (!$newAssignee) {
             return response()->json([
                 'success' => false,

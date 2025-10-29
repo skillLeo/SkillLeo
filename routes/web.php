@@ -276,6 +276,22 @@ Route::middleware(['auth'])->group(function () {
                 ->name('tasks.')
                 ->group(function () {
 
+
+                    Route::post('/{task}/attachments', [TaskController::class, 'uploadAttachment'])
+                        ->name('attachments.upload');
+
+                    Route::delete('/{task}/attachments/{attachment}', [TaskController::class, 'deleteAttachment'])
+                        ->name('attachments.delete');
+
+                    Route::get('/{task}/attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])
+                        ->name('attachments.download');
+
+                    // Task Comments
+                    Route::post('/{task}/comment', [TaskController::class, 'addComment'])
+                        ->name('comment.add');
+
+
+
                     // Task List Views
                     Route::get('/my-tasks', [TaskController::class, 'assignedToMe'])
                         ->name('my-tasks');
